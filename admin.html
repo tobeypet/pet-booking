@@ -210,7 +210,7 @@ const SERVICE_DEF = {
 };
 
 const newCustomerState = {
-  data:{ ownerName:'',phone:'',lineId:'',address:'',petName:'',petBreed:'',petAge:'',petWeight:'',petPersonality:'',petHealth:'' },
+  data:{ ownerName:'',phone:'',lineId:'',address:'',petName:'',petBreed:'',petAge:'',petWeight:'',petPersonality:'',petHealth:'',remarks:'',contactPref:'' },
   resultCode:null, error:''
 };
 
@@ -431,17 +431,26 @@ function tplNewCustomer(){
   const d = newCustomerState.data;
   return `
     <h2 class="card-title">新增客人資料</h2>
-    <p class="card-desc">直接在後台幫客人建檔，系統會自動產生一組專屬代碼；下次客人自己預約時輸入這組代碼，就能快速帶入資料。</p>
+    <p class="card-desc">直接在後台幫客人建檔，系統會自動產生一組專屬代碼；下次客人自己預約時輸入這組代碼，就能快速帶入資料。以下欄位皆為選填，填多少算多少。</p>
     <div class="field"><label>飼主姓名</label><input type="text" id="nc-name" value="${esc(d.ownerName)}"></div>
     <div class="field"><label>電話</label><input type="tel" id="nc-phone" value="${esc(d.phone)}"></div>
-    <div class="field"><label>LINE ID（選填）</label><input type="text" id="nc-line" value="${esc(d.lineId)}"></div>
+    <div class="field"><label>LINE ID</label><input type="text" id="nc-line" value="${esc(d.lineId)}"></div>
     <div class="field"><label>地址</label><input type="text" id="nc-address" value="${esc(d.address)}"></div>
+    <div class="field">
+      <label>聯繫方式偏好</label>
+      <div class="choice-row" id="nc-contact-pref">
+        <div class="choice-pill ${d.contactPref==='官方LINE'?'active':''}" data-c="官方LINE">官方LINE</div>
+        <div class="choice-pill ${d.contactPref==='LINE'?'active':''}" data-c="LINE">LINE</div>
+        <div class="choice-pill ${d.contactPref==='IG'?'active':''}" data-c="IG">IG</div>
+      </div>
+    </div>
     <div class="field"><label>寵物名稱</label><input type="text" id="nc-petname" value="${esc(d.petName)}"></div>
     <div class="field"><label>寵物品種</label><input type="text" id="nc-petbreed" value="${esc(d.petBreed)}"></div>
-    <div class="field"><label>年齡（選填）</label><input type="text" id="nc-petage" value="${esc(d.petAge)}"></div>
-    <div class="field"><label>體重（選填）</label><input type="text" id="nc-petweight" value="${esc(d.petWeight)}"></div>
-    <div class="field"><label>寵物個性（選填）</label><textarea id="nc-personality">${esc(d.petPersonality)}</textarea></div>
-    <div class="field"><label>健康狀況（選填）</label><textarea id="nc-health">${esc(d.petHealth)}</textarea></div>
+    <div class="field"><label>年齡</label><input type="text" id="nc-petage" value="${esc(d.petAge)}"></div>
+    <div class="field"><label>體重</label><input type="text" id="nc-petweight" value="${esc(d.petWeight)}"></div>
+    <div class="field"><label>寵物個性</label><textarea id="nc-personality">${esc(d.petPersonality)}</textarea></div>
+    <div class="field"><label>健康狀況</label><textarea id="nc-health">${esc(d.petHealth)}</textarea></div>
+    <div class="field"><label>備註</label><textarea id="nc-remarks" placeholder="其他想記錄的事項">${esc(d.remarks)}</textarea></div>
     <div class="err" id="nc-err" style="display:${newCustomerState.error?'block':'none'};">${newCustomerState.error||''}</div>
     <div class="actions"><button class="btn btn-primary" id="ncSubmitBtn" style="flex:1;">新增客人資料</button></div>
     ${newCustomerState.resultCode ? `
@@ -453,6 +462,12 @@ function tplNewCustomer(){
   `;
 }
 function bindNewCustomer(){
+  document.getElementById('nc-contact-pref').addEventListener('click', e=>{
+    const p = e.target.closest('.choice-pill'); if(!p) return;
+    const val = p.dataset.c;
+    newCustomerState.data.contactPref = (newCustomerState.data.contactPref===val) ? '' : val;
+    render();
+  });
   document.getElementById('ncSubmitBtn').addEventListener('click', async ()=>{
     const d = newCustomerState.data;
     d.ownerName = document.getElementById('nc-name').value.trim();
@@ -465,9 +480,11 @@ function bindNewCustomer(){
     d.petWeight = document.getElementById('nc-petweight').value.trim();
     d.petPersonality = document.getElementById('nc-personality').value.trim();
     d.petHealth = document.getElementById('nc-health').value.trim();
+    d.remarks = document.getElementById('nc-remarks').value.trim();
 
-    if(!d.ownerName || !d.phone || !d.address || !d.petName || !d.petBreed){
-      newCustomerState.error = '請完整填寫姓名、電話、地址、寵物名稱與品種。';
+    const hasAny = Object.values(d).some(v => v);
+    if(!hasAny){
+      newCustomerState.error = '請至少填寫一項資料。';
       render(); return;
     }
     if(!GOOGLE_SCRIPT_URL){ newCustomerState.error = '尚未連結試算表，無法新增。'; render(); return; }
@@ -482,7 +499,7 @@ function bindNewCustomer(){
       const result = await res.json();
       if(!result.success) throw new Error(result.error || '新增失敗');
       newCustomerState.resultCode = result.customerCode;
-      newCustomerState.data = { ownerName:'',phone:'',lineId:'',address:'',petName:'',petBreed:'',petAge:'',petWeight:'',petPersonality:'',petHealth:'' };
+      newCustomerState.data = { ownerName:'',phone:'',lineId:'',address:'',petName:'',petBreed:'',petAge:'',petWeight:'',petPersonality:'',petHealth:'',remarks:'',contactPref:'' };
       render();
     }catch(err){
       btn.disabled = false; btn.textContent = '新增客人資料';
