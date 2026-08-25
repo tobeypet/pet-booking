@@ -1,0 +1,847 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>毛孩預約 | 線上預約系統</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#3D6FA8">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="毛孩預約">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Noto+Sans+TC:wght@400;500;600;700;900&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --cream:#EAF0FA; --cream-2:#DCE6F5; --pine:#3D6FA8; --pine-2:#2A5480;
+    --sage:#8FB8E0; --sage-light:#E3EDF9; --apricot:#29B6E8; --apricot-dark:#1D96C2;
+    --blush:#B8C5EA; --ink:#1A3A56; --ink-soft:#4A6785; --line:#C7D9EF;
+    --white:#FFFFFF; --danger:#C15B4A; --danger-light:#F6E4DF; --radius:22px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--cream);
+    background-image:
+      radial-gradient(circle at 8% 12%, rgba(255,255,255,0.35) 0, transparent 40%),
+      radial-gradient(circle at 92% 85%, rgba(229,143,87,0.14) 0, transparent 45%);
+    color:var(--ink); font-family:"Noto Sans TC", sans-serif;
+    min-height:100vh; padding:32px 16px 60px; -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:640px;margin:0 auto;}
+  .brand{display:flex;align-items:center;gap:12px;margin-bottom:22px;}
+  .brand-mark{
+    width:50px;height:50px;border-radius:50%;background:var(--pine);
+    display:flex;align-items:center;justify-content:center;flex-shrink:0;
+    box-shadow:0 4px 10px rgba(46,104,88,0.3);
+  }
+  .brand-name{font-family:"Baloo 2","Noto Sans TC",sans-serif;font-weight:800;font-size:23px;color:var(--pine);letter-spacing:0.3px;line-height:1.1;}
+  .brand-sub{font-size:12.5px;color:var(--ink-soft);letter-spacing:1px;margin-top:2px;}
+
+  .progress{display:flex;justify-content:space-between;margin-bottom:26px;position:relative;padding:0 4px;}
+  .progress::before{content:"";position:absolute;top:16px;left:28px;right:28px;height:2px;background:var(--line);z-index:0;}
+  .step-dot{position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;gap:6px;cursor:default;flex:1;}
+  .step-dot.clickable{cursor:pointer;}
+  .step-num{
+    width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+    background:var(--white);border:2px solid var(--line);font-weight:700;font-size:13px;
+    color:var(--ink-soft);transition:all .2s ease;
+  }
+  .step-dot.active .step-num{background:var(--apricot);border-color:var(--apricot-dark);color:#fff;}
+  .step-dot.done .step-num{background:var(--pine);border-color:var(--pine);color:#fff;}
+  .step-label{font-size:11.5px;color:var(--ink-soft);text-align:center;max-width:64px;line-height:1.3;}
+  .step-dot.active .step-label{color:var(--pine);font-weight:700;}
+
+  .bubbles{display:flex;align-items:flex-end;justify-content:center;gap:10px;height:20px;margin:18px 0 8px;opacity:.85;}
+  .bubbles span{display:block;border-radius:50%;background:linear-gradient(160deg, var(--sage-light), var(--sage));}
+  .bubbles span:nth-child(1){width:6px;height:6px;}
+  .bubbles span:nth-child(2){width:10px;height:10px;background:linear-gradient(160deg,#fff,var(--blush));}
+  .bubbles span:nth-child(3){width:5px;height:5px;}
+  .bubbles span:nth-child(4){width:13px;height:13px;background:linear-gradient(160deg,#fff,var(--apricot));opacity:.5;}
+  .bubbles span:nth-child(5){width:7px;height:7px;}
+
+  .card{background:var(--white);border-radius:var(--radius);border:1px solid var(--line);box-shadow:0 10px 30px rgba(38,67,58,0.08);padding:26px 22px 24px;}
+  .card-title{font-family:"Baloo 2","Noto Sans TC",sans-serif;font-weight:700;font-size:20px;color:var(--pine);margin:0 0 4px;}
+  .card-desc{font-size:13px;color:var(--ink-soft);margin:0 0 20px;line-height:1.6;}
+
+  .field{margin-bottom:16px;}
+  .field label{display:block;font-size:13px;font-weight:700;color:var(--pine);margin-bottom:6px;}
+  .field .hint{font-weight:400;color:var(--ink-soft);font-size:11.5px;margin-left:4px;}
+  input[type=text], input[type=tel], input[type=number], select, textarea{
+    width:100%;padding:11px 13px;border-radius:11px;border:1.5px solid var(--line);
+    background:var(--cream);font-size:14.5px;font-family:inherit;color:var(--ink);
+    outline:none;transition:border-color .15s ease, background .15s ease;resize:vertical;
+  }
+  textarea{min-height:64px;line-height:1.5;}
+  input:focus, select:focus, textarea:focus{border-color:var(--apricot);background:#fff;}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+  .seg{display:flex;border:1.5px solid var(--line);border-radius:11px;overflow:hidden;margin-bottom:18px;}
+  .seg button{flex:1;padding:12px 8px;border:none;background:var(--cream);font-family:inherit;font-size:13.5px;font-weight:600;color:var(--ink-soft);cursor:pointer;transition:all .15s ease;}
+  .seg button + button{border-left:1.5px solid var(--line);}
+  .seg button.active{background:var(--pine);color:#fff;}
+
+  .photo-upload{display:flex;align-items:center;gap:14px;}
+  .photo-preview{width:64px;height:64px;border-radius:14px;background:var(--sage-light);border:1.5px dashed var(--sage);display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;}
+  .photo-preview img{width:100%;height:100%;object-fit:cover;}
+  .photo-preview svg{width:26px;height:26px;opacity:.55;}
+  .upload-btn{padding:10px 16px;border-radius:11px;background:var(--cream);border:1.5px solid var(--line);font-size:13px;font-weight:600;color:var(--pine);cursor:pointer;}
+  .upload-btn:hover{background:var(--sage-light);}
+  input[type=file]{display:none;}
+
+  .section-divider{font-size:11.5px;font-weight:700;letter-spacing:1.5px;color:var(--apricot-dark);margin:22px 0 12px;display:flex;align-items:center;gap:8px;}
+  .section-divider::after{content:"";flex:1;height:1px;background:var(--line);}
+
+  .svc-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:18px;}
+  .svc-card{border:1.5px solid var(--line);border-radius:14px;padding:16px 14px;cursor:pointer;background:var(--cream);transition:all .15s ease;text-align:left;}
+  .svc-card:hover{border-color:var(--sage);}
+  .svc-card.active{border-color:var(--apricot);background:#E5F8FD;box-shadow:0 0 0 3px rgba(228,148,61,0.15);}
+  .svc-icon{display:block;margin-bottom:6px;}
+  .svc-icon svg{width:36px;height:36px;}
+  .svc-name{font-weight:700;font-size:15px;color:var(--pine);}
+  .svc-sub{font-size:11.5px;color:var(--ink-soft);margin-top:3px;}
+
+  .choice-row{display:flex;gap:10px;margin-bottom:16px;}
+  .choice-pill{flex:1;padding:12px;border-radius:12px;text-align:center;border:1.5px solid var(--line);background:var(--cream);font-weight:600;font-size:13.5px;color:var(--ink-soft);cursor:pointer;}
+  .choice-pill.icon-pill{display:flex;flex-direction:column;align-items:center;gap:6px;padding:14px 10px 12px;}
+  .choice-pill.icon-pill svg{width:42px;height:42px;flex-shrink:0;}
+  .choice-pill.active{background:var(--pine);border-color:var(--pine);color:#fff;}
+
+  .duration-box{background:var(--sage-light);border-radius:12px;padding:12px 14px;display:flex;align-items:center;justify-content:space-between;font-size:13.5px;color:var(--pine);font-weight:600;margin-top:6px;margin-bottom:20px;}
+  .duration-box b{font-family:"Baloo 2","Noto Sans TC",sans-serif;font-size:16px;}
+
+  .cal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
+  .cal-head .mo{font-family:"Baloo 2","Noto Sans TC",sans-serif;font-weight:700;font-size:16px;color:var(--pine);}
+  .cal-nav button{height:30px;border-radius:8px;border:1.5px solid var(--line);background:var(--cream);cursor:pointer;font-size:12.5px;color:var(--pine);padding:0 10px;font-family:inherit;font-weight:600;}
+  .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-bottom:8px;}
+  .cal-dow{text-align:center;font-size:11px;color:var(--ink-soft);font-weight:700;padding-bottom:4px;}
+  .cal-cell{
+    aspect-ratio:1/1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+    border-radius:10px;font-size:13.5px;font-weight:600;cursor:pointer;border:1.5px solid transparent;
+    color:var(--ink);background:transparent;gap:1px;position:relative;
+  }
+  .cal-cell.empty{visibility:hidden;cursor:default;}
+  .cal-cell.avail{background:#FFFFFF;border-color:var(--line);box-shadow:0 1px 3px rgba(26,58,86,0.06);}
+  .cal-cell.disabled{color:#B7C4D6;background:transparent;cursor:not-allowed;}
+  .cal-cell.avail:hover{border-color:var(--sage);}
+  .cal-cell.selected{background:var(--apricot);border-color:var(--apricot);color:#fff;}
+  .cal-cell.today{box-shadow:inset 0 0 0 1.5px var(--pine);}
+  .cal-cell.extended{background:#DFF6FC;border-color:var(--apricot);box-shadow:inset 0 0 0 1.5px var(--apricot);color:var(--apricot-dark);}
+  .cal-cell.extended.selected{background:var(--apricot);color:#fff;}
+  .cal-tag{font-size:8.5px;font-weight:700;line-height:1;background:var(--pine);color:#fff;padding:1.5px 4px;border-radius:5px;letter-spacing:0.5px;}
+  .cal-cell.selected .cal-tag{background:#fff;color:var(--pine);}
+  .cal-legend{display:flex;gap:16px;font-size:11.5px;color:var(--ink-soft);margin:6px 0 18px;flex-wrap:wrap;}
+  .cal-legend span{display:inline-flex;align-items:center;gap:5px;}
+  .dot{width:9px;height:9px;border-radius:50%;display:inline-block;}
+  .dot.a{background:#FFFFFF;border:1.5px solid var(--line);}
+  .dot.d{background:transparent;border:1.5px dashed #B7C4D6;}
+  .dot.e{background:#DFF6FC;border:1.5px solid var(--apricot);}
+
+  .slot-title{font-size:13px;font-weight:700;color:var(--pine);margin:4px 0 10px;}
+  .slot-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;}
+  .slot{padding:10px 6px;border-radius:10px;border:1.5px solid var(--line);background:var(--cream);text-align:center;font-size:13px;font-weight:600;color:var(--ink);cursor:pointer;}
+  .slot:hover{border-color:var(--sage);}
+  .slot.selected{background:var(--pine);border-color:var(--pine);color:#fff;}
+  .slot.taken{background:#E4EAF2;color:#9FB0C4;cursor:not-allowed;text-decoration:line-through;}
+  .empty-note{font-size:13px;color:var(--ink-soft);background:var(--cream);border-radius:10px;padding:14px;text-align:center;}
+
+  .review-block{background:var(--cream);border-radius:14px;padding:16px;margin-bottom:14px;}
+  .review-block h4{margin:0 0 10px;font-size:12.5px;color:var(--apricot-dark);letter-spacing:1px;font-weight:700;}
+  .review-line{display:flex;justify-content:space-between;gap:10px;padding:6px 0;font-size:13.5px;border-bottom:1px dashed var(--line);}
+  .review-line:last-child{border-bottom:none;}
+  .review-line .k{color:var(--ink-soft);flex-shrink:0;}
+  .review-line .v{font-weight:600;text-align:right;}
+  .review-line .v.multi{white-space:pre-wrap;max-width:70%;}
+  .review-photo{display:flex;align-items:center;gap:12px;margin-bottom:14px;}
+  .review-photo img{width:56px;height:56px;border-radius:12px;object-fit:cover;border:1.5px solid var(--line);}
+
+  .actions{display:flex;gap:10px;margin-top:22px;}
+  .btn{flex:1;padding:13px 18px;border-radius:12px;border:none;font-family:inherit;font-weight:700;font-size:14.5px;cursor:pointer;transition:transform .1s ease, opacity .15s ease;}
+  .btn:active{transform:scale(0.98);}
+  .btn-primary{background:var(--apricot);color:#fff;}
+  .btn-primary:hover{background:var(--apricot-dark);}
+  .btn-primary:disabled{background:#D8E2F0;color:#fff;cursor:not-allowed;}
+  .btn-ghost{background:var(--cream);color:var(--pine);border:1.5px solid var(--line);flex:0 0 100px;}
+  .btn-ghost:hover{background:var(--sage-light);}
+  .err{color:var(--danger);font-size:12px;margin-top:5px;}
+
+  .success{text-align:center;padding:10px 6px 4px;}
+  .success .paw{width:64px;height:64px;border-radius:50%;background:var(--sage-light);display:flex;align-items:center;justify-content:center;margin:0 auto 16px;}
+  .success h2{font-family:"Baloo 2","Noto Sans TC",sans-serif;color:var(--pine);margin:0 0 6px;}
+  .success p{color:var(--ink-soft);font-size:13.5px;margin:0 0 20px;}
+  .conf-code{display:inline-block;background:var(--pine);color:#fff;padding:8px 18px;border-radius:10px;font-weight:700;letter-spacing:2px;font-family:"Baloo 2","Noto Sans TC",sans-serif;margin-bottom:14px;}
+  .pending-badge{
+    display:inline-flex;align-items:center;gap:6px;background:#DFF6FC;color:var(--apricot-dark);
+    padding:8px 16px;border-radius:99px;font-size:12.5px;font-weight:700;margin-bottom:18px;
+  }
+  .code-box{
+    background:var(--sage-light);border-radius:14px;padding:16px;margin-bottom:20px;text-align:left;
+  }
+  .code-box .lbl{font-size:11.5px;color:var(--ink-soft);margin-bottom:6px;}
+  .code-box .code{font-family:"Baloo 2","Noto Sans TC",sans-serif;font-size:22px;font-weight:900;color:var(--pine);letter-spacing:3px;}
+  .code-box .tip{font-size:11.5px;color:var(--ink-soft);margin-top:6px;line-height:1.5;}
+
+  .masked-card{background:var(--sage-light);border-radius:14px;padding:16px;margin:16px 0;}
+  .masked-card h4{margin:0 0 10px;font-size:12.5px;color:var(--pine);letter-spacing:1px;font-weight:700;}
+
+  .install-banner{
+    background:var(--pine);color:#fff;border-radius:14px;
+    display:flex;align-items:center;justify-content:space-between;gap:10px;
+    padding:10px 14px;font-size:12.5px;margin-bottom:16px;line-height:1.5;
+  }
+  .install-banner b{font-weight:800;}
+  .install-banner .btns{display:flex;gap:8px;flex-shrink:0;}
+  .install-banner button{border:none;border-radius:8px;padding:7px 12px;font-weight:700;cursor:pointer;font-family:inherit;font-size:12px;}
+  .install-banner .install-go{background:#fff;color:var(--pine);}
+  .install-banner .install-close{background:rgba(255,255,255,0.25);color:#fff;padding:7px 10px;}
+
+  @media (max-width:420px){
+    .svc-grid{grid-template-columns:1fr;}
+    .row2{grid-template-columns:1fr;}
+    .slot-grid{grid-template-columns:repeat(2,1fr);}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="brand">
+    <div class="brand-mark">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+        <circle cx="7" cy="8" r="2" fill="#FFFFFF"/><circle cx="12" cy="6" r="2" fill="#FFFFFF"/><circle cx="17" cy="8" r="2" fill="#FFFFFF"/>
+        <path d="M12 11c-3 0-5.5 2.2-5.5 4.6 0 1.6 1.3 2.4 2.7 1.9.9-.3 1.7-.5 2.8-.5s1.9.2 2.8.5c1.4.5 2.7-.3 2.7-1.9C17.5 13.2 15 11 12 11z" fill="#FFFFFF"/>
+      </svg>
+    </div>
+    <div>
+      <div class="brand-name">毛孩預約</div>
+      <div class="brand-sub">寵物美容・洗澡・線上預約</div>
+    </div>
+  </div>
+
+  <div class="progress" id="progress"></div>
+  <div class="bubbles"><span></span><span></span><span></span><span></span><span></span></div>
+  <div class="card" id="card"></div>
+</div>
+
+<script>
+/* ================= Google 試算表／日曆 串接設定 ================= */
+const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwfwpOEL4l_iqzXx0Ky9_J2l-HzFsHZD-nURQ8VRpGPrs_NYAN6u5RTtVE607RutPH6/exec";
+
+/* ================= state ================= */
+const state = {
+  step: 1, // 1 選服務時段 2 填寫資料 3 確認預約 4 成功
+  owner:{
+    name:'', phone:'', lineId:'', address:'',
+    petName:'', petBreed:'', petAge:'', petWeight:'', petPersonality:'', petHealth:'', petPhoto:null
+  },
+  service:{ category:'', animalType:'', hairLength:'', duration:0, label:'' },
+  booking:{ date:null, time:null },
+  identifyMode:'new', // 'new' | 'returning'
+  lookupCode:'',
+  lookupResult:null, // 完整資料（先隱藏，確認後才套用）
+  confirmCode:null,
+  customerCode:null
+};
+
+const availability = { closedDates: new Set(), blockedSlots: {}, extendedDates: new Set(), taichungDates: new Set(), loaded:false };
+
+const STEP_LABELS = ['選服務時段','填寫資料','確認預約'];
+const BUSINESS_START = 9*60, DEFAULT_BUSINESS_END = 13*60, EXTENDED_BUSINESS_END = 20*60;
+
+/* ================= helpers ================= */
+function fmtDate(d){ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+function fmtTime(mins){ const h=Math.floor(mins/60), m=mins%60; return String(h).padStart(2,'0')+':'+String(m).padStart(2,'0'); }
+function toMin(hhmm){ const [h,m]=hhmm.split(':').map(Number); return h*60+m; }
+function getBusinessEnd(dateStr){ return availability.extendedDates.has(dateStr) ? EXTENDED_BUSINESS_END : DEFAULT_BUSINESS_END; }
+function isPastDate(dt){ const today=new Date(); today.setHours(0,0,0,0); return dt < today; }
+function isDateFullyClosed(dateStr){ return availability.closedDates.has(dateStr); }
+function isSlotBlocked(dateStr, startMin, durationMin){
+  if(isDateFullyClosed(dateStr)) return true;
+  const blocked = availability.blockedSlots[dateStr];
+  if(!blocked || blocked.size===0) return false;
+  for(let t=startMin; t<startMin+durationMin; t+=30){ if(blocked.has(fmtTime(t))) return true; }
+  return false;
+}
+function esc(str){ return String(str==null?'':str).replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+function svgPaw(color){
+  color = color || '#8FB8E0';
+  return `<svg viewBox="0 0 24 24" fill="none"><circle cx="7" cy="8" r="1.8" fill="${color}"/><circle cx="12" cy="6" r="1.8" fill="${color}"/><circle cx="17" cy="8" r="1.8" fill="${color}"/><path d="M12 11c-3 0-5.5 2.2-5.5 4.6 0 1.6 1.3 2.4 2.7 1.9.9-.3 1.7-.5 2.8-.5s1.9.2 2.8.5c1.4.5 2.7-.3 2.7-1.9C17.5 13.2 15 11 12 11z" fill="${color}"/></svg>`;
+}
+function svgDogIcon(){
+  return `<svg viewBox="0 0 64 64" fill="none">
+    <circle cx="44" cy="32" r="11" fill="#C3D3F0"/>
+    <circle cx="38" cy="21.6" r="11" fill="#C3D3F0"/>
+    <circle cx="26" cy="21.6" r="11" fill="#C3D3F0"/>
+    <circle cx="20" cy="32" r="11" fill="#C3D3F0"/>
+    <circle cx="26" cy="42.4" r="11" fill="#C3D3F0"/>
+    <circle cx="38" cy="42.4" r="11" fill="#C3D3F0"/>
+    <circle cx="32" cy="32" r="15" fill="#C3D3F0"/>
+    <path d="M16 20 Q10 26 16 32 Q22 38 16 44" stroke="#1A3A56" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+    <ellipse cx="37" cy="27" rx="1.9" ry="2.6" fill="#1A3A56"/>
+    <ellipse cx="44.5" cy="27" rx="1.9" ry="2.6" fill="#1A3A56"/>
+    <rect x="38.5" y="33" width="5.5" height="4.5" rx="1.6" fill="#1A3A56"/>
+  </svg>`;
+}
+function svgScissorsIcon(){
+  return `<svg viewBox="0 0 64 64" fill="none">
+    <path d="M32 30 L14 12" stroke="#3D6FA8" stroke-width="5" stroke-linecap="round"/>
+    <path d="M32 30 L50 12" stroke="#29B6E8" stroke-width="5" stroke-linecap="round"/>
+    <path d="M32 30 L20 46" stroke="#1A3A56" stroke-width="4" stroke-linecap="round"/>
+    <path d="M32 30 L44 46" stroke="#1A3A56" stroke-width="4" stroke-linecap="round"/>
+    <circle cx="32" cy="30" r="3.2" fill="#1A3A56"/>
+    <circle cx="18" cy="49" r="7" fill="none" stroke="#1A3A56" stroke-width="3.5"/>
+    <circle cx="46" cy="49" r="7" fill="none" stroke="#1A3A56" stroke-width="3.5"/>
+  </svg>`;
+}
+function svgBathIcon(){
+  return `<svg viewBox="0 0 64 64" fill="none">
+    <path d="M10 34 h44 v5 a15 15 0 0 1 -15 15 h-14 a15 15 0 0 1 -15 -15 z" fill="#8FB8E0"/>
+    <rect x="8" y="29" width="48" height="8" rx="4" fill="#3D6FA8"/>
+    <circle cx="10" cy="46" r="3" fill="#3D6FA8"/>
+    <circle cx="21" cy="15" r="4.5" fill="#E3EDF9" stroke="#3D6FA8" stroke-width="1.6"/>
+    <circle cx="30" cy="8" r="3.2" fill="#E3EDF9" stroke="#3D6FA8" stroke-width="1.6"/>
+    <circle cx="36" cy="17" r="2.6" fill="#E3EDF9" stroke="#3D6FA8" stroke-width="1.6"/>
+  </svg>`;
+}
+function svgCatIcon(){
+  return `<svg viewBox="0 0 64 64" fill="none">
+    <path d="M17 24 12 9 27 20z" fill="#A8DAF0"/>
+    <path d="M47 24 52 9 37 20z" fill="#A8DAF0"/>
+    <circle cx="44" cy="32" r="10" fill="#A8DAF0"/>
+    <circle cx="38" cy="23" r="10" fill="#A8DAF0"/>
+    <circle cx="26" cy="23" r="10" fill="#A8DAF0"/>
+    <circle cx="20" cy="32" r="10" fill="#A8DAF0"/>
+    <circle cx="26" cy="41" r="10" fill="#A8DAF0"/>
+    <circle cx="38" cy="41" r="10" fill="#A8DAF0"/>
+    <circle cx="32" cy="32" r="14" fill="#A8DAF0"/>
+    <path d="M14 34 L22 33 M14 39 L22 37" stroke="#1A3A56" stroke-width="1.6" stroke-linecap="round"/>
+    <ellipse cx="37" cy="27" rx="1.9" ry="2.6" fill="#1A3A56"/>
+    <ellipse cx="44.5" cy="27" rx="1.9" ry="2.6" fill="#1A3A56"/>
+    <path d="M39 34 L44 34 L41.5 37z" fill="#1A3A56"/>
+  </svg>`;
+}
+function maskName(name){ if(!name) return '—'; const chars = Array.from(name); return chars[0] + '○'.repeat(Math.max(chars.length-1,1)); }
+function extractCityDistrict(address){
+  if(!address) return '—';
+  const m = address.match(/^(.{2,3}[市縣])(.{1,3}[區市鄉鎮])/);
+  return m ? (m[1]+m[2]) : address.slice(0,6);
+}
+
+async function loadAvailability(){
+  if(!GOOGLE_SCRIPT_URL) { availability.loaded = true; return; }
+  try{
+    const res = await fetch(GOOGLE_SCRIPT_URL + '?action=getSettings');
+    const data = await res.json();
+    if(data.success && data.settings){
+      availability.closedDates = new Set(data.settings.closedDates || []);
+      availability.extendedDates = new Set(data.settings.extendedDates || []);
+      availability.taichungDates = new Set(data.settings.taichungDates || []);
+      const bs = {};
+      Object.entries(data.settings.blockedSlots || {}).forEach(([d,arr])=>{ bs[d] = new Set(arr); });
+      availability.blockedSlots = bs;
+    }
+  }catch(err){ console.error('讀取後台設定失敗：', err); }
+  availability.loaded = true;
+}
+
+/* ================= service durations ================= */
+const SERVICE_DEF = {
+  grooming: { name:'美容', rules:{ cat:{duration:120,label:'貓咪美容'}, dogLong:{duration:120,label:'長毛狗美容'}, dogShort:{duration:120,label:'短毛狗美容'} } },
+  bath: { name:'洗澡', rules:{ cat:{duration:120,label:'貓咪洗澡'}, dogLong:{duration:90,label:'長毛狗洗澡'}, dogShort:{duration:60,label:'短毛狗洗澡'} } }
+};
+function computeDuration(){
+  const s = state.service;
+  if(!s.category || !s.animalType) return null;
+  if(s.animalType==='cat') return SERVICE_DEF[s.category].rules.cat;
+  if(s.animalType==='dog'){ if(!s.hairLength) return null; return s.hairLength==='long' ? SERVICE_DEF[s.category].rules.dogLong : SERVICE_DEF[s.category].rules.dogShort; }
+  return null;
+}
+
+const custView = { year:new Date().getFullYear(), month:new Date().getMonth() };
+
+/* ================= root render ================= */
+function render(){
+  const card = document.getElementById('card');
+  renderProgress();
+  if(state.step===1) card.innerHTML = tplStep1();
+  else if(state.step===2) card.innerHTML = tplStep2();
+  else if(state.step===3) card.innerHTML = tplStep3();
+  else if(state.step===4) card.innerHTML = tplSuccess();
+
+  if(state.step===1) bindStep1();
+  if(state.step===2) bindStep2();
+  if(state.step===3) bindStep3();
+}
+function renderProgress(){
+  const el = document.getElementById('progress');
+  if(state.step > STEP_LABELS.length){ el.innerHTML = ''; return; }
+  el.innerHTML = STEP_LABELS.map((label,i)=>{
+    const n = i+1;
+    let cls='step-dot';
+    if(n < state.step) cls+=' done clickable';
+    else if(n === state.step) cls+=' active';
+    return `<div class="${cls}" data-goto="${n}"><div class="step-num">${n < state.step ? '✓' : n}</div><div class="step-label">${label}</div></div>`;
+  }).join('');
+  el.querySelectorAll('.step-dot.clickable').forEach(d=>{
+    d.addEventListener('click', ()=>{ state.step = parseInt(d.dataset.goto,10); render(); });
+  });
+}
+
+/* ================= STEP 1：選服務＋看時段（合併畫面） ================= */
+function tplStep1(){
+  const s = state.service;
+  const showDogHair = s.animalType==='dog';
+  const dur = computeDuration();
+  const ready = !!dur;
+  const canProceed = ready && state.booking.date && state.booking.time;
+
+  let calendarBlock = '';
+  if(ready){
+    calendarBlock = `
+      <div class="cal-head">
+        <button class="cal-nav" id="cal-prev">‹ 上個月</button>
+        <div class="mo">${custView.year} 年 ${custView.month+1} 月</div>
+        <button class="cal-nav" id="cal-next">下個月 ›</button>
+      </div>
+      <div class="cal-grid" id="cal-grid">${renderCustCalGrid()}</div>
+      <div class="cal-legend">
+        <span><i class="dot a"></i>可預約</span>
+        <span><i class="dot e"></i>延長營業至20:00</span>
+        <span><i class="dot d"></i>不開放／已無空檔</span>
+        <span><span class="cal-tag" style="position:static;">台中</span>台中服務日</span>
+      </div>
+      <div id="slot-section">${renderSlotSection()}</div>
+    `;
+  }
+
+  return `
+    <h2 class="card-title">選擇服務與時段</h2>
+    <p class="card-desc">選好服務類型後，下方會立即顯示可預約的日期與時段，一目了然。</p>
+    <div class="svc-grid" id="svc-grid">
+      <div class="svc-card ${s.category==='grooming'?'active':''}" data-svc="grooming"><span class="svc-icon">${svgScissorsIcon()}</span><div class="svc-name">美容</div><div class="svc-sub">貓／狗（長毛・短毛）均約 2 小時</div></div>
+      <div class="svc-card ${s.category==='bath'?'active':''}" data-svc="bath"><span class="svc-icon">${svgBathIcon()}</span><div class="svc-name">洗澡</div><div class="svc-sub">依貓／狗與毛長，時間不同</div></div>
+    </div>
+    <div class="field">
+      <label>寵物類別</label>
+      <div class="choice-row" id="animal-row">
+        <div class="choice-pill icon-pill ${s.animalType==='cat'?'active':''}" data-a="cat">${svgCatIcon()}<span>貓咪</span></div>
+        <div class="choice-pill icon-pill ${s.animalType==='dog'?'active':''}" data-a="dog">${svgDogIcon()}<span>狗狗</span></div>
+      </div>
+    </div>
+    ${showDogHair ? `
+    <div class="field">
+      <label>毛長類型</label>
+      <div class="choice-row" id="hair-row">
+        <div class="choice-pill ${s.hairLength==='long'?'active':''}" data-h="long">長毛</div>
+        <div class="choice-pill ${s.hairLength==='short'?'active':''}" data-h="short">短毛</div>
+      </div>
+    </div>` : ''}
+    ${ready ? `<div class="duration-box"><span>預估所需時間</span><b>${dur.duration/60 % 1===0? dur.duration/60 : (dur.duration/60).toFixed(1)} 小時</b></div>` : ''}
+    ${ready ? calendarBlock : `<div class="empty-note">請先選擇服務與寵物類型，即可查看可預約時段。</div>`}
+    <div class="err" id="step1-err" style="display:none;"></div>
+    <div class="actions">
+      <button class="btn btn-primary" id="toStep2" ${canProceed?'':'disabled'}>正式預約</button>
+    </div>
+  `;
+}
+function renderCustCalGrid(){
+  const {year, month} = custView;
+  const first = new Date(year, month, 1);
+  const startOffset = first.getDay();
+  const daysInMonth = new Date(year, month+1, 0).getDate();
+  const today = new Date(); today.setHours(0,0,0,0);
+  let html = ['日','一','二','三','四','五','六'].map(d=>`<div class="cal-dow">${d}</div>`).join('');
+  for(let i=0;i<startOffset;i++) html += `<div class="cal-cell empty"></div>`;
+  for(let d=1; d<=daysInMonth; d++){
+    const dt = new Date(year, month, d);
+    const dateStr = fmtDate(dt);
+    const past = isPastDate(dt);
+    const closed = isDateFullyClosed(dateStr);
+    const extended = availability.extendedDates.has(dateStr);
+    const taichung = availability.taichungDates.has(dateStr);
+    const disabled = past || closed;
+    const isToday = fmtDate(dt) === fmtDate(today);
+    const isSelected = state.booking.date === dateStr;
+    let cls = 'cal-cell';
+    cls += disabled ? ' disabled' : ' avail';
+    if(!disabled && extended) cls += ' extended';
+    if(isToday) cls += ' today';
+    if(isSelected) cls += ' selected';
+    const tag = taichung ? `<span class="cal-tag">台中</span>` : '';
+    html += `<div class="${cls}" data-date="${disabled?'':dateStr}"><span>${d}</span>${tag}</div>`;
+  }
+  return html;
+}
+function renderSlotSection(){
+  if(!availability.loaded){ return `<div class="empty-note">讀取可預約時段中...</div>`; }
+  if(!state.booking.date){ return `<div class="empty-note">請先選擇日期，即可查看可預約時段。</div>`; }
+  const duration = state.service.duration || 120;
+  const end = getBusinessEnd(state.booking.date);
+  const slots = [];
+  for(let start=BUSINESS_START; start+duration<=end; start+=30){ slots.push({ start, taken: isSlotBlocked(state.booking.date, start, duration) }); }
+  if(slots.length===0){ return `<div class="empty-note">此服務所需時間較長，當日時段不足，請選擇其他日期。</div>`; }
+  return `
+    <div class="slot-title">${state.booking.date} 可預約時段</div>
+    <div class="slot-grid" id="slot-grid">
+      ${slots.map(s=>{
+        const val = fmtTime(s.start);
+        const isSel = state.booking.time === val;
+        let cls = 'slot';
+        if(s.taken) cls += ' taken'; else if(isSel) cls += ' selected';
+        return `<div class="${cls}" data-time="${s.taken?'':val}">${val}</div>`;
+      }).join('')}
+    </div>
+  `;
+}
+function bindStep1(){
+  document.getElementById('svc-grid').addEventListener('click', e=>{
+    const c = e.target.closest('.svc-card'); if(!c) return;
+    state.service.category = c.dataset.svc;
+    updateDurationLabel();
+    state.booking.date=null; state.booking.time=null;
+    render();
+  });
+  document.getElementById('animal-row').addEventListener('click', e=>{
+    const p = e.target.closest('.choice-pill'); if(!p) return;
+    state.service.animalType = p.dataset.a; if(p.dataset.a==='cat') state.service.hairLength='';
+    updateDurationLabel();
+    state.booking.date=null; state.booking.time=null;
+    render();
+  });
+  const hairRow = document.getElementById('hair-row');
+  if(hairRow){
+    hairRow.addEventListener('click', e=>{
+      const p = e.target.closest('.choice-pill'); if(!p) return;
+      state.service.hairLength = p.dataset.h;
+      updateDurationLabel();
+      state.booking.date=null; state.booking.time=null;
+      render();
+    });
+  }
+  const calPrev = document.getElementById('cal-prev');
+  if(calPrev) calPrev.addEventListener('click', ()=>{ custView.month--; if(custView.month<0){custView.month=11; custView.year--;} state.booking.date=null; state.booking.time=null; render(); });
+  const calNext = document.getElementById('cal-next');
+  if(calNext) calNext.addEventListener('click', ()=>{ custView.month++; if(custView.month>11){custView.month=0; custView.year++;} state.booking.date=null; state.booking.time=null; render(); });
+  bindCustCalGrid();
+  bindSlotGrid();
+  document.getElementById('toStep2').addEventListener('click', ()=>{
+    if(!state.booking.date || !state.booking.time) return;
+    state.step = 2; render();
+  });
+}
+function updateDurationLabel(){
+  const r = computeDuration();
+  if(r){
+    state.service.duration = r.duration;
+    state.service.label = r.label + '（' + SERVICE_DEF[state.service.category].name + '）';
+  } else { state.service.duration = 0; state.service.label=''; }
+}
+function bindCustCalGrid(){
+  const grid = document.getElementById('cal-grid'); if(!grid) return;
+  grid.addEventListener('click', e=>{
+    const c = e.target.closest('.cal-cell.avail'); if(!c) return;
+    state.booking.date = c.dataset.date; state.booking.time = null;
+    document.getElementById('cal-grid').innerHTML = renderCustCalGrid();
+    document.getElementById('slot-section').innerHTML = renderSlotSection();
+    bindCustCalGrid(); bindSlotGrid();
+    const btn = document.getElementById('toStep2'); if(btn) btn.disabled = true;
+  });
+}
+function bindSlotGrid(){
+  const grid = document.getElementById('slot-grid'); if(!grid) return;
+  grid.addEventListener('click', e=>{
+    const s = e.target.closest('.slot'); if(!s || s.classList.contains('taken')) return;
+    state.booking.time = s.dataset.time;
+    document.getElementById('slot-section').innerHTML = renderSlotSection();
+    bindSlotGrid();
+    const btn = document.getElementById('toStep2'); if(btn) btn.disabled = false;
+  });
+}
+
+/* ================= STEP 2：填寫資料（新客人／老客人代碼帶入） ================= */
+function tplStep2(){
+  return `
+    <h2 class="card-title">填寫飼主與毛孩資料</h2>
+    <p class="card-desc">已經來過的客人可以直接輸入專屬代碼帶入資料；第一次來的客人請填寫下方表單。</p>
+    <div class="seg" id="identify-seg">
+      <button type="button" data-v="new" class="${state.identifyMode==='new'?'active':''}">新客人</button>
+      <button type="button" data-v="returning" class="${state.identifyMode==='returning'?'active':''}">老客人（輸入代碼）</button>
+    </div>
+    ${state.identifyMode==='returning' ? tplReturning() : tplNewCustomerForm()}
+  `;
+}
+function tplReturning(){
+  const r = state.lookupResult;
+  return `
+    <div class="field">
+      <label>專屬代碼</label>
+      <input type="text" id="f-code" placeholder="例如 C1A2B3" value="${esc(state.lookupCode)}">
+    </div>
+    <div class="err" id="lookup-err" style="display:none;"></div>
+    <div class="actions" style="margin-top:6px;"><button class="btn btn-primary" id="lookupBtn" style="flex:1;">帶入資料</button></div>
+    ${r ? `
+    <div class="masked-card">
+      <h4>請確認是您本人</h4>
+      <div class="review-line"><span class="k">姓名</span><span class="v">${maskName(r.ownerName)}</span></div>
+      <div class="review-line"><span class="k">寵物</span><span class="v">${esc(r.petName)}</span></div>
+      <div class="review-line"><span class="k">地區</span><span class="v">${esc(extractCityDistrict(r.address))}</span></div>
+    </div>
+    <div class="actions">
+      <button class="btn btn-ghost" id="notMeBtn">不是我</button>
+      <button class="btn btn-primary" id="confirmMeBtn">對，是我，繼續</button>
+    </div>
+    ` : ''}
+  `;
+}
+function tplNewCustomerForm(){
+  const o = state.owner;
+  return `
+    <div class="field"><label>飼主姓名</label><input type="text" id="f-name" placeholder="請輸入姓名" value="${esc(o.name)}"></div>
+    <div class="field"><label>電話</label><input type="tel" id="f-phone" placeholder="例如 0912-345-678" value="${esc(o.phone)}"></div>
+    <div class="field"><label>LINE ID <span class="hint">(選填)</span></label><input type="text" id="f-lineid" placeholder="方便平常傳照片、聊細節" value="${esc(o.lineId)}"></div>
+    <div class="field"><label>地址</label><input type="text" id="f-address" placeholder="請輸入地址" value="${esc(o.address)}"></div>
+
+    <div class="section-divider">毛孩資訊</div>
+    <div class="row2">
+      <div class="field"><label>寵物名稱</label><input type="text" id="f-petname" placeholder="例如 麻糬" value="${esc(o.petName)}"></div>
+      <div class="field"><label>寵物品種</label><input type="text" id="f-petbreed" placeholder="例如 貴賓犬" value="${esc(o.petBreed)}"></div>
+    </div>
+    <div class="row2">
+      <div class="field"><label>年齡 <span class="hint">(歲)</span></label><input type="number" min="0" step="0.5" id="f-petage" placeholder="例如 2" value="${esc(o.petAge)}"></div>
+      <div class="field"><label>體重 <span class="hint">(kg)</span></label><input type="number" min="0" step="0.1" id="f-petweight" placeholder="例如 4.5" value="${esc(o.petWeight)}"></div>
+    </div>
+    <div class="field"><label>寵物個性 <span class="hint">(選填)</span></label><textarea id="f-petpersonality" placeholder="請簡述毛孩的個性，方便美容師掌握互動方式">${esc(o.petPersonality)}</textarea></div>
+    <div class="field"><label>健康狀況 <span class="hint">(選填)</span></label><textarea id="f-pethealth" placeholder="請簡述毛孩目前的健康狀況或注意事項">${esc(o.petHealth)}</textarea></div>
+    <div class="field">
+      <label>上傳寵物照片 <span class="hint">(選填)</span></label>
+      <div class="photo-upload">
+        <div class="photo-preview" id="photo-preview">${o.petPhoto ? `<img src="${o.petPhoto}">` : svgPaw()}</div>
+        <label class="upload-btn" for="f-photo">選擇照片</label>
+        <input type="file" id="f-photo" accept="image/*">
+      </div>
+    </div>
+    <div class="err" id="step2-err" style="display:none;"></div>
+    <div class="actions"><button class="btn btn-ghost" id="back2">上一步</button><button class="btn btn-primary" id="next2">下一步：確認預約</button></div>
+  `;
+}
+function bindStep2(){
+  document.getElementById('identify-seg').addEventListener('click', e=>{
+    const btn = e.target.closest('button'); if(!btn) return;
+    state.identifyMode = btn.dataset.v;
+    state.lookupResult = null;
+    render();
+  });
+
+  if(state.identifyMode==='returning'){
+    document.getElementById('lookupBtn').addEventListener('click', async ()=>{
+      const code = document.getElementById('f-code').value.trim();
+      const errEl = document.getElementById('lookup-err');
+      errEl.style.display='none';
+      if(!code){ errEl.textContent='請輸入代碼。'; errEl.style.display='block'; return; }
+      state.lookupCode = code;
+      if(!GOOGLE_SCRIPT_URL){ errEl.textContent='目前尚未連結試算表，無法查詢代碼。'; errEl.style.display='block'; return; }
+      const btn = document.getElementById('lookupBtn');
+      btn.disabled = true; btn.textContent = '查詢中...';
+      try{
+        const res = await fetch(GOOGLE_SCRIPT_URL + '?action=lookupByCode&code=' + encodeURIComponent(code));
+        const data = await res.json();
+        if(!data.success) throw new Error(data.error || '找不到這個代碼');
+        state.lookupResult = data.customer;
+        render();
+      }catch(err){
+        btn.disabled = false; btn.textContent = '帶入資料';
+        errEl.textContent = '查無此代碼，請確認輸入正確，或改用新客人填寫資料。';
+        errEl.style.display = 'block';
+      }
+    });
+    const notMeBtn = document.getElementById('notMeBtn');
+    if(notMeBtn) notMeBtn.addEventListener('click', ()=>{ state.lookupResult=null; state.lookupCode=''; render(); });
+    const confirmMeBtn = document.getElementById('confirmMeBtn');
+    if(confirmMeBtn) confirmMeBtn.addEventListener('click', ()=>{
+      const r = state.lookupResult;
+      state.owner = {
+        name:r.ownerName||'', phone:r.phone||'', lineId:r.lineId||'', address:r.address||'',
+        petName:r.petName||'', petBreed:r.petBreed||'', petAge:r.petAge||'', petWeight:r.petWeight||'',
+        petPersonality:r.petPersonality||'', petHealth:r.petHealth||'', petPhoto:null
+      };
+      state.step = 3; render();
+    });
+    return;
+  }
+
+  document.getElementById('f-photo').addEventListener('change', e=>{
+    const file = e.target.files[0]; if(!file) return;
+    const reader = new FileReader();
+    reader.onload = ()=>{ state.owner.petPhoto = reader.result; document.getElementById('photo-preview').innerHTML = `<img src="${reader.result}">`; };
+    reader.readAsDataURL(file);
+  });
+  document.getElementById('back2').addEventListener('click', ()=>{ state.step=1; render(); });
+  document.getElementById('next2').addEventListener('click', ()=>{
+    state.owner.name = document.getElementById('f-name').value.trim();
+    state.owner.phone = document.getElementById('f-phone').value.trim();
+    state.owner.lineId = document.getElementById('f-lineid').value.trim();
+    state.owner.address = document.getElementById('f-address').value.trim();
+    state.owner.petName = document.getElementById('f-petname').value.trim();
+    state.owner.petBreed = document.getElementById('f-petbreed').value.trim();
+    state.owner.petAge = document.getElementById('f-petage').value.trim();
+    state.owner.petWeight = document.getElementById('f-petweight').value.trim();
+    state.owner.petPersonality = document.getElementById('f-petpersonality').value.trim();
+    state.owner.petHealth = document.getElementById('f-pethealth').value.trim();
+    const required = [state.owner.name, state.owner.phone, state.owner.address, state.owner.petName, state.owner.petBreed];
+    const errEl = document.getElementById('step2-err');
+    if(required.some(v=>!v)){ errEl.textContent = '請完整填寫姓名、電話、地址、寵物名稱與品種。'; errEl.style.display='block'; return; }
+    errEl.style.display='none';
+    state.step = 3; render();
+  });
+}
+
+/* ================= STEP 3：確認預約 ================= */
+function tplStep3(){
+  const o = state.owner, s = state.service, b = state.booking;
+  const hrs = s.duration/60;
+  return `
+    <h2 class="card-title">確認預約資訊</h2>
+    <p class="card-desc">請確認以下資訊無誤後送出預約。</p>
+    ${o.petPhoto ? `<div class="review-photo"><img src="${o.petPhoto}"><div><div style="font-weight:700;color:var(--pine);">${esc(o.petName)}</div><div style="font-size:12px;color:var(--ink-soft);">${esc(o.petBreed)}</div></div></div>` : ''}
+    <div class="review-block">
+      <h4>飼主資訊</h4>
+      <div class="review-line"><span class="k">姓名</span><span class="v">${esc(o.name)}</span></div>
+      <div class="review-line"><span class="k">電話</span><span class="v">${esc(o.phone)}</span></div>
+      <div class="review-line"><span class="k">LINE ID</span><span class="v">${esc(o.lineId)||'—'}</span></div>
+      <div class="review-line"><span class="k">地址</span><span class="v">${esc(o.address)}</span></div>
+    </div>
+    <div class="review-block">
+      <h4>毛孩資訊</h4>
+      <div class="review-line"><span class="k">名稱</span><span class="v">${esc(o.petName)}</span></div>
+      <div class="review-line"><span class="k">品種</span><span class="v">${esc(o.petBreed)}</span></div>
+      <div class="review-line"><span class="k">年齡</span><span class="v">${esc(o.petAge)||'—'} 歲</span></div>
+      <div class="review-line"><span class="k">體重</span><span class="v">${esc(o.petWeight)||'—'} kg</span></div>
+      <div class="review-line"><span class="k">個性</span><span class="v multi">${esc(o.petPersonality)||'—'}</span></div>
+      <div class="review-line"><span class="k">健康狀況</span><span class="v multi">${esc(o.petHealth)||'—'}</span></div>
+    </div>
+    <div class="review-block">
+      <h4>服務內容</h4>
+      <div class="review-line"><span class="k">服務項目</span><span class="v">${s.label}</span></div>
+      <div class="review-line"><span class="k">預估時間</span><span class="v">${hrs % 1===0?hrs:hrs.toFixed(1)} 小時</span></div>
+      <div class="review-line"><span class="k">預約日期</span><span class="v">${b.date}</span></div>
+      <div class="review-line"><span class="k">預約時段</span><span class="v">${b.time} – ${fmtTime(toMin(b.time)+s.duration)}</span></div>
+    </div>
+    <div class="err" id="step3-err" style="display:none;"></div>
+    <div class="actions"><button class="btn btn-ghost" id="back3">上一步</button><button class="btn btn-primary" id="submit3">送出預約</button></div>
+  `;
+}
+function bindStep3(){
+  document.getElementById('back3').addEventListener('click', ()=>{ state.step=2; render(); });
+  document.getElementById('submit3').addEventListener('click', async ()=>{
+    const btn = document.getElementById('submit3');
+    const errEl = document.getElementById('step3-err');
+    errEl.style.display = 'none';
+    const code = genCode();
+    const o = state.owner, s = state.service, b = state.booking;
+    const payload = {
+      action:'booking',
+      confirmCode: code, ownerName: o.name, phone: o.phone, lineId: o.lineId, address: o.address,
+      petName: o.petName, petBreed: o.petBreed, petAge: o.petAge, petWeight: o.petWeight,
+      petPersonality: o.petPersonality, petHealth: o.petHealth, serviceLabel: s.label, durationMinutes: s.duration,
+      date: b.date, time: b.time, endTime: fmtTime(toMin(b.time) + s.duration), taichung: availability.taichungDates.has(b.date)
+    };
+    if(!GOOGLE_SCRIPT_URL){ state.confirmCode = code; state.customerCode = null; state.step = 4; render(); return; }
+    btn.disabled = true; btn.textContent = '送出中...';
+    try{
+      const res = await fetch(GOOGLE_SCRIPT_URL, {
+        method:'POST', headers:{ 'Content-Type':'text/plain;charset=utf-8' }, body: JSON.stringify(payload)
+      });
+      const result = await res.json();
+      if(!result.success) throw new Error(result.error || '寫入失敗');
+      state.confirmCode = code;
+      state.customerCode = result.customerCode || null;
+      state.step = 4; render();
+    }catch(err){
+      btn.disabled = false; btn.textContent = '送出預約';
+      errEl.textContent = '預約資料傳送失敗，請確認網路連線後再試一次。（' + err.message + '）';
+      errEl.style.display = 'block';
+      console.error('送出預約失敗：', err);
+    }
+  });
+}
+function genCode(){
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let out='PB-'; for(let i=0;i<6;i++) out += chars[Math.floor(Math.random()*chars.length)];
+  return out;
+}
+
+/* ================= STEP 4：成功頁 ================= */
+function tplSuccess(){
+  const b = state.booking, o = state.owner;
+  return `
+    <div class="success">
+      <div class="paw">${svgPaw()}</div>
+      <h2>預約已送出</h2>
+      <div class="pending-badge">⏳ 需等托比確認</div>
+      <p>已為 ${esc(o.petName)} 送出 ${b.date} ${b.time} 的${state.service.label}預約，<br>托比確認後會透過您留下的聯絡方式通知您。</p>
+      ${state.customerCode ? `
+      <div class="code-box">
+        <div class="lbl">您的專屬代碼</div>
+        <div class="code">${esc(state.customerCode)}</div>
+        <div class="tip">請截圖保存，下次預約時輸入這組代碼，就能自動帶入您與毛孩的資料，不用重新填寫。</div>
+      </div>
+      ` : ''}
+    </div>
+    <div class="actions"><button class="btn btn-primary" id="newBooking" style="flex:1;">建立新預約</button></div>
+  `;
+}
+document.addEventListener('click', e=>{
+  if(e.target && e.target.id==='newBooking'){
+    state.step = 1;
+    state.owner = {name:'',phone:'',lineId:'',address:'',petName:'',petBreed:'',petAge:'',petWeight:'',petPersonality:'',petHealth:'',petPhoto:null};
+    state.service = {category:'',animalType:'',hairLength:'',duration:0,label:''};
+    state.booking = {date:null,time:null};
+    state.identifyMode = 'new';
+    state.lookupCode = ''; state.lookupResult = null;
+    state.confirmCode = null; state.customerCode = null;
+    render();
+  }
+});
+
+render();
+loadAvailability().then(()=>{ render(); });
+
+if('serviceWorker' in navigator){
+  window.addEventListener('load', ()=>{ navigator.serviceWorker.register('sw.js').catch(()=>{}); });
+}
+
+/* ================= 加入主畫面提示條 ================= */
+let deferredInstallPrompt = null;
+function isIOS(){ return /iphone|ipad|ipod/i.test(navigator.userAgent) && !window.MSStream; }
+function isStandalone(){ return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true; }
+function showInstallBanner(mode){
+  if(isStandalone() || document.getElementById('installBanner')) return;
+  const wrap = document.querySelector('.wrap');
+  const banner = document.createElement('div');
+  banner.id = 'installBanner';
+  banner.className = 'install-banner';
+  if(mode==='android'){
+    banner.innerHTML = `<span>加入主畫面，像 App 一樣使用</span><span class="btns"><button class="install-go" id="installGoBtn">安裝</button><button class="install-close" id="installCloseBtn">✕</button></span>`;
+  } else {
+    banner.innerHTML = `<span>iPhone 用戶：點下方 <b>分享</b> 圖示 → <b>加入主畫面</b></span><span class="btns"><button class="install-close" id="installCloseBtn">✕</button></span>`;
+  }
+  wrap.insertBefore(banner, wrap.firstChild);
+  document.getElementById('installCloseBtn').addEventListener('click', ()=>banner.remove());
+  const goBtn = document.getElementById('installGoBtn');
+  if(goBtn){
+    goBtn.addEventListener('click', async ()=>{
+      banner.remove();
+      if(deferredInstallPrompt){ deferredInstallPrompt.prompt(); await deferredInstallPrompt.userChoice; deferredInstallPrompt = null; }
+    });
+  }
+}
+window.addEventListener('beforeinstallprompt', (e)=>{
+  e.preventDefault();
+  deferredInstallPrompt = e;
+  showInstallBanner('android');
+});
+window.addEventListener('load', ()=>{
+  if(!isStandalone() && isIOS()){ setTimeout(()=>showInstallBanner('ios'), 1000); }
+});
+</script>
+</body>
+</html>

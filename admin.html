@@ -1,0 +1,973 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>毛孩預約 | 店家後台</title>
+<link rel="manifest" href="admin-manifest.json">
+<meta name="theme-color" content="#3D6FA8">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="毛孩後台">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Noto+Sans+TC:wght@400;500;600;700;900&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --cream:#EAF0FA; --pine:#3D6FA8; --sage:#8FB8E0; --sage-light:#E3EDF9;
+    --apricot:#29B6E8; --apricot-dark:#1D96C2; --ink:#1A3A56; --ink-soft:#4A6785;
+    --line:#C7D9EF; --white:#FFFFFF; --danger:#C15B4A; --danger-light:#F6E4DF; --radius:22px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--cream);
+    background-image:radial-gradient(circle at 8% 12%, rgba(255,255,255,0.35) 0, transparent 40%), radial-gradient(circle at 92% 85%, rgba(229,143,87,0.14) 0, transparent 45%);
+    color:var(--ink); font-family:"Noto Sans TC", sans-serif; min-height:100vh; padding:32px 16px 60px; -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:640px;margin:0 auto;}
+  .brand{display:flex;align-items:center;justify-content:space-between;margin-bottom:22px;}
+  .brand-left{display:flex;align-items:center;gap:12px;}
+  .brand-mark{width:50px;height:50px;border-radius:50%;background:var(--pine);display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 4px 10px rgba(46,104,88,0.3);}
+  .brand-name{font-family:"Baloo 2","Noto Sans TC",sans-serif;font-weight:800;font-size:23px;color:var(--pine);letter-spacing:0.3px;line-height:1.1;}
+  .brand-sub{font-size:12.5px;color:var(--ink-soft);letter-spacing:1px;margin-top:2px;}
+  .status-pill{font-size:11px;font-weight:700;padding:4px 10px;border-radius:99px;background:var(--sage-light);color:var(--pine);white-space:nowrap;}
+  .status-pill.err{background:var(--danger-light);color:var(--danger);}
+  .status-pill.saving{background:#DFF6FC;color:var(--apricot-dark);}
+
+  .card{background:var(--white);border-radius:var(--radius);border:1px solid var(--line);box-shadow:0 10px 30px rgba(38,67,58,0.08);padding:26px 22px 24px;}
+  .card-title{font-family:"Baloo 2","Noto Sans TC",sans-serif;font-weight:700;font-size:20px;color:var(--pine);margin:0 0 4px;}
+  .card-desc{font-size:13px;color:var(--ink-soft);margin:0 0 16px;line-height:1.6;}
+  .admin-note{background:#E5F8FD;border:1px solid #A9CDE8;color:var(--apricot-dark);font-size:12px;border-radius:10px;padding:10px 12px;margin-bottom:18px;line-height:1.6;}
+
+  .cal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
+  .cal-head .mo{font-family:"Baloo 2","Noto Sans TC",sans-serif;font-weight:700;font-size:16px;color:var(--pine);}
+  .cal-nav button{height:30px;border-radius:8px;border:1.5px solid var(--line);background:var(--cream);cursor:pointer;font-size:12.5px;color:var(--pine);padding:0 10px;font-family:inherit;font-weight:600;}
+  .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-bottom:8px;}
+  .cal-dow{text-align:center;font-size:11px;color:var(--ink-soft);font-weight:700;padding-bottom:4px;}
+  .cal-cell{
+    aspect-ratio:1/1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+    border-radius:10px;font-size:13.5px;font-weight:600;cursor:pointer;border:1.5px solid transparent;
+    color:var(--ink);background:transparent;gap:1px;position:relative;
+  }
+  .cal-cell.empty{visibility:hidden;cursor:default;}
+  .cal-cell.avail{background:#FFFFFF;border-color:var(--line);box-shadow:0 1px 3px rgba(26,58,86,0.06);}
+  .cal-cell.avail:hover{border-color:var(--sage);}
+  .cal-cell.selected{background:var(--apricot);border-color:var(--apricot);color:#fff;}
+  .cal-cell.today{box-shadow:inset 0 0 0 1.5px var(--pine);}
+  .cal-cell.admin-closed{background:var(--danger-light);border-color:var(--danger);color:var(--danger);}
+  .cal-cell.admin-past{color:#B7C4D6;background:transparent;cursor:not-allowed;}
+  .cal-cell.extended{background:#DFF6FC;border-color:var(--apricot);box-shadow:inset 0 0 0 1.5px var(--apricot);color:var(--apricot-dark);}
+  .cal-tag{font-size:8.5px;font-weight:700;line-height:1;background:var(--pine);color:#fff;padding:1.5px 4px;border-radius:5px;letter-spacing:0.5px;}
+  .cal-cell.selected .cal-tag{background:#fff;color:var(--pine);}
+  .cal-legend{display:flex;gap:16px;font-size:11.5px;color:var(--ink-soft);margin:6px 0 18px;flex-wrap:wrap;}
+  .cal-legend span{display:inline-flex;align-items:center;gap:5px;}
+  .dot{width:9px;height:9px;border-radius:50%;display:inline-block;}
+  .dot.a{background:#FFFFFF;border:1.5px solid var(--line);}
+  .dot.d{background:transparent;border:1.5px dashed #B7C4D6;}
+  .dot.c{background:var(--danger-light);border:1.5px solid var(--danger);}
+  .dot.e{background:#DFF6FC;border:1.5px solid var(--apricot);}
+
+  .toggle-row{display:flex;align-items:center;justify-content:space-between;background:var(--cream);border-radius:12px;padding:12px 14px;margin-bottom:16px;}
+  .toggle-row .label{font-size:13.5px;font-weight:700;color:var(--pine);}
+  .toggle-row .sub{font-size:11.5px;color:var(--ink-soft);margin-top:2px;}
+  .switch{position:relative;width:44px;height:25px;flex-shrink:0;}
+  .switch input{opacity:0;width:0;height:0;position:absolute;}
+  .switch .track{position:absolute;inset:0;background:var(--line);border-radius:99px;cursor:pointer;transition:.2s;}
+  .switch .track::before{content:"";position:absolute;width:19px;height:19px;left:3px;top:3px;background:#fff;border-radius:50%;transition:.2s;box-shadow:0 1px 3px rgba(0,0,0,.2);}
+  .switch input:checked + .track{background:var(--danger);}
+  .switch input:checked + .track::before{transform:translateX(19px);}
+
+  .slot-title{font-size:13px;font-weight:700;color:var(--pine);margin:4px 0 10px;}
+  .admin-slot-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:8px;}
+  .admin-slot{padding:9px 4px;border-radius:9px;border:1.5px solid var(--line);background:var(--cream);text-align:center;font-size:12.5px;font-weight:600;color:var(--pine);cursor:pointer;}
+  .admin-slot.blocked{background:var(--danger-light);border-color:var(--danger);color:var(--danger);text-decoration:line-through;}
+  .empty-note{font-size:13px;color:var(--ink-soft);background:var(--cream);border-radius:10px;padding:14px;text-align:${'left'};}
+
+  .summary-box{background:var(--cream);border-radius:12px;padding:14px;margin-top:18px;}
+  .summary-box h5{margin:0 0 8px;font-size:12px;color:var(--pine);letter-spacing:.5px;}
+  .summary-item{display:flex;justify-content:space-between;align-items:center;font-size:12.5px;padding:6px 0;border-bottom:1px dashed var(--line);}
+  .summary-item:last-child{border-bottom:none;}
+  .summary-item .x{color:var(--danger);cursor:pointer;font-weight:700;font-size:13px;background:none;border:none;padding:2px 6px;}
+  .summary-empty{font-size:12px;color:var(--ink-soft);padding:6px 0;}
+
+  .view-tabs{display:flex;flex-wrap:wrap;border:1.5px solid var(--line);border-radius:11px;overflow:hidden;margin-bottom:20px;}
+  .view-tabs button{flex:1 1 50%;padding:11px 6px;border:none;background:var(--cream);font-family:inherit;font-size:12.5px;font-weight:700;color:var(--ink-soft);cursor:pointer;border-bottom:1.5px solid var(--line);}
+  .view-tabs button:nth-child(odd){border-right:1.5px solid var(--line);}
+  .view-tabs button:nth-child(n+3){border-bottom:none;}
+  .view-tabs button.active{background:var(--pine);color:#fff;}
+
+  .field{margin-bottom:16px;}
+  .field label{display:block;font-size:13px;font-weight:700;color:var(--pine);margin-bottom:6px;}
+  input[type=tel], input[type=text], textarea, select{
+    width:100%;padding:11px 13px;border-radius:11px;border:1.5px solid var(--line);
+    background:var(--cream);font-size:14.5px;font-family:inherit;color:var(--ink);
+    outline:none;transition:border-color .15s ease, background .15s ease;resize:vertical;
+  }
+  select{cursor:pointer;appearance:none;-webkit-appearance:none;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%236B5A48' stroke-width='2.5'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat:no-repeat;background-position:right 14px center;padding-right:36px;
+  }
+  textarea{min-height:70px;line-height:1.5;}
+  input:focus, textarea:focus{border-color:var(--apricot);background:#fff;}
+  .actions{display:flex;gap:10px;margin-top:14px;}
+  .btn{flex:1;padding:12px 18px;border-radius:12px;border:none;font-family:inherit;font-weight:700;font-size:14px;cursor:pointer;}
+  .btn-primary{background:var(--apricot);color:#fff;}
+  .btn-primary:hover{background:var(--apricot-dark);}
+  .btn-tab-color{background:var(--pine)!important;}
+  .btn-tab-color:hover{filter:brightness(0.92);}
+  .btn-primary:disabled{background:#D8E2F0;color:#fff;cursor:not-allowed;}
+  .err{color:var(--danger);font-size:12px;margin-top:5px;}
+
+  .info-card{background:var(--sage-light);border-radius:14px;padding:16px;margin:16px 0;}
+  .info-card h4{margin:0 0 10px;font-size:12.5px;color:var(--pine);letter-spacing:1px;font-weight:700;}
+  .info-line{display:flex;justify-content:space-between;font-size:13.5px;padding:5px 0;}
+  .info-line .k{color:var(--ink-soft);}
+  .info-line .v{font-weight:600;}
+  .svc-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:18px;}
+  .svc-card{border:1.5px solid var(--line);border-radius:14px;padding:14px;cursor:pointer;background:var(--cream);text-align:left;}
+  .svc-card.active{border-color:var(--apricot);background:#E5F8FD;box-shadow:0 0 0 3px rgba(41,182,232,0.15);}
+  .svc-name{font-weight:700;font-size:14.5px;color:var(--pine);}
+  .svc-sub{font-size:11.5px;color:var(--ink-soft);margin-top:3px;}
+  .choice-row{display:flex;gap:10px;margin-bottom:16px;}
+  .choice-pill{flex:1;padding:11px;border-radius:12px;text-align:center;border:1.5px solid var(--line);background:var(--cream);font-weight:600;font-size:13.5px;color:var(--ink-soft);cursor:pointer;}
+  .choice-pill.active{background:var(--pine);border-color:var(--pine);color:#fff;}
+  .admin-slot.selected-slot{background:var(--pine);border-color:var(--pine);color:#fff;}
+  .diary-entry{background:var(--cream);border-radius:12px;padding:14px;margin-bottom:10px;}
+  .diary-entry .date{font-size:11.5px;color:var(--ink-soft);margin-bottom:6px;}
+  .diary-entry .note{font-size:13.5px;white-space:pre-wrap;line-height:1.6;}
+
+  .install-banner{
+    background:var(--pine);color:#fff;border-radius:14px;
+    display:flex;align-items:center;justify-content:space-between;gap:10px;
+    padding:10px 14px;font-size:12.5px;margin-bottom:16px;line-height:1.5;
+  }
+  .install-banner b{font-weight:800;}
+  .install-banner .btns{display:flex;gap:8px;flex-shrink:0;}
+  .install-banner button{border:none;border-radius:8px;padding:7px 12px;font-weight:700;cursor:pointer;font-family:inherit;font-size:12px;}
+  .install-banner .install-go{background:#fff;color:var(--pine);}
+  .install-banner .install-close{background:rgba(255,255,255,0.25);color:#fff;padding:7px 10px;}
+
+  @media (max-width:420px){
+    .admin-slot-grid{grid-template-columns:repeat(2,1fr);}
+    .brand{flex-direction:column;align-items:flex-start;gap:8px;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="brand">
+    <div class="brand-left">
+      <div class="brand-mark">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+          <circle cx="7" cy="8" r="2" fill="#FFFFFF"/><circle cx="12" cy="6" r="2" fill="#FFFFFF"/><circle cx="17" cy="8" r="2" fill="#FFFFFF"/>
+          <path d="M12 11c-3 0-5.5 2.2-5.5 4.6 0 1.6 1.3 2.4 2.7 1.9.9-.3 1.7-.5 2.8-.5s1.9.2 2.8.5c1.4.5 2.7-.3 2.7-1.9C17.5 13.2 15 11 12 11z" fill="#FFFFFF"/>
+        </svg>
+      </div>
+      <div>
+        <div class="brand-name">毛孩預約・店家後台</div>
+        <div class="brand-sub">管理可預約日期與時段</div>
+      </div>
+    </div>
+    <span class="status-pill" id="statusPill">尚未連線</span>
+  </div>
+
+  <div class="card" id="card"></div>
+</div>
+
+<script>
+/* 部署 Apps Script 後，把「網頁應用程式」網址貼在下面雙引號中，
+   此網址同時用來讀取／儲存後台設定（與客人端 index.html 共用同一個網址）*/
+const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwfwpOEL4l_iqzXx0Ky9_J2l-HzFsHZD-nURQ8VRpGPrs_NYAN6u5RTtVE607RutPH6/exec";
+
+const adminConfig = { closedDates:new Set(), blockedSlots:{}, extendedDates:new Set(), taichungDates:new Set() };
+const adminView = { year:new Date().getFullYear(), month:new Date().getMonth(), selectedDate:null };
+const BUSINESS_START = 9*60, DEFAULT_BUSINESS_END = 13*60, EXTENDED_BUSINESS_END = 20*60;
+
+const pageState = { view:'calendar' }; // 'calendar' | 'diary' | 'newCustomer' | 'newBooking'
+const diaryState = { field:'name', value:'', results:[], customer:null, entries:[], error:'' };
+const DIARY_FIELDS = { name:'飼主姓名', phone:'電話', line:'LINE ID', pet:'寵物名稱' };
+function esc(str){ return String(str==null?'':str).replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+
+function fmtDate(d){ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+function fmtTime(mins){ const h=Math.floor(mins/60), m=mins%60; return String(h).padStart(2,'0')+':'+String(m).padStart(2,'0'); }
+function toMin(hhmm){ const [h,m] = hhmm.split(':').map(Number); return h*60+m; }
+function isPastDate(dt){ const today=new Date(); today.setHours(0,0,0,0); return dt < today; }
+function isDateFullyClosed(dateStr){ return adminConfig.closedDates.has(dateStr); }
+function getBusinessEnd(dateStr){ return adminConfig.extendedDates.has(dateStr) ? EXTENDED_BUSINESS_END : DEFAULT_BUSINESS_END; }
+function baseSlots(endMin){ endMin = endMin || DEFAULT_BUSINESS_END; const arr=[]; for(let t=BUSINESS_START;t<endMin;t+=30) arr.push(t); return arr; }
+function isSlotBlockedForBooking(dateStr, startMin, durationMin){
+  if(isDateFullyClosed(dateStr)) return true;
+  const blocked = adminConfig.blockedSlots[dateStr];
+  if(!blocked || blocked.size===0) return false;
+  for(let t=startMin; t<startMin+durationMin; t+=30){ if(blocked.has(fmtTime(t))) return true; }
+  return false;
+}
+
+const SERVICE_DEF = {
+  grooming: { name:'美容', rules:{ cat:{duration:120,label:'貓咪美容'}, dogLong:{duration:120,label:'長毛狗美容'}, dogShort:{duration:120,label:'短毛狗美容'} } },
+  bath: { name:'洗澡', rules:{ cat:{duration:120,label:'貓咪洗澡'}, dogLong:{duration:90,label:'長毛狗洗澡'}, dogShort:{duration:60,label:'短毛狗洗澡'} } }
+};
+
+const newCustomerState = {
+  data:{ ownerName:'',phone:'',lineId:'',address:'',petName:'',petBreed:'',petAge:'',petWeight:'',petPersonality:'',petHealth:'' },
+  resultCode:null, error:''
+};
+
+const newBookingState = {
+  field:'name', value:'', results:[], customer:null, error:'',
+  service:{ category:'', animalType:'', hairLength:'', duration:0, label:'' },
+  date:null, time:null,
+  monthView:{ year:new Date().getFullYear(), month:new Date().getMonth() }
+};
+
+function setStatus(mode){
+  const pill = document.getElementById('statusPill');
+  if(!GOOGLE_SCRIPT_URL){ pill.textContent = '本機示範模式（尚未連結試算表）'; pill.className='status-pill err'; return; }
+  if(mode==='saving'){ pill.textContent = '儲存中...'; pill.className='status-pill saving'; }
+  else if(mode==='saved'){ pill.textContent = '已同步至試算表'; pill.className='status-pill'; }
+  else if(mode==='error'){ pill.textContent = '同步失敗'; pill.className='status-pill err'; }
+  else if(mode==='loading'){ pill.textContent = '讀取設定中...'; pill.className='status-pill saving'; }
+}
+
+async function loadSettings(){
+  if(!GOOGLE_SCRIPT_URL){ setStatus(); render(); return; }
+  setStatus('loading');
+  try{
+    const res = await fetch(GOOGLE_SCRIPT_URL + '?action=getSettings');
+    const data = await res.json();
+    if(data.success && data.settings){
+      adminConfig.closedDates = new Set(data.settings.closedDates || []);
+      adminConfig.extendedDates = new Set(data.settings.extendedDates || []);
+      adminConfig.taichungDates = new Set(data.settings.taichungDates || []);
+      const bs = {};
+      Object.entries(data.settings.blockedSlots || {}).forEach(([d,arr])=>{ bs[d] = new Set(arr); });
+      adminConfig.blockedSlots = bs;
+    }
+    setStatus('saved');
+  }catch(err){ console.error('讀取設定失敗：', err); setStatus('error'); }
+  render();
+}
+
+async function saveSettings(){
+  if(!GOOGLE_SCRIPT_URL) return;
+  setStatus('saving');
+  const settings = {
+    closedDates: Array.from(adminConfig.closedDates),
+    extendedDates: Array.from(adminConfig.extendedDates),
+    taichungDates: Array.from(adminConfig.taichungDates),
+    blockedSlots: Object.fromEntries(Object.entries(adminConfig.blockedSlots).map(([k,v])=>[k, Array.from(v)]))
+  };
+  try{
+    const res = await fetch(GOOGLE_SCRIPT_URL, {
+      method:'POST', headers:{ 'Content-Type':'text/plain;charset=utf-8' },
+      body: JSON.stringify({ action:'saveSettings', settings })
+    });
+    const result = await res.json();
+    if(!result.success) throw new Error(result.error || '儲存失敗');
+    setStatus('saved');
+  }catch(err){ console.error('儲存設定失敗：', err); setStatus('error'); }
+}
+
+/* ================= render ================= */
+function render(){
+  const tabs = `
+    <div class="view-tabs" id="view-tabs">
+      <button type="button" data-v="calendar" class="${pageState.view==='calendar'?'active':''}">預約時間管理</button>
+      <button type="button" data-v="diary" class="${pageState.view==='diary'?'active':''}">寵物日記</button>
+      <button type="button" data-v="newCustomer" class="${pageState.view==='newCustomer'?'active':''}">新增客人</button>
+      <button type="button" data-v="newBooking" class="${pageState.view==='newBooking'?'active':''}">新增預約</button>
+    </div>
+  `;
+  let bodyHtml;
+  if(pageState.view==='diary') bodyHtml = tplDiary();
+  else if(pageState.view==='newCustomer') bodyHtml = tplNewCustomer();
+  else if(pageState.view==='newBooking') bodyHtml = tplNewBooking();
+  else bodyHtml = tplAdmin();
+
+  document.getElementById('card').innerHTML = tabs + bodyHtml;
+  document.getElementById('view-tabs').addEventListener('click', e=>{
+    const btn = e.target.closest('button'); if(!btn) return;
+    pageState.view = btn.dataset.v; render();
+  });
+  if(pageState.view==='diary') bindDiary();
+  else if(pageState.view==='newCustomer') bindNewCustomer();
+  else if(pageState.view==='newBooking') bindNewBooking();
+  else bindAdmin();
+}
+
+/* ================= 寵物日記 ================= */
+function tplDiary(){
+  const c = diaryState.customer;
+  const fieldLabel = DIARY_FIELDS[diaryState.field];
+  return `
+    <h2 class="card-title">寵物日記</h2>
+    <p class="card-desc">可用飼主姓名、電話、LINE ID 或寵物名稱任一項查詢客戶，找到後即可針對每次服務新增紀錄，方便下次服務前回顧。客人本人看不到這些內容。</p>
+    <div class="field">
+      <label>查詢方式</label>
+      <select id="diary-field-select">
+        <option value="name" ${diaryState.field==='name'?'selected':''}>飼主姓名</option>
+        <option value="phone" ${diaryState.field==='phone'?'selected':''}>電話</option>
+        <option value="line" ${diaryState.field==='line'?'selected':''}>LINE ID</option>
+        <option value="pet" ${diaryState.field==='pet'?'selected':''}>寵物名稱</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>輸入${fieldLabel}</label>
+      <input type="text" id="diary-search-value" placeholder="請輸入${fieldLabel}（可只輸入部分內容）" value="${esc(diaryState.value)}">
+    </div>
+    <div class="err" id="diary-err" style="display:${diaryState.error?'block':'none'};">${diaryState.error||''}</div>
+    <div class="actions"><button class="btn btn-primary btn-tab-color" id="diarySearchBtn" style="flex:1;">查詢</button></div>
+
+    ${diaryState.results.length>1 ? `
+      <div class="summary-box">
+        <h5>找到 ${diaryState.results.length} 筆符合的客人，請選擇</h5>
+        ${diaryState.results.map((r,i)=>`
+          <div class="summary-item" data-pick="${i}" style="cursor:pointer;">
+            <span>${esc(r.ownerName)}｜${esc(r.phone)}｜${esc(r.petName)}</span>
+            <span style="color:var(--pine);font-weight:700;">選擇 ›</span>
+          </div>
+        `).join('')}
+      </div>
+    ` : ''}
+
+    ${c ? `
+      <div class="info-card">
+        <h4>客人資訊</h4>
+        <div class="info-line"><span class="k">飼主</span><span class="v">${esc(c.ownerName)}</span></div>
+        <div class="info-line"><span class="k">電話</span><span class="v">${esc(c.phone)}</span></div>
+        <div class="info-line"><span class="k">LINE ID</span><span class="v">${esc(c.lineId)||'—'}</span></div>
+        <div class="info-line"><span class="k">寵物</span><span class="v">${esc(c.petName)}（${esc(c.petBreed)}）</span></div>
+      </div>
+      <div class="field"><label>新增日記</label><textarea id="diary-note" placeholder="這次服務的紀錄，例如：這次剪得比較短、皮膚有點泛紅要注意"></textarea></div>
+      <div class="actions"><button class="btn btn-primary" id="diaryAddBtn" style="flex:1;">新增日記</button></div>
+      <div class="slot-title" style="margin-top:22px;">過往日記（新到舊）</div>
+      ${diaryState.entries.length===0
+        ? `<div class="empty-note">目前還沒有日記紀錄。</div>`
+        : diaryState.entries.map(en=>`<div class="diary-entry"><div class="date">${esc(en.date)}</div><div class="note">${esc(en.note)}</div></div>`).join('')}
+    ` : ''}
+  `;
+}
+async function searchDiary(){
+  const value = document.getElementById('diary-search-value').value.trim();
+  diaryState.error = '';
+  diaryState.results = [];
+  diaryState.customer = null;
+  diaryState.entries = [];
+  if(!value){ diaryState.error='請輸入查詢內容。'; render(); return; }
+  diaryState.value = value;
+  if(!GOOGLE_SCRIPT_URL){ diaryState.error='尚未連結試算表，無法查詢。'; render(); return; }
+  const btn = document.getElementById('diarySearchBtn');
+  btn.disabled = true; btn.textContent = '查詢中...';
+  try{
+    const res = await fetch(GOOGLE_SCRIPT_URL + '?action=searchDiaryCustomer&field=' + diaryState.field + '&value=' + encodeURIComponent(value));
+    const data = await res.json();
+    if(!data.success) throw new Error(data.error || '查詢失敗');
+    const results = data.results || [];
+    if(results.length === 0){
+      diaryState.error = '查無符合的客人，請確認輸入內容，或改用其他欄位查詢。';
+    } else if(results.length === 1){
+      await selectDiaryCustomer(results[0]);
+      return;
+    } else {
+      diaryState.results = results;
+    }
+  }catch(err){
+    diaryState.error = '查詢失敗，請確認網路連線後再試一次。';
+    console.error('查詢客人失敗：', err);
+  }
+  btn.disabled = false; btn.textContent = '查詢';
+  render();
+}
+async function selectDiaryCustomer(customer){
+  diaryState.customer = customer;
+  diaryState.results = [];
+  diaryState.error = '';
+  try{
+    const diaryRes = await fetch(GOOGLE_SCRIPT_URL + '?action=getDiary&phone=' + encodeURIComponent(customer.phone));
+    const diaryData = await diaryRes.json();
+    diaryState.entries = (diaryData.success && diaryData.entries) ? diaryData.entries : [];
+  }catch(err){
+    diaryState.entries = [];
+    console.error('讀取日記失敗：', err);
+  }
+  render();
+}
+async function addDiaryEntry(){
+  const note = document.getElementById('diary-note').value.trim();
+  if(!note) return;
+  const btn = document.getElementById('diaryAddBtn');
+  btn.disabled = true; btn.textContent = '新增中...';
+  try{
+    const res = await fetch(GOOGLE_SCRIPT_URL, {
+      method:'POST', headers:{ 'Content-Type':'text/plain;charset=utf-8' },
+      body: JSON.stringify({ action:'addDiaryEntry', phone: diaryState.customer.phone, petName: diaryState.customer.petName, note })
+    });
+    const result = await res.json();
+    if(!result.success) throw new Error(result.error || '新增失敗');
+    await selectDiaryCustomer(diaryState.customer);
+  }catch(err){
+    btn.disabled = false; btn.textContent = '新增日記';
+    console.error('新增日記失敗：', err);
+  }
+}
+function bindDiary(){
+  document.getElementById('diary-field-select').addEventListener('change', e=>{
+    diaryState.field = e.target.value;
+    diaryState.results = []; diaryState.customer = null; diaryState.entries = []; diaryState.error='';
+    render();
+  });
+  document.getElementById('diarySearchBtn').addEventListener('click', searchDiary);
+  document.getElementById('diary-search-value').addEventListener('keydown', e=>{ if(e.key==='Enter') searchDiary(); });
+  document.querySelectorAll('[data-pick]').forEach(el=>{
+    el.addEventListener('click', ()=>{ selectDiaryCustomer(diaryState.results[parseInt(el.dataset.pick,10)]); });
+  });
+  const addBtn = document.getElementById('diaryAddBtn');
+  if(addBtn) addBtn.addEventListener('click', addDiaryEntry);
+}
+
+/* ================= 新增客人 ================= */
+function tplNewCustomer(){
+  const d = newCustomerState.data;
+  return `
+    <h2 class="card-title">新增客人資料</h2>
+    <p class="card-desc">直接在後台幫客人建檔，系統會自動產生一組專屬代碼；下次客人自己預約時輸入這組代碼，就能快速帶入資料。</p>
+    <div class="field"><label>飼主姓名</label><input type="text" id="nc-name" value="${esc(d.ownerName)}"></div>
+    <div class="field"><label>電話</label><input type="tel" id="nc-phone" value="${esc(d.phone)}"></div>
+    <div class="field"><label>LINE ID（選填）</label><input type="text" id="nc-line" value="${esc(d.lineId)}"></div>
+    <div class="field"><label>地址</label><input type="text" id="nc-address" value="${esc(d.address)}"></div>
+    <div class="field"><label>寵物名稱</label><input type="text" id="nc-petname" value="${esc(d.petName)}"></div>
+    <div class="field"><label>寵物品種</label><input type="text" id="nc-petbreed" value="${esc(d.petBreed)}"></div>
+    <div class="field"><label>年齡（選填）</label><input type="text" id="nc-petage" value="${esc(d.petAge)}"></div>
+    <div class="field"><label>體重（選填）</label><input type="text" id="nc-petweight" value="${esc(d.petWeight)}"></div>
+    <div class="field"><label>寵物個性（選填）</label><textarea id="nc-personality">${esc(d.petPersonality)}</textarea></div>
+    <div class="field"><label>健康狀況（選填）</label><textarea id="nc-health">${esc(d.petHealth)}</textarea></div>
+    <div class="err" id="nc-err" style="display:${newCustomerState.error?'block':'none'};">${newCustomerState.error||''}</div>
+    <div class="actions"><button class="btn btn-primary" id="ncSubmitBtn" style="flex:1;">新增客人資料</button></div>
+    ${newCustomerState.resultCode ? `
+      <div class="info-card">
+        <h4>建檔成功</h4>
+        <div class="info-line"><span class="k">專屬代碼</span><span class="v" style="font-size:18px;font-weight:800;color:var(--pine);">${esc(newCustomerState.resultCode)}</span></div>
+      </div>
+    ` : ''}
+  `;
+}
+function bindNewCustomer(){
+  document.getElementById('ncSubmitBtn').addEventListener('click', async ()=>{
+    const d = newCustomerState.data;
+    d.ownerName = document.getElementById('nc-name').value.trim();
+    d.phone = document.getElementById('nc-phone').value.trim();
+    d.lineId = document.getElementById('nc-line').value.trim();
+    d.address = document.getElementById('nc-address').value.trim();
+    d.petName = document.getElementById('nc-petname').value.trim();
+    d.petBreed = document.getElementById('nc-petbreed').value.trim();
+    d.petAge = document.getElementById('nc-petage').value.trim();
+    d.petWeight = document.getElementById('nc-petweight').value.trim();
+    d.petPersonality = document.getElementById('nc-personality').value.trim();
+    d.petHealth = document.getElementById('nc-health').value.trim();
+
+    if(!d.ownerName || !d.phone || !d.address || !d.petName || !d.petBreed){
+      newCustomerState.error = '請完整填寫姓名、電話、地址、寵物名稱與品種。';
+      render(); return;
+    }
+    if(!GOOGLE_SCRIPT_URL){ newCustomerState.error = '尚未連結試算表，無法新增。'; render(); return; }
+    newCustomerState.error = '';
+    const btn = document.getElementById('ncSubmitBtn');
+    btn.disabled = true; btn.textContent = '新增中...';
+    try{
+      const res = await fetch(GOOGLE_SCRIPT_URL, {
+        method:'POST', headers:{ 'Content-Type':'text/plain;charset=utf-8' },
+        body: JSON.stringify(Object.assign({ action:'addCustomer' }, d))
+      });
+      const result = await res.json();
+      if(!result.success) throw new Error(result.error || '新增失敗');
+      newCustomerState.resultCode = result.customerCode;
+      newCustomerState.data = { ownerName:'',phone:'',lineId:'',address:'',petName:'',petBreed:'',petAge:'',petWeight:'',petPersonality:'',petHealth:'' };
+      render();
+    }catch(err){
+      btn.disabled = false; btn.textContent = '新增客人資料';
+      newCustomerState.error = '新增失敗，請確認網路連線後再試一次。';
+      render();
+      console.error('新增客人失敗：', err);
+    }
+  });
+}
+
+/* ================= 新增預約（後台手動建立） ================= */
+function computeDurationNB(){
+  const s = newBookingState.service;
+  if(!s.category || !s.animalType) return null;
+  if(s.animalType==='cat') return SERVICE_DEF[s.category].rules.cat;
+  if(s.animalType==='dog'){ if(!s.hairLength) return null; return s.hairLength==='long' ? SERVICE_DEF[s.category].rules.dogLong : SERVICE_DEF[s.category].rules.dogShort; }
+  return null;
+}
+function updateNBDuration(){
+  const r = computeDurationNB();
+  if(r){
+    newBookingState.service.duration = r.duration;
+    newBookingState.service.label = r.label + '（' + SERVICE_DEF[newBookingState.service.category].name + '）';
+  } else { newBookingState.service.duration = 0; newBookingState.service.label = ''; }
+}
+function tplNewBooking(){
+  const nb = newBookingState;
+  if(!nb.customer){
+    return `
+      <h2 class="card-title">新增預約</h2>
+      <p class="card-desc">先查詢客人（例如電話預約進來的客人），找到後再選擇服務與時段。若客人尚未建檔，請先到「新增客人」分頁建檔。</p>
+      <div class="field">
+        <label>查詢方式</label>
+        <select id="nb-field-select">
+          <option value="name" ${nb.field==='name'?'selected':''}>飼主姓名</option>
+          <option value="phone" ${nb.field==='phone'?'selected':''}>電話</option>
+          <option value="line" ${nb.field==='line'?'selected':''}>LINE ID</option>
+          <option value="pet" ${nb.field==='pet'?'selected':''}>寵物名稱</option>
+        </select>
+      </div>
+      <div class="field"><label>輸入${DIARY_FIELDS[nb.field]}</label><input type="text" id="nb-search-value" value="${esc(nb.value)}"></div>
+      <div class="err" id="nb-err" style="display:${nb.error?'block':'none'};">${nb.error||''}</div>
+      <div class="actions"><button class="btn btn-primary" id="nbSearchBtn" style="flex:1;">查詢客人</button></div>
+      ${nb.results.length>1 ? `
+        <div class="summary-box">
+          <h5>找到 ${nb.results.length} 筆，請選擇</h5>
+          ${nb.results.map((r,i)=>`
+            <div class="summary-item" data-pick="${i}" style="cursor:pointer;">
+              <span>${esc(r.ownerName)}｜${esc(r.phone)}｜${esc(r.petName)}</span>
+              <span style="color:var(--pine);font-weight:700;">選擇 ›</span>
+            </div>
+          `).join('')}
+        </div>
+      ` : ''}
+    `;
+  }
+
+  const c = nb.customer, s = nb.service;
+  const showDogHair = s.animalType==='dog';
+  const dur = computeDurationNB();
+  const ready = !!dur;
+  let calendarBlock = '';
+  if(ready){
+    calendarBlock = `
+      <div class="cal-head">
+        <button class="cal-nav" id="nb-cal-prev">‹ 上個月</button>
+        <div class="mo">${nb.monthView.year} 年 ${nb.monthView.month+1} 月</div>
+        <button class="cal-nav" id="nb-cal-next">下個月 ›</button>
+      </div>
+      <div class="cal-grid" id="nb-cal-grid">${renderNBCalGrid()}</div>
+      <div id="nb-slot-section">${renderNBSlotSection()}</div>
+    `;
+  }
+  return `
+    <h2 class="card-title">新增預約</h2>
+    <div class="info-card">
+      <h4>預約客人</h4>
+      <div class="info-line"><span class="k">飼主</span><span class="v">${esc(c.ownerName)}</span></div>
+      <div class="info-line"><span class="k">電話</span><span class="v">${esc(c.phone)}</span></div>
+      <div class="info-line"><span class="k">寵物</span><span class="v">${esc(c.petName)}（${esc(c.petBreed)}）</span></div>
+    </div>
+    <button class="btn btn-ghost" id="nbChangeCustomer" style="width:100%;margin-bottom:18px;">換一位客人</button>
+
+    <div class="svc-grid" id="nb-svc-grid">
+      <div class="svc-card ${s.category==='grooming'?'active':''}" data-svc="grooming"><div class="svc-name">美容</div><div class="svc-sub">貓／狗均約 2 小時</div></div>
+      <div class="svc-card ${s.category==='bath'?'active':''}" data-svc="bath"><div class="svc-name">洗澡</div><div class="svc-sub">依貓／狗與毛長，時間不同</div></div>
+    </div>
+    <div class="field">
+      <label>寵物類別</label>
+      <div class="choice-row" id="nb-animal-row">
+        <div class="choice-pill ${s.animalType==='cat'?'active':''}" data-a="cat">貓咪</div>
+        <div class="choice-pill ${s.animalType==='dog'?'active':''}" data-a="dog">狗狗</div>
+      </div>
+    </div>
+    ${showDogHair ? `
+    <div class="field">
+      <label>毛長類型</label>
+      <div class="choice-row" id="nb-hair-row">
+        <div class="choice-pill ${s.hairLength==='long'?'active':''}" data-h="long">長毛</div>
+        <div class="choice-pill ${s.hairLength==='short'?'active':''}" data-h="short">短毛</div>
+      </div>
+    </div>` : ''}
+    ${ready ? calendarBlock : `<div class="empty-note">請先選擇服務與寵物類型，即可查看可預約時段。</div>`}
+    <div class="err" id="nb-err2" style="display:none;"></div>
+    <div class="actions"><button class="btn btn-primary" id="nbSubmitBtn" ${(!nb.date||!nb.time)?'disabled':''} style="flex:1;">新增預約</button></div>
+  `;
+}
+function renderNBCalGrid(){
+  const {year, month} = newBookingState.monthView;
+  const first = new Date(year, month, 1);
+  const startOffset = first.getDay();
+  const daysInMonth = new Date(year, month+1, 0).getDate();
+  const today = new Date(); today.setHours(0,0,0,0);
+  let html = ['日','一','二','三','四','五','六'].map(d=>`<div class="cal-dow">${d}</div>`).join('');
+  for(let i=0;i<startOffset;i++) html += `<div class="cal-cell empty"></div>`;
+  for(let d=1; d<=daysInMonth; d++){
+    const dt = new Date(year, month, d);
+    const dateStr = fmtDate(dt);
+    const past = isPastDate(dt);
+    const closed = isDateFullyClosed(dateStr);
+    const extended = adminConfig.extendedDates.has(dateStr);
+    const taichung = adminConfig.taichungDates.has(dateStr);
+    const disabled = past || closed;
+    const isToday = fmtDate(dt) === fmtDate(today);
+    const isSelected = newBookingState.date === dateStr;
+    let cls = 'cal-cell';
+    cls += disabled ? ' disabled' : ' avail';
+    if(!disabled && extended) cls += ' extended';
+    if(isToday) cls += ' today';
+    if(isSelected) cls += ' selected';
+    const tag = taichung ? `<span class="cal-tag">台中</span>` : '';
+    html += `<div class="${cls}" data-date="${disabled?'':dateStr}"><span>${d}</span>${tag}</div>`;
+  }
+  return html;
+}
+function renderNBSlotSection(){
+  if(!newBookingState.date){ return `<div class="empty-note">請先選擇日期。</div>`; }
+  const duration = newBookingState.service.duration || 120;
+  const end = getBusinessEnd(newBookingState.date);
+  const slots = [];
+  for(let start=BUSINESS_START; start+duration<=end; start+=30){ slots.push({ start, taken: isSlotBlockedForBooking(newBookingState.date, start, duration) }); }
+  if(slots.length===0){ return `<div class="empty-note">此服務所需時間較長，當日時段不足，請選擇其他日期。</div>`; }
+  return `
+    <div class="slot-title">${newBookingState.date} 可預約時段</div>
+    <div class="admin-slot-grid" id="nb-slot-grid">
+      ${slots.map(s=>{
+        const val = fmtTime(s.start);
+        const isSel = newBookingState.time === val;
+        let cls = 'admin-slot';
+        if(s.taken) cls += ' blocked'; else if(isSel) cls += ' selected-slot';
+        return `<div class="${cls}" data-time="${s.taken?'':val}">${val}${s.taken?'（已被預約）':''}</div>`;
+      }).join('')}
+    </div>
+  `;
+}
+function bindNewBooking(){
+  if(!newBookingState.customer){
+    document.getElementById('nb-field-select').addEventListener('change', e=>{ newBookingState.field = e.target.value; render(); });
+    document.getElementById('nbSearchBtn').addEventListener('click', searchNBCustomer);
+    document.getElementById('nb-search-value').addEventListener('keydown', e=>{ if(e.key==='Enter') searchNBCustomer(); });
+    document.querySelectorAll('[data-pick]').forEach(el=>{
+      el.addEventListener('click', ()=>{ selectNBCustomer(newBookingState.results[parseInt(el.dataset.pick,10)]); });
+    });
+    return;
+  }
+  document.getElementById('nbChangeCustomer').addEventListener('click', ()=>{
+    newBookingState.customer = null; newBookingState.results = []; newBookingState.value = '';
+    newBookingState.date = null; newBookingState.time = null;
+    newBookingState.service = { category:'', animalType:'', hairLength:'', duration:0, label:'' };
+    render();
+  });
+  document.getElementById('nb-svc-grid').addEventListener('click', e=>{
+    const c = e.target.closest('.svc-card'); if(!c) return;
+    newBookingState.service.category = c.dataset.svc; updateNBDuration();
+    newBookingState.date = null; newBookingState.time = null;
+    render();
+  });
+  document.getElementById('nb-animal-row').addEventListener('click', e=>{
+    const p = e.target.closest('.choice-pill'); if(!p) return;
+    newBookingState.service.animalType = p.dataset.a;
+    if(p.dataset.a==='cat') newBookingState.service.hairLength = '';
+    updateNBDuration();
+    newBookingState.date = null; newBookingState.time = null;
+    render();
+  });
+  const hairRow = document.getElementById('nb-hair-row');
+  if(hairRow){
+    hairRow.addEventListener('click', e=>{
+      const p = e.target.closest('.choice-pill'); if(!p) return;
+      newBookingState.service.hairLength = p.dataset.h; updateNBDuration();
+      newBookingState.date = null; newBookingState.time = null;
+      render();
+    });
+  }
+  const calPrev = document.getElementById('nb-cal-prev');
+  if(calPrev) calPrev.addEventListener('click', ()=>{
+    newBookingState.monthView.month--; if(newBookingState.monthView.month<0){newBookingState.monthView.month=11; newBookingState.monthView.year--;}
+    newBookingState.date=null; newBookingState.time=null; render();
+  });
+  const calNext = document.getElementById('nb-cal-next');
+  if(calNext) calNext.addEventListener('click', ()=>{
+    newBookingState.monthView.month++; if(newBookingState.monthView.month>11){newBookingState.monthView.month=0; newBookingState.monthView.year++;}
+    newBookingState.date=null; newBookingState.time=null; render();
+  });
+  const calGrid = document.getElementById('nb-cal-grid');
+  if(calGrid){
+    calGrid.addEventListener('click', e=>{
+      const c = e.target.closest('.cal-cell.avail'); if(!c) return;
+      newBookingState.date = c.dataset.date; newBookingState.time = null;
+      render();
+    });
+  }
+  const slotGrid = document.getElementById('nb-slot-grid');
+  if(slotGrid){
+    slotGrid.addEventListener('click', e=>{
+      const s = e.target.closest('.admin-slot'); if(!s || s.classList.contains('blocked')) return;
+      newBookingState.time = s.dataset.time;
+      render();
+    });
+  }
+  const submitBtn = document.getElementById('nbSubmitBtn');
+  if(submitBtn) submitBtn.addEventListener('click', submitNBBooking);
+}
+async function searchNBCustomer(){
+  const value = document.getElementById('nb-search-value').value.trim();
+  newBookingState.error = ''; newBookingState.results = [];
+  if(!value){ newBookingState.error = '請輸入查詢內容。'; render(); return; }
+  newBookingState.value = value;
+  if(!GOOGLE_SCRIPT_URL){ newBookingState.error = '尚未連結試算表，無法查詢。'; render(); return; }
+  const btn = document.getElementById('nbSearchBtn');
+  btn.disabled = true; btn.textContent = '查詢中...';
+  try{
+    const res = await fetch(GOOGLE_SCRIPT_URL + '?action=searchDiaryCustomer&field=' + newBookingState.field + '&value=' + encodeURIComponent(value));
+    const data = await res.json();
+    if(!data.success) throw new Error(data.error || '查詢失敗');
+    const results = data.results || [];
+    if(results.length === 0){ newBookingState.error = '查無符合的客人，請確認輸入內容，或先到「新增客人」分頁建檔。'; }
+    else if(results.length === 1){ selectNBCustomer(results[0]); return; }
+    else { newBookingState.results = results; }
+  }catch(err){
+    newBookingState.error = '查詢失敗，請確認網路連線後再試一次。';
+    console.error('查詢客人失敗：', err);
+  }
+  btn.disabled = false; btn.textContent = '查詢客人';
+  render();
+}
+function selectNBCustomer(customer){
+  newBookingState.customer = customer;
+  newBookingState.results = [];
+  newBookingState.error = '';
+  render();
+}
+function genBookingCode(){
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let out = 'PB-'; for(let i=0;i<6;i++) out += chars[Math.floor(Math.random()*chars.length)];
+  return out;
+}
+async function submitNBBooking(){
+  const btn = document.getElementById('nbSubmitBtn');
+  const errEl = document.getElementById('nb-err2');
+  errEl.style.display = 'none';
+  if(!newBookingState.date || !newBookingState.time) return;
+  const c = newBookingState.customer, s = newBookingState.service, nb = newBookingState;
+  const code = genBookingCode();
+  const payload = {
+    action:'booking', createdByAdmin:true,
+    confirmCode: code, ownerName:c.ownerName, phone:c.phone, lineId:c.lineId, address:c.address,
+    petName:c.petName, petBreed:c.petBreed, petAge:c.petAge, petWeight:c.petWeight,
+    petPersonality:c.petPersonality, petHealth:c.petHealth,
+    serviceLabel:s.label, durationMinutes:s.duration,
+    date: nb.date, time: nb.time, endTime: fmtTime(toMin(nb.time) + s.duration),
+    taichung: adminConfig.taichungDates.has(nb.date)
+  };
+  if(!GOOGLE_SCRIPT_URL){ errEl.textContent = '尚未連結試算表，無法新增。'; errEl.style.display = 'block'; return; }
+  btn.disabled = true; btn.textContent = '新增中...';
+  try{
+    const res = await fetch(GOOGLE_SCRIPT_URL, {
+      method:'POST', headers:{ 'Content-Type':'text/plain;charset=utf-8' }, body: JSON.stringify(payload)
+    });
+    const result = await res.json();
+    if(!result.success) throw new Error(result.error || '新增失敗');
+    newBookingState.customer = null; newBookingState.results = []; newBookingState.value = '';
+    newBookingState.service = { category:'', animalType:'', hairLength:'', duration:0, label:'' };
+    newBookingState.date = null; newBookingState.time = null;
+    render();
+  }catch(err){
+    btn.disabled = false; btn.textContent = '新增預約';
+    errEl.textContent = '新增失敗，請確認網路連線後再試一次。';
+    errEl.style.display = 'block';
+    console.error('新增預約失敗：', err);
+  }
+}
+
+function tplAdmin(){
+  return `
+    <h2 class="card-title">管理可預約時間</h2>
+    <p class="card-desc">點選日期後，可設定「台中服務日」、「整天不可預約」、「延長營業至20:00」，或個別關閉特定時段（例如公休日、已被電話預約的時段等）。設定會自動即時儲存。</p>
+    ${!GOOGLE_SCRIPT_URL ? `<div class="admin-note">目前尚未連結 Google 試算表，這裡的設定只是示範，重新整理頁面就會消失，也不會反映到客人端頁面。請依照說明部署 Apps Script，並把網址貼到本檔案開頭的 GOOGLE_SCRIPT_URL。</div>` : ''}
+
+    <div class="cal-head">
+      <button class="cal-nav" id="admin-cal-prev">‹ 上個月</button>
+      <div class="mo">${adminView.year} 年 ${adminView.month+1} 月</div>
+      <button class="cal-nav" id="admin-cal-next">下個月 ›</button>
+    </div>
+    <div class="cal-grid" id="admin-cal-grid">${renderAdminCalGrid()}</div>
+    <div class="cal-legend">
+      <span><i class="dot a"></i>可預約</span>
+      <span><i class="dot e"></i>延長營業至20:00</span>
+      <span><i class="dot c"></i>整天不可預約</span>
+      <span><i class="dot d"></i>已過去</span>
+      <span><span class="cal-tag" style="position:static;">台中</span>台中服務日</span>
+    </div>
+
+    <div id="admin-detail">${renderAdminDetail()}</div>
+
+    <div class="summary-box"><h5>目前已設定「台中服務日」的日期</h5>${renderTaichungList()}</div>
+    <div class="summary-box"><h5>目前已設定「整天不可預約」的日期</h5>${renderClosedList()}</div>
+    <div class="summary-box"><h5>目前已設定「延長營業至20:00」的日期</h5>${renderExtendedList()}</div>
+    <div class="summary-box"><h5>目前已設定「個別時段不可預約」</h5>${renderBlockedList()}</div>
+  `;
+}
+function renderAdminCalGrid(){
+  const {year, month} = adminView;
+  const first = new Date(year, month, 1);
+  const startOffset = first.getDay();
+  const daysInMonth = new Date(year, month+1, 0).getDate();
+  const today = new Date(); today.setHours(0,0,0,0);
+  let html = ['日','一','二','三','四','五','六'].map(d=>`<div class="cal-dow">${d}</div>`).join('');
+  for(let i=0;i<startOffset;i++) html += `<div class="cal-cell empty"></div>`;
+  for(let d=1; d<=daysInMonth; d++){
+    const dt = new Date(year, month, d);
+    const dateStr = fmtDate(dt);
+    const past = isPastDate(dt);
+    const closed = isDateFullyClosed(dateStr);
+    const extended = adminConfig.extendedDates.has(dateStr);
+    const taichung = adminConfig.taichungDates.has(dateStr);
+    const isToday = fmtDate(dt) === fmtDate(today);
+    const isSelected = adminView.selectedDate === dateStr;
+    let cls = 'cal-cell';
+    if(past) cls += ' admin-past';
+    else if(closed) cls += ' admin-closed';
+    else{ cls += ' avail'; if(extended) cls += ' extended'; }
+    if(isToday) cls += ' today';
+    if(isSelected) cls += ' selected';
+    const tag = taichung ? `<span class="cal-tag">台中</span>` : '';
+    html += `<div class="${cls}" data-date="${past?'':dateStr}"><span>${d}</span>${tag}</div>`;
+  }
+  return html;
+}
+function renderAdminDetail(){
+  const date = adminView.selectedDate;
+  if(!date){ return `<div class="empty-note">請先點選一個日期，即可設定當日的預約開放狀況。</div>`; }
+  const closed = isDateFullyClosed(date);
+  const extended = adminConfig.extendedDates.has(date);
+  const taichung = adminConfig.taichungDates.has(date);
+  let html = `
+    <div class="toggle-row">
+      <div><div class="label">${date}　台中服務日</div><div class="sub">開啟後，此日期會標示「台中」，讓客人知道當天在台中服務</div></div>
+      <label class="switch"><input type="checkbox" id="admin-taichung-toggle" ${taichung?'checked':''}><span class="track"></span></label>
+    </div>
+    <div class="toggle-row">
+      <div><div class="label">${date}　整天不可預約</div><div class="sub">開啟後，客人將無法選擇此日期</div></div>
+      <label class="switch"><input type="checkbox" id="admin-closed-toggle" ${closed?'checked':''}><span class="track"></span></label>
+    </div>
+  `;
+  if(!closed){
+    html += `
+    <div class="toggle-row">
+      <div><div class="label">${date}　延長營業至 20:00</div><div class="sub">開啟後，當日時段開放至晚上8點（預設只到13:00）</div></div>
+      <label class="switch"><input type="checkbox" id="admin-extended-toggle" ${extended?'checked':''}><span class="track"></span></label>
+    </div>
+    `;
+    const end = getBusinessEnd(date);
+    const blocked = adminConfig.blockedSlots[date] || new Set();
+    html += `<div class="slot-title">個別時段設定（點選切換，共 ${baseSlots(end).length} 個時段）</div>
+      <div class="admin-slot-grid" id="admin-slot-grid">
+        ${baseSlots(end).map(t=>{ const val=fmtTime(t); const isBlocked=blocked.has(val); return `<div class="admin-slot ${isBlocked?'blocked':''}" data-time="${val}">${val}</div>`; }).join('')}
+      </div>
+      <div class="empty-note">已標記為不可預約的時段會以紅色顯示，客人在該時段將無法預約（若服務時間跨越此時段亦會一併排除）。</div>
+    `;
+  }
+  return html;
+}
+function renderClosedList(){
+  const dates = Array.from(adminConfig.closedDates).sort();
+  if(dates.length===0) return `<div class="summary-empty">尚未設定</div>`;
+  return dates.map(d=>`<div class="summary-item"><span>${d}</span><button class="x" data-remove-closed="${d}">✕</button></div>`).join('');
+}
+function renderTaichungList(){
+  const dates = Array.from(adminConfig.taichungDates).sort();
+  if(dates.length===0) return `<div class="summary-empty">尚未設定</div>`;
+  return dates.map(d=>`<div class="summary-item"><span>${d}（台中）</span><button class="x" data-remove-taichung="${d}">✕</button></div>`).join('');
+}
+function renderExtendedList(){
+  const dates = Array.from(adminConfig.extendedDates).sort();
+  if(dates.length===0) return `<div class="summary-empty">尚未設定</div>`;
+  return dates.map(d=>`<div class="summary-item"><span>${d}（09:00–20:00）</span><button class="x" data-remove-extended="${d}">✕</button></div>`).join('');
+}
+function renderBlockedList(){
+  const entries = Object.entries(adminConfig.blockedSlots).filter(([,set])=>set && set.size>0).sort((a,b)=>a[0].localeCompare(b[0]));
+  if(entries.length===0) return `<div class="summary-empty">尚未設定</div>`;
+  return entries.map(([date,set])=>{
+    const times = Array.from(set).sort().join('、');
+    return `<div class="summary-item"><span>${date}：${times}</span><button class="x" data-remove-blocked="${date}">✕</button></div>`;
+  }).join('');
+}
+function bindAdmin(){
+  document.getElementById('admin-cal-prev').addEventListener('click', ()=>{ adminView.month--; if(adminView.month<0){adminView.month=11; adminView.year--;} render(); });
+  document.getElementById('admin-cal-next').addEventListener('click', ()=>{ adminView.month++; if(adminView.month>11){adminView.month=0; adminView.year++;} render(); });
+  document.getElementById('admin-cal-grid').addEventListener('click', e=>{
+    const c = e.target.closest('.cal-cell'); if(!c || !c.dataset.date) return;
+    adminView.selectedDate = c.dataset.date; render();
+  });
+  const taichungToggle = document.getElementById('admin-taichung-toggle');
+  if(taichungToggle){ taichungToggle.addEventListener('change', ()=>{
+    const date = adminView.selectedDate;
+    if(taichungToggle.checked) adminConfig.taichungDates.add(date); else adminConfig.taichungDates.delete(date);
+    render(); saveSettings();
+  }); }
+  const toggle = document.getElementById('admin-closed-toggle');
+  if(toggle){ toggle.addEventListener('change', ()=>{
+    const date = adminView.selectedDate;
+    if(toggle.checked) adminConfig.closedDates.add(date); else adminConfig.closedDates.delete(date);
+    render(); saveSettings();
+  }); }
+  const extToggle = document.getElementById('admin-extended-toggle');
+  if(extToggle){ extToggle.addEventListener('change', ()=>{
+    const date = adminView.selectedDate;
+    if(extToggle.checked) adminConfig.extendedDates.add(date); else adminConfig.extendedDates.delete(date);
+    render(); saveSettings();
+  }); }
+  const slotGrid = document.getElementById('admin-slot-grid');
+  if(slotGrid){ slotGrid.addEventListener('click', e=>{
+    const cell = e.target.closest('.admin-slot'); if(!cell) return;
+    const date = adminView.selectedDate; const time = cell.dataset.time;
+    if(!adminConfig.blockedSlots[date]) adminConfig.blockedSlots[date] = new Set();
+    const set = adminConfig.blockedSlots[date];
+    if(set.has(time)) set.delete(time); else set.add(time);
+    render(); saveSettings();
+  }); }
+  document.querySelectorAll('[data-remove-closed]').forEach(btn=>{ btn.addEventListener('click', ()=>{ adminConfig.closedDates.delete(btn.dataset.removeClosed); render(); saveSettings(); }); });
+  document.querySelectorAll('[data-remove-taichung]').forEach(btn=>{ btn.addEventListener('click', ()=>{ adminConfig.taichungDates.delete(btn.dataset.removeTaichung); render(); saveSettings(); }); });
+  document.querySelectorAll('[data-remove-extended]').forEach(btn=>{ btn.addEventListener('click', ()=>{ adminConfig.extendedDates.delete(btn.dataset.removeExtended); render(); saveSettings(); }); });
+  document.querySelectorAll('[data-remove-blocked]').forEach(btn=>{ btn.addEventListener('click', ()=>{ delete adminConfig.blockedSlots[btn.dataset.removeBlocked]; render(); saveSettings(); }); });
+}
+
+loadSettings();
+
+if('serviceWorker' in navigator){
+  window.addEventListener('load', ()=>{ navigator.serviceWorker.register('sw.js').catch(()=>{}); });
+}
+
+/* ================= 加入主畫面提示條 ================= */
+let deferredInstallPrompt = null;
+function isIOS(){ return /iphone|ipad|ipod/i.test(navigator.userAgent) && !window.MSStream; }
+function isStandalone(){ return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true; }
+function showInstallBanner(mode){
+  if(isStandalone() || document.getElementById('installBanner')) return;
+  const wrap = document.querySelector('.wrap');
+  const banner = document.createElement('div');
+  banner.id = 'installBanner';
+  banner.className = 'install-banner';
+  if(mode==='android'){
+    banner.innerHTML = `<span>加入主畫面，像 App 一樣使用</span><span class="btns"><button class="install-go" id="installGoBtn">安裝</button><button class="install-close" id="installCloseBtn">✕</button></span>`;
+  } else {
+    banner.innerHTML = `<span>iPhone 用戶：點下方 <b>分享</b> 圖示 → <b>加入主畫面</b></span><span class="btns"><button class="install-close" id="installCloseBtn">✕</button></span>`;
+  }
+  wrap.insertBefore(banner, wrap.firstChild);
+  document.getElementById('installCloseBtn').addEventListener('click', ()=>banner.remove());
+  const goBtn = document.getElementById('installGoBtn');
+  if(goBtn){
+    goBtn.addEventListener('click', async ()=>{
+      banner.remove();
+      if(deferredInstallPrompt){ deferredInstallPrompt.prompt(); await deferredInstallPrompt.userChoice; deferredInstallPrompt = null; }
+    });
+  }
+}
+window.addEventListener('beforeinstallprompt', (e)=>{
+  e.preventDefault();
+  deferredInstallPrompt = e;
+  showInstallBanner('android');
+});
+window.addEventListener('load', ()=>{
+  if(!isStandalone() && isIOS()){ setTimeout(()=>showInstallBanner('ios'), 1000); }
+});
+</script>
+</body>
+</html>
