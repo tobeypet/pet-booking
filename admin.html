@@ -516,7 +516,7 @@ function bindNewCustomer(){
       newCustomerState.lastCreated = {
         ownerName: d.ownerName, phone: d.phone, lineId: d.lineId, address: d.address,
         petName: d.petName, petBreed: d.petBreed, petAge: d.petAge, petWeight: d.petWeight,
-        petPersonality: d.petPersonality, petHealth: d.petHealth
+        petPersonality: d.petPersonality, petHealth: d.petHealth, customerCode: result.customerCode
       };
       newCustomerState.data = { ownerName:'',phone:'',lineId:'',address:'',petName:'',petBreed:'',petAge:'',petWeight:'',petPersonality:'',petHealth:'',remarks:'',contactPref:'' };
       render();
@@ -819,7 +819,7 @@ async function submitNBBooking(){
   const c = newBookingState.customer, s = newBookingState.service, nb = newBookingState;
   const code = genBookingCode();
   const payload = {
-    action:'booking', createdByAdmin:true,
+    action:'booking', createdByAdmin:true, customerCode: c.customerCode,
     confirmCode: code, ownerName:c.ownerName, phone:c.phone, lineId:c.lineId, address:c.address,
     petName:c.petName, petBreed:c.petBreed, petAge:c.petAge, petWeight:c.petWeight,
     petPersonality:c.petPersonality, petHealth:c.petHealth,

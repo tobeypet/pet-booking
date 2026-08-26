@@ -686,7 +686,7 @@ function bindStep2(){
       state.owner = {
         name:r.ownerName||'', phone:r.phone||'', lineId:r.lineId||'', address:r.address||'',
         petName:r.petName||'', petBreed:r.petBreed||'', petAge:r.petAge||'', petWeight:r.petWeight||'',
-        petPersonality:r.petPersonality||'', petHealth:r.petHealth||'', petPhoto:null
+        petPersonality:r.petPersonality||'', petHealth:r.petHealth||'', petPhoto:null, customerCode:r.customerCode||null
       };
       state.step = 3; render();
     });
@@ -841,7 +841,7 @@ function bindStep4(){
     const code = genCode();
     const o = state.owner, s = state.service, b = state.booking;
     const payload = {
-      action:'booking',
+      action:'booking', customerCode: o.customerCode || undefined,
       confirmCode: code, ownerName: o.name, phone: o.phone, lineId: o.lineId, address: o.address,
       petName: o.petName, petBreed: o.petBreed, petAge: o.petAge, petWeight: o.petWeight,
       petPersonality: o.petPersonality, petHealth: o.petHealth, serviceLabel: s.label, durationMinutes: s.duration,
