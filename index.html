@@ -244,7 +244,30 @@ const state = {
 
 const availability = { closedDates: new Set(), blockedSlots: {}, extendedDates: new Set(), taichungDates: new Set(), loaded:false };
 
-const STEP_LABELS = ['選服務時段','填寫資料','確認預約'];
+const STEP_LABELS = ['選服務時段','填寫資料','確認時段','確認預約'];
+const travelState = { loaded:false, loading:false, blockedRanges:[], forDate:null, error:'' };
+function isSlotBlockedByTravel(startMin, durationMin){
+  const ranges = travelState.blockedRanges || [];
+  for(const range of ranges){
+    const rs = range[0], re = range[1];
+    if(startMin < re && (startMin+durationMin) > rs) return true;
+  }
+  return false;
+}
+async function loadTravelBlockedSlots(date){
+  travelState.loaded = false; travelState.loading = true; travelState.forDate = date; travelState.error = '';
+  if(!GOOGLE_SCRIPT_URL){ travelState.blockedRanges = []; travelState.loaded = true; travelState.loading = false; return; }
+  try{
+    const res = await fetch(GOOGLE_SCRIPT_URL + '?action=getTravelBlockedSlots&date=' + encodeURIComponent(date) + '&address=' + encodeURIComponent(state.owner.address));
+    const data = await res.json();
+    travelState.blockedRanges = (data.success && data.blockedRanges) ? data.blockedRanges : [];
+  }catch(err){
+    travelState.blockedRanges = [];
+    travelState.error = '無法確認行程時間，暫時以一般時段顯示。';
+    console.error('讀取行程限制失敗：', err);
+  }
+  travelState.loaded = true; travelState.loading = false;
+}
 const BUSINESS_START = 9*60, DEFAULT_BUSINESS_END = 13*60, EXTENDED_BUSINESS_END = 20*60;
 
 /* ================= helpers ================= */
@@ -365,11 +388,13 @@ function render(){
   if(state.step===1) card.innerHTML = tplStep1();
   else if(state.step===2) card.innerHTML = tplStep2();
   else if(state.step===3) card.innerHTML = tplStep3();
-  else if(state.step===4) card.innerHTML = tplSuccess();
+  else if(state.step===4) card.innerHTML = tplStep4();
+  else if(state.step===5) card.innerHTML = tplSuccess();
 
   if(state.step===1) bindStep1();
   if(state.step===2) bindStep2();
   if(state.step===3) bindStep3();
+  if(state.step===4) bindStep4();
 }
 function renderProgress(){
   const el = document.getElementById('progress');
@@ -415,7 +440,7 @@ function tplStep1(){
 
   return `
     <h2 class="card-title">選擇服務與時段</h2>
-    <p class="card-desc">選好服務類型後，下方會立即顯示可預約的日期與時段，一目了然。</p>
+    <p class="card-desc">選好服務類型後，下方會立即顯示可預約的日期與時段，一目了然。<b style="color:var(--apricot-dark);">此為快速預覽時段，實際可預約時間可能因地點而有所變動。</b></p>
     <div class="svc-grid" id="svc-grid">
       <div class="svc-card ${s.category==='grooming'?'active':''}" data-svc="grooming"><span class="svc-icon">${svgScissorsIcon()}</span><div class="svc-name">美容</div><div class="svc-sub">貓／狗（長毛・短毛）均約 2 小時</div></div>
       <div class="svc-card ${s.category==='bath'?'active':''}" data-svc="bath"><span class="svc-icon">${svgBathIcon()}</span><div class="svc-name">洗澡</div><div class="svc-sub">依貓／狗與毛長，時間不同</div></div>
@@ -439,7 +464,7 @@ function tplStep1(){
     ${ready ? calendarBlock : `<div class="empty-note">請先選擇服務與寵物類型，即可查看可預約時段。</div>`}
     <div class="err" id="step1-err" style="display:none;"></div>
     <div class="actions">
-      <button class="btn btn-primary" id="toStep2" ${canProceed?'':'disabled'}>正式預約</button>
+      <button class="btn btn-primary" id="toStep2" ${canProceed?'':'disabled'}>前往填寫資料，準備預約</button>
     </div>
   `;
 }
@@ -695,7 +720,85 @@ function bindStep2(){
 }
 
 /* ================= STEP 3：確認預約 ================= */
+/* ================= STEP 3：確認實際可預約時段（行程時間過濾） ================= */
 function tplStep3(){
+  return `
+    <h2 class="card-title">確認實際可預約時段</h2>
+    <p class="card-desc">托比會依同一天其他客人的地點，重新確認實際可服務的時段，請再次選擇日期與時間。</p>
+    <div class="cal-head">
+      <button class="cal-nav" id="cal-prev">‹ 上個月</button>
+      <div class="mo">${custView.year} 年 ${custView.month+1} 月</div>
+      <button class="cal-nav" id="cal-next">下個月 ›</button>
+    </div>
+    <div class="cal-grid" id="cal-grid">${renderCustCalGrid()}</div>
+    <div class="cal-legend">
+      <span><i class="dot a"></i>可預約</span>
+      <span><i class="dot e"></i>延長營業至20:00</span>
+      <span><i class="dot d"></i>不開放／已無空檔</span>
+    </div>
+    <div id="slot-section">${renderSlotSectionStep3()}</div>
+    <div class="err" id="step3-err" style="display:none;"></div>
+    <div class="actions"><button class="btn btn-ghost" id="back3">上一步</button><button class="btn btn-primary" id="next3">下一步：確認預約</button></div>
+  `;
+}
+function renderSlotSectionStep3(){
+  if(!state.booking.date){ return `<div class="empty-note">請先選擇日期，即可查看可預約時段。</div>`; }
+  if(travelState.forDate !== state.booking.date || !travelState.loaded){
+    return `<div class="empty-note">檢查行程時間中...</div>`;
+  }
+  const duration = state.service.duration || 120;
+  const end = getBusinessEnd(state.booking.date);
+  const slots = [];
+  for(let start=BUSINESS_START; start+duration<=end; start+=30){
+    const taken = isSlotBlocked(state.booking.date, start, duration) || isSlotBlockedByTravel(start, duration);
+    slots.push({ start, taken });
+  }
+  if(slots.length===0){ return `<div class="empty-note">此服務所需時間較長，當日時段不足，請選擇其他日期。</div>`; }
+  return `
+    <div class="slot-title">${state.booking.date} 可預約時段</div>
+    ${travelState.error ? `<div class="empty-note" style="margin-bottom:10px;">${travelState.error}</div>` : ''}
+    <div class="slot-grid" id="slot-grid">
+      ${slots.map(s=>{
+        const val = fmtTime(s.start);
+        const isSel = state.booking.time === val;
+        let cls = 'slot';
+        if(s.taken) cls += ' taken'; else if(isSel) cls += ' selected';
+        return `<div class="${cls}" data-time="${s.taken?'':val}">${val}</div>`;
+      }).join('')}
+    </div>
+  `;
+}
+function bindStep3(){
+  document.getElementById('cal-grid').addEventListener('click', e=>{
+    const c = e.target.closest('.cal-cell.avail'); if(!c) return;
+    state.booking.date = c.dataset.date; state.booking.time = null;
+    render();
+    loadTravelBlockedSlots(state.booking.date).then(()=>{ if(state.step===3) render(); });
+  });
+  const slotGrid = document.getElementById('slot-grid');
+  if(slotGrid){
+    slotGrid.addEventListener('click', e=>{
+      const s = e.target.closest('.slot'); if(!s || s.classList.contains('taken')) return;
+      state.booking.time = s.dataset.time;
+      render();
+    });
+  }
+  document.getElementById('cal-prev').addEventListener('click', ()=>{ custView.month--; if(custView.month<0){custView.month=11; custView.year--;} state.booking.date=null; state.booking.time=null; render(); });
+  document.getElementById('cal-next').addEventListener('click', ()=>{ custView.month++; if(custView.month>11){custView.month=0; custView.year++;} state.booking.date=null; state.booking.time=null; render(); });
+  document.getElementById('back3').addEventListener('click', ()=>{ state.step=2; render(); });
+  document.getElementById('next3').addEventListener('click', ()=>{
+    const errEl = document.getElementById('step3-err');
+    if(!state.booking.date || !state.booking.time){ errEl.textContent = '請選擇預約日期與時段。'; errEl.style.display='block'; return; }
+    errEl.style.display = 'none';
+    state.step = 4; render();
+  });
+  if(state.booking.date && travelState.forDate !== state.booking.date && !travelState.loading){
+    loadTravelBlockedSlots(state.booking.date).then(()=>{ if(state.step===3) render(); });
+  }
+}
+
+/* ================= STEP 4：確認預約 ================= */
+function tplStep4(){
   const o = state.owner, s = state.service, b = state.booking;
   const hrs = s.duration/60;
   return `
@@ -725,15 +828,15 @@ function tplStep3(){
       <div class="review-line"><span class="k">預約日期</span><span class="v">${b.date}</span></div>
       <div class="review-line"><span class="k">預約時段</span><span class="v">${b.time} – ${fmtTime(toMin(b.time)+s.duration)}</span></div>
     </div>
-    <div class="err" id="step3-err" style="display:none;"></div>
-    <div class="actions"><button class="btn btn-ghost" id="back3">上一步</button><button class="btn btn-primary" id="submit3">送出預約</button></div>
+    <div class="err" id="step4-err" style="display:none;"></div>
+    <div class="actions"><button class="btn btn-ghost" id="back4">上一步</button><button class="btn btn-primary" id="submit4">送出預約</button></div>
   `;
 }
-function bindStep3(){
-  document.getElementById('back3').addEventListener('click', ()=>{ state.step=2; render(); });
-  document.getElementById('submit3').addEventListener('click', async ()=>{
-    const btn = document.getElementById('submit3');
-    const errEl = document.getElementById('step3-err');
+function bindStep4(){
+  document.getElementById('back4').addEventListener('click', ()=>{ state.step=3; render(); });
+  document.getElementById('submit4').addEventListener('click', async ()=>{
+    const btn = document.getElementById('submit4');
+    const errEl = document.getElementById('step4-err');
     errEl.style.display = 'none';
     const code = genCode();
     const o = state.owner, s = state.service, b = state.booking;
@@ -744,7 +847,7 @@ function bindStep3(){
       petPersonality: o.petPersonality, petHealth: o.petHealth, serviceLabel: s.label, durationMinutes: s.duration,
       date: b.date, time: b.time, endTime: fmtTime(toMin(b.time) + s.duration), taichung: availability.taichungDates.has(b.date)
     };
-    if(!GOOGLE_SCRIPT_URL){ state.confirmCode = code; state.customerCode = null; state.step = 4; render(); return; }
+    if(!GOOGLE_SCRIPT_URL){ state.confirmCode = code; state.customerCode = null; state.step = 5; render(); return; }
     btn.disabled = true; btn.textContent = '送出中...';
     try{
       const res = await fetch(GOOGLE_SCRIPT_URL, {
@@ -754,7 +857,7 @@ function bindStep3(){
       if(!result.success) throw new Error(result.error || '寫入失敗');
       state.confirmCode = code;
       state.customerCode = result.customerCode || null;
-      state.step = 4; render();
+      state.step = 5; render();
     }catch(err){
       btn.disabled = false; btn.textContent = '送出預約';
       errEl.textContent = '預約資料傳送失敗，請確認網路連線後再試一次。（' + err.message + '）';
@@ -769,7 +872,7 @@ function genCode(){
   return out;
 }
 
-/* ================= STEP 4：成功頁 ================= */
+/* ================= STEP 5：成功頁 ================= */
 function tplSuccess(){
   const b = state.booking, o = state.owner;
   return `
@@ -798,6 +901,7 @@ document.addEventListener('click', e=>{
     state.identifyMode = 'new';
     state.lookupCode = ''; state.lookupResult = null;
     state.confirmCode = null; state.customerCode = null;
+    travelState.loaded = false; travelState.loading = false; travelState.blockedRanges = []; travelState.forDate = null; travelState.error = '';
     render();
   }
 });

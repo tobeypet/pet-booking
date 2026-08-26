@@ -635,22 +635,52 @@ function renderNBCalGrid(){
   }
   return html;
 }
+const nbTravelState = { loaded:false, loading:false, blockedRanges:[], forDate:null, error:'' };
+function isSlotBlockedByTravelNB(startMin, durationMin){
+  const ranges = nbTravelState.blockedRanges || [];
+  for(const range of ranges){
+    const rs = range[0], re = range[1];
+    if(startMin < re && (startMin+durationMin) > rs) return true;
+  }
+  return false;
+}
+async function loadNBTravelBlockedSlots(date){
+  nbTravelState.loaded = false; nbTravelState.loading = true; nbTravelState.forDate = date; nbTravelState.error = '';
+  if(!GOOGLE_SCRIPT_URL || !newBookingState.customer){ nbTravelState.blockedRanges = []; nbTravelState.loaded = true; nbTravelState.loading = false; return; }
+  try{
+    const res = await fetch(GOOGLE_SCRIPT_URL + '?action=getTravelBlockedSlots&date=' + encodeURIComponent(date) + '&address=' + encodeURIComponent(newBookingState.customer.address));
+    const data = await res.json();
+    nbTravelState.blockedRanges = (data.success && data.blockedRanges) ? data.blockedRanges : [];
+  }catch(err){
+    nbTravelState.blockedRanges = [];
+    nbTravelState.error = '無法確認行程時間，暫時以一般時段顯示。';
+    console.error('讀取行程限制失敗：', err);
+  }
+  nbTravelState.loaded = true; nbTravelState.loading = false;
+}
 function renderNBSlotSection(){
   if(!newBookingState.date){ return `<div class="empty-note">請先選擇日期。</div>`; }
+  if(nbTravelState.forDate !== newBookingState.date || !nbTravelState.loaded){
+    return `<div class="empty-note">檢查行程時間中...</div>`;
+  }
   const duration = newBookingState.service.duration || 120;
   const end = getBusinessEnd(newBookingState.date);
   const slots = [];
-  for(let start=BUSINESS_START; start+duration<=end; start+=30){ slots.push({ start, taken: isSlotBlockedForBooking(newBookingState.date, start, duration) }); }
+  for(let start=BUSINESS_START; start+duration<=end; start+=30){
+    const taken = isSlotBlockedForBooking(newBookingState.date, start, duration) || isSlotBlockedByTravelNB(start, duration);
+    slots.push({ start, taken });
+  }
   if(slots.length===0){ return `<div class="empty-note">此服務所需時間較長，當日時段不足，請選擇其他日期。</div>`; }
   return `
     <div class="slot-title">${newBookingState.date} 可預約時段</div>
+    ${nbTravelState.error ? `<div class="empty-note" style="margin-bottom:10px;">${nbTravelState.error}</div>` : ''}
     <div class="admin-slot-grid" id="nb-slot-grid">
       ${slots.map(s=>{
         const val = fmtTime(s.start);
         const isSel = newBookingState.time === val;
         let cls = 'admin-slot';
         if(s.taken) cls += ' blocked'; else if(isSel) cls += ' selected-slot';
-        return `<div class="${cls}" data-time="${s.taken?'':val}">${val}${s.taken?'（已被預約）':''}</div>`;
+        return `<div class="${cls}" data-time="${s.taken?'':val}">${val}${s.taken?'（已被預約／行程排不過來）':''}</div>`;
       }).join('')}
     </div>
   `;
@@ -669,6 +699,7 @@ function bindNewBooking(){
     newBookingState.customer = null; newBookingState.results = []; newBookingState.value = '';
     newBookingState.date = null; newBookingState.time = null;
     newBookingState.service = { category:'', animalType:'', hairLength:'', duration:0, label:'' };
+    nbTravelState.loaded = false; nbTravelState.blockedRanges = []; nbTravelState.forDate = null;
     render();
   });
   document.getElementById('nb-svc-grid').addEventListener('click', e=>{
@@ -710,6 +741,7 @@ function bindNewBooking(){
       const c = e.target.closest('.cal-cell.avail'); if(!c) return;
       newBookingState.date = c.dataset.date; newBookingState.time = null;
       render();
+      loadNBTravelBlockedSlots(newBookingState.date).then(()=>{ if(pageState.view==='newBooking') render(); });
     });
   }
   const slotGrid = document.getElementById('nb-slot-grid');
@@ -722,6 +754,9 @@ function bindNewBooking(){
   }
   const submitBtn = document.getElementById('nbSubmitBtn');
   if(submitBtn) submitBtn.addEventListener('click', submitNBBooking);
+  if(newBookingState.date && nbTravelState.forDate !== newBookingState.date && !nbTravelState.loading){
+    loadNBTravelBlockedSlots(newBookingState.date).then(()=>{ if(pageState.view==='newBooking') render(); });
+  }
 }
 async function searchNBCustomer(){
   const value = document.getElementById('nb-search-value').value.trim();
