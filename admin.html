@@ -211,7 +211,7 @@ const SERVICE_DEF = {
 
 const newCustomerState = {
   data:{ ownerName:'',phone:'',lineId:'',address:'',petName:'',petBreed:'',petAge:'',petWeight:'',petPersonality:'',petHealth:'',remarks:'',contactPref:'' },
-  resultCode:null, error:''
+  resultCode:null, lastCreated:null, error:''
 };
 
 const newBookingState = {
@@ -458,10 +458,24 @@ function tplNewCustomer(){
         <h4>建檔成功</h4>
         <div class="info-line"><span class="k">專屬代碼</span><span class="v" style="font-size:18px;font-weight:800;color:var(--pine);">${esc(newCustomerState.resultCode)}</span></div>
       </div>
+      <div class="actions"><button class="btn btn-primary" id="ncGoBooking" style="flex:1;">馬上幫這位客人安排預約</button></div>
     ` : ''}
   `;
 }
 function bindNewCustomer(){
+  const goBookingBtn = document.getElementById('ncGoBooking');
+  if(goBookingBtn){
+    goBookingBtn.addEventListener('click', ()=>{
+      newBookingState.customer = newCustomerState.lastCreated;
+      newBookingState.results = []; newBookingState.value = ''; newBookingState.error = '';
+      newBookingState.service = { category:'', animalType:'', hairLength:'', duration:0, label:'' };
+      newBookingState.date = null; newBookingState.time = null;
+      nbTravelState.loaded = false; nbTravelState.blockedRanges = []; nbTravelState.forDate = null;
+      newCustomerState.resultCode = null; newCustomerState.lastCreated = null;
+      pageState.view = 'newBooking';
+      render();
+    });
+  }
   document.getElementById('nc-contact-pref').addEventListener('click', e=>{
     const p = e.target.closest('.choice-pill'); if(!p) return;
     const val = p.dataset.c;
@@ -499,6 +513,11 @@ function bindNewCustomer(){
       const result = await res.json();
       if(!result.success) throw new Error(result.error || '新增失敗');
       newCustomerState.resultCode = result.customerCode;
+      newCustomerState.lastCreated = {
+        ownerName: d.ownerName, phone: d.phone, lineId: d.lineId, address: d.address,
+        petName: d.petName, petBreed: d.petBreed, petAge: d.petAge, petWeight: d.petWeight,
+        petPersonality: d.petPersonality, petHealth: d.petHealth
+      };
       newCustomerState.data = { ownerName:'',phone:'',lineId:'',address:'',petName:'',petBreed:'',petAge:'',petWeight:'',petPersonality:'',petHealth:'',remarks:'',contactPref:'' };
       render();
     }catch(err){
