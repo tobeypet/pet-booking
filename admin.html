@@ -220,7 +220,7 @@ const newCustomerState = {
 const newBookingState = {
   field:'name', value:'', results:[], customer:null, error:'',
   service:{ category:'', animalType:'', hairLength:'', multiplier:1, duration:0, label:'' },
-  date:null, time:null,
+  date:null, time:null, customTime:false,
   monthView:{ year:new Date().getFullYear(), month:new Date().getMonth() }
 };
 
@@ -472,7 +472,7 @@ function bindNewCustomer(){
       newBookingState.customer = newCustomerState.lastCreated;
       newBookingState.results = []; newBookingState.value = ''; newBookingState.error = '';
       newBookingState.service = { category:'', animalType:'', hairLength:'', multiplier:1, duration:0, label:'' };
-      newBookingState.date = null; newBookingState.time = null;
+      newBookingState.date = null; newBookingState.time = null; newBookingState.customTime = false;
       nbTravelState.loaded = false; nbTravelState.blockedRanges = []; nbTravelState.forDate = null;
       newCustomerState.resultCode = null; newCustomerState.lastCreated = null;
       pageState.view = 'newBooking';
@@ -600,7 +600,17 @@ function tplNewBooking(){
         <button class="cal-nav" id="nb-cal-next">下個月 ›</button>
       </div>
       <div class="cal-grid" id="nb-cal-grid">${renderNBCalGrid()}</div>
-      <div id="nb-slot-section">${renderNBSlotSection()}</div>
+      <div class="toggle-row" style="margin-top:14px;">
+        <div>
+          <div class="label">自訂時間</div>
+          <div class="sub">不使用下方時段按鈕，直接手動輸入開始時間</div>
+        </div>
+        <label class="switch">
+          <input type="checkbox" id="nb-custom-time-toggle" ${nb.customTime?'checked':''}>
+          <span class="track"></span>
+        </label>
+      </div>
+      <div id="nb-slot-section">${nb.customTime ? renderNBCustomTimeSection() : renderNBSlotSection()}</div>
     `;
   }
   return `
@@ -732,6 +742,28 @@ function renderNBSlotSection(){
     </div>
   `;
 }
+function renderNBCustomTimeSection(){
+  if(!newBookingState.date){ return `<div class="empty-note">請先選擇日期。</div>`; }
+  const duration = newBookingState.service.duration || 120;
+  const nb = newBookingState;
+  let warning = '';
+  if(nb.time){
+    const startMin = toMin(nb.time);
+    const isLoaded = nbTravelState.forDate === nb.date && nbTravelState.loaded;
+    const conflict = isSlotBlockedForBooking(nb.date, startMin, duration) || (isLoaded && isSlotBlockedByTravelNB(startMin, duration));
+    if(conflict){
+      warning = `<div class="empty-note" style="margin-top:10px;color:var(--danger);background:var(--danger-light);">⚠️ 這個時間跟公休／已有的預約／行程時間有衝突，仍可送出，但請確認托比排得過來。</div>`;
+    }
+  }
+  return `
+    <div class="slot-title">${newBookingState.date} 自訂開始時間</div>
+    <div class="field" style="margin-bottom:0;">
+      <input type="time" id="nb-manual-time" value="${nb.time||''}">
+    </div>
+    ${nb.time ? `<div class="info-line" style="padding-top:10px;"><span class="k">結束時間</span><span class="v">${fmtTime(toMin(nb.time)+duration)}</span></div>` : ''}
+    ${warning}
+  `;
+}
 function bindNewBooking(){
   if(!newBookingState.customer){
     document.getElementById('nb-field-select').addEventListener('change', e=>{ newBookingState.field = e.target.value; render(); });
@@ -744,7 +776,7 @@ function bindNewBooking(){
   }
   document.getElementById('nbChangeCustomer').addEventListener('click', ()=>{
     newBookingState.customer = null; newBookingState.results = []; newBookingState.value = '';
-    newBookingState.date = null; newBookingState.time = null;
+    newBookingState.date = null; newBookingState.time = null; newBookingState.customTime = false;
     newBookingState.service = { category:'', animalType:'', hairLength:'', multiplier:1, duration:0, label:'' };
     nbTravelState.loaded = false; nbTravelState.blockedRanges = []; nbTravelState.forDate = null;
     render();
@@ -754,7 +786,7 @@ function bindNewBooking(){
     newBookingState.service.category = c.dataset.svc;
     newBookingState.service.animalType = ''; newBookingState.service.hairLength = ''; newBookingState.service.multiplier = 1;
     updateNBDuration();
-    newBookingState.date = null; newBookingState.time = null;
+    newBookingState.date = null; newBookingState.time = null; newBookingState.customTime = false;
     render();
   });
   const multiplierSelect = document.getElementById('nb-multiplier');
@@ -762,7 +794,7 @@ function bindNewBooking(){
     multiplierSelect.addEventListener('change', e=>{
       newBookingState.service.multiplier = parseInt(e.target.value, 10);
       updateNBDuration();
-      newBookingState.date = null; newBookingState.time = null;
+      newBookingState.date = null; newBookingState.time = null; newBookingState.customTime = false;
       render();
     });
   }
@@ -773,7 +805,7 @@ function bindNewBooking(){
       newBookingState.service.animalType = p.dataset.a;
       if(p.dataset.a==='cat') newBookingState.service.hairLength = '';
       updateNBDuration();
-      newBookingState.date = null; newBookingState.time = null;
+      newBookingState.date = null; newBookingState.time = null; newBookingState.customTime = false;
       render();
     });
   }
@@ -782,7 +814,7 @@ function bindNewBooking(){
     hairRow.addEventListener('click', e=>{
       const p = e.target.closest('.choice-pill'); if(!p) return;
       newBookingState.service.hairLength = p.dataset.h; updateNBDuration();
-      newBookingState.date = null; newBookingState.time = null;
+      newBookingState.date = null; newBookingState.time = null; newBookingState.customTime = false;
       render();
     });
   }
@@ -810,6 +842,21 @@ function bindNewBooking(){
     slotGrid.addEventListener('click', e=>{
       const s = e.target.closest('.admin-slot'); if(!s || s.classList.contains('blocked')) return;
       newBookingState.time = s.dataset.time;
+      render();
+    });
+  }
+  const customTimeToggle = document.getElementById('nb-custom-time-toggle');
+  if(customTimeToggle){
+    customTimeToggle.addEventListener('change', ()=>{
+      newBookingState.customTime = customTimeToggle.checked;
+      newBookingState.time = null;
+      render();
+    });
+  }
+  const manualTimeInput = document.getElementById('nb-manual-time');
+  if(manualTimeInput){
+    manualTimeInput.addEventListener('change', ()=>{
+      newBookingState.time = manualTimeInput.value || null;
       render();
     });
   }
@@ -879,7 +926,7 @@ async function submitNBBooking(){
     if(!result.success) throw new Error(result.error || '新增失敗');
     newBookingState.customer = null; newBookingState.results = []; newBookingState.value = '';
     newBookingState.service = { category:'', animalType:'', hairLength:'', multiplier:1, duration:0, label:'' };
-    newBookingState.date = null; newBookingState.time = null;
+    newBookingState.date = null; newBookingState.time = null; newBookingState.customTime = false;
     render();
   }catch(err){
     btn.disabled = false; btn.textContent = '新增預約';
