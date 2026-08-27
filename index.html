@@ -130,6 +130,7 @@
   .cal-cell.extended.selected{background:var(--apricot);color:#fff;}
   .cal-tag{font-size:8.5px;font-weight:700;line-height:1;background:var(--pine);color:#fff;padding:1.5px 4px;border-radius:5px;letter-spacing:0.5px;}
   .cal-cell.selected .cal-tag{background:#fff;color:var(--pine);}
+  .area-hint{font-size:7.5px;line-height:1;color:var(--ink-soft);opacity:0.75;letter-spacing:0.2px;}
   .cal-legend{display:flex;gap:16px;font-size:11.5px;color:var(--ink-soft);margin:6px 0 18px;flex-wrap:wrap;}
   .cal-legend span{display:inline-flex;align-items:center;gap:5px;}
   .dot{width:9px;height:9px;border-radius:50%;display:inline-block;}
@@ -228,7 +229,9 @@ const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwfwpOEL4l_iq
 
 /* ================= state ================= */
 const state = {
+  mode: 'landing', // 'landing' | 'register' | 'booking'
   step: 1, // 1 選服務時段 2 填寫資料 3 確認預約 4 成功
+  landingDate: null,
   owner:{
     name:'', phone:'', lineId:'', address:'',
     petName:'', petBreed:'', petAge:'', petWeight:'', petPersonality:'', petHealth:'', petPhoto:null
@@ -241,6 +244,21 @@ const state = {
   confirmCode:null,
   customerCode:null
 };
+
+const registerState = {
+  data:{ name:'',phone:'',lineId:'',address:'',petName:'',petBreed:'',petAge:'',petWeight:'',petPersonality:'',petHealth:'' },
+  error:'', resultCode:null
+};
+
+const landingHints = {}; // 'yyyy-mm-dd' -> 地址（顯示時會擷取縣市區）
+async function loadAreaHints(){
+  if(!GOOGLE_SCRIPT_URL) return;
+  try{
+    const res = await fetch(GOOGLE_SCRIPT_URL + '?action=getAreaHints');
+    const data = await res.json();
+    if(data.success && data.hints){ Object.assign(landingHints, data.hints); }
+  }catch(err){ console.error('讀取地區提示失敗：', err); }
+}
 
 const availability = { closedDates: new Set(), blockedSlots: {}, extendedDates: new Set(), taichungDates: new Set(), loaded:false };
 
@@ -384,6 +402,18 @@ const custView = { year:new Date().getFullYear(), month:new Date().getMonth() };
 /* ================= root render ================= */
 function render(){
   const card = document.getElementById('card');
+  if(state.mode === 'landing'){
+    document.getElementById('progress').innerHTML = '';
+    card.innerHTML = tplLanding();
+    bindLanding();
+    return;
+  }
+  if(state.mode === 'register'){
+    document.getElementById('progress').innerHTML = '';
+    card.innerHTML = tplRegister();
+    bindRegister();
+    return;
+  }
   renderProgress();
   if(state.step===1) card.innerHTML = tplStep1();
   else if(state.step===2) card.innerHTML = tplStep2();
@@ -412,6 +442,204 @@ function renderProgress(){
 }
 
 /* ================= STEP 1：選服務＋看時段（合併畫面） ================= */
+/* ================= 首頁：簡易日曆（不分服務） ================= */
+function tplLanding(){
+  const infoBlock = state.landingDate ? renderLandingDateInfo() : '';
+  return `
+    <h2 class="card-title">選個日子看看托比什麼時候有空</h2>
+    <p class="card-desc">下方是簡易日曆，可以先看看哪天開放預約；選好服務後會顯示更精確的可預約時段。</p>
+    <div class="cal-head">
+      <button class="cal-nav" id="cal-prev">‹ 上個月</button>
+      <div class="mo">${custView.year} 年 ${custView.month+1} 月</div>
+      <button class="cal-nav" id="cal-next">下個月 ›</button>
+    </div>
+    <div class="cal-grid" id="cal-grid">${renderLandingCalGrid()}</div>
+    <div class="cal-legend">
+      <span><i class="dot a"></i>可預約</span>
+      <span><i class="dot e"></i>延長營業至20:00</span>
+      <span><i class="dot d"></i>不開放／已無空檔</span>
+      <span><span class="cal-tag" style="position:static;">台中</span>台中服務日</span>
+    </div>
+    ${infoBlock}
+    <div class="actions">
+      <button class="btn btn-ghost" id="toRegister" style="flex:1;">先建立個人資料</button>
+      <button class="btn btn-primary" id="toBooking" style="flex:1;">前往預約</button>
+    </div>
+  `;
+}
+function renderLandingCalGrid(){
+  const {year, month} = custView;
+  const first = new Date(year, month, 1);
+  const startOffset = first.getDay();
+  const daysInMonth = new Date(year, month+1, 0).getDate();
+  const today = new Date(); today.setHours(0,0,0,0);
+  let html = ['日','一','二','三','四','五','六'].map(d=>`<div class="cal-dow">${d}</div>`).join('');
+  for(let i=0;i<startOffset;i++) html += `<div class="cal-cell empty"></div>`;
+  for(let d=1; d<=daysInMonth; d++){
+    const dt = new Date(year, month, d);
+    const dateStr = fmtDate(dt);
+    const past = isPastDate(dt);
+    const closed = isDateFullyClosed(dateStr);
+    const extended = availability.extendedDates.has(dateStr);
+    const taichung = availability.taichungDates.has(dateStr);
+    const disabled = past || closed;
+    const isToday = fmtDate(dt) === fmtDate(today);
+    const isSelected = state.landingDate === dateStr;
+    let cls = 'cal-cell';
+    cls += disabled ? ' disabled' : ' avail';
+    if(!disabled && extended) cls += ' extended';
+    if(isToday) cls += ' today';
+    if(isSelected) cls += ' selected';
+    const tag = taichung ? `<span class="cal-tag">台中</span>` : '';
+    const hintAddr = landingHints[dateStr];
+    const areaHint = (!disabled && hintAddr) ? `<span class="area-hint">${esc(extractCityDistrict(hintAddr))}</span>` : '';
+    html += `<div class="${cls}" data-date="${disabled?'':dateStr}"><span>${d}</span>${tag}${areaHint}</div>`;
+  }
+  return html;
+}
+function renderLandingDateInfo(){
+  const d = state.landingDate;
+  const end = getBusinessEnd(d);
+  const hint = landingHints[d];
+  return `
+    <div class="empty-note" style="text-align:left;margin-bottom:16px;">
+      <b>${d}</b>　營業時間 09:00–${fmtTime(end)}
+      ${hint ? `<br>托比當天已經會到「${esc(extractCityDistrict(hint))}」附近服務，順路預約更好安排喔！` : ''}
+    </div>
+  `;
+}
+function bindLanding(){
+  document.getElementById('cal-prev').addEventListener('click', ()=>{ custView.month--; if(custView.month<0){custView.month=11; custView.year--;} state.landingDate=null; render(); });
+  document.getElementById('cal-next').addEventListener('click', ()=>{ custView.month++; if(custView.month>11){custView.month=0; custView.year++;} state.landingDate=null; render(); });
+  document.getElementById('cal-grid').addEventListener('click', e=>{
+    const c = e.target.closest('.cal-cell.avail'); if(!c) return;
+    state.landingDate = c.dataset.date;
+    render();
+  });
+  document.getElementById('toBooking').addEventListener('click', ()=>{
+    state.mode = 'booking';
+    state.step = 1;
+    render();
+  });
+  document.getElementById('toRegister').addEventListener('click', ()=>{
+    state.mode = 'register';
+    render();
+  });
+}
+
+/* ================= 先建立個人資料 ================= */
+function tplRegister(){
+  const d = registerState.data;
+  if(registerState.resultCode){
+    return `
+      <div class="success">
+        <div class="paw">${svgPaw()}</div>
+        <h2>建檔成功！</h2>
+        <div class="code-box">
+          <div class="lbl">您的專屬代碼</div>
+          <div class="code">${esc(registerState.resultCode)}</div>
+          <div class="tip">請截圖保存，下次預約時輸入這組代碼，就能自動帶入您與毛孩的資料。</div>
+        </div>
+      </div>
+      <div class="actions">
+        <button class="btn btn-ghost" id="regBackLanding" style="flex:1;">返回首頁</button>
+        <button class="btn btn-primary" id="regGoBooking" style="flex:1;">前往預約</button>
+      </div>
+    `;
+  }
+  return `
+    <h2 class="card-title">建立個人資料</h2>
+    <p class="card-desc">先留下您與毛孩的基本資料，我們會給您一組專屬代碼，之後預約時輸入代碼就能快速帶入資料。</p>
+    <div class="field"><label>飼主姓名</label><input type="text" id="reg-name" value="${esc(d.name)}"></div>
+    <div class="field"><label>電話</label><input type="tel" id="reg-phone" value="${esc(d.phone)}"></div>
+    <div class="field"><label>LINE ID <span class="hint">(選填)</span></label><input type="text" id="reg-lineid" value="${esc(d.lineId)}"></div>
+    <div class="field"><label>地址</label><input type="text" id="reg-address" value="${esc(d.address)}"></div>
+    <div class="section-divider">毛孩資訊</div>
+    <div class="row2">
+      <div class="field"><label>寵物名稱</label><input type="text" id="reg-petname" value="${esc(d.petName)}"></div>
+      <div class="field"><label>寵物品種</label><input type="text" id="reg-petbreed" value="${esc(d.petBreed)}"></div>
+    </div>
+    <div class="row2">
+      <div class="field"><label>年齡 <span class="hint">(選填)</span></label><input type="number" min="0" step="0.5" id="reg-petage" value="${esc(d.petAge)}"></div>
+      <div class="field"><label>體重 <span class="hint">(選填)</span></label><input type="number" min="0" step="0.1" id="reg-petweight" value="${esc(d.petWeight)}"></div>
+    </div>
+    <div class="field"><label>寵物個性 <span class="hint">(選填)</span></label><textarea id="reg-personality">${esc(d.petPersonality)}</textarea></div>
+    <div class="field"><label>健康狀況 <span class="hint">(選填)</span></label><textarea id="reg-health">${esc(d.petHealth)}</textarea></div>
+    <div class="err" id="reg-err" style="display:${registerState.error?'block':'none'};">${registerState.error||''}</div>
+    <div class="actions">
+      <button class="btn btn-ghost" id="regBack" style="flex:0 0 100px;">返回</button>
+      <button class="btn btn-primary" id="regSubmit" style="flex:1;">建立資料</button>
+    </div>
+  `;
+}
+function bindRegister(){
+  if(registerState.resultCode){
+    document.getElementById('regBackLanding').addEventListener('click', ()=>{
+      registerState.resultCode = null;
+      registerState.data = { name:'',phone:'',lineId:'',address:'',petName:'',petBreed:'',petAge:'',petWeight:'',petPersonality:'',petHealth:'' };
+      state.mode = 'landing'; render();
+    });
+    document.getElementById('regGoBooking').addEventListener('click', ()=>{
+      const rd = registerState.data;
+      state.owner = {
+        name: rd.name, phone: rd.phone, lineId: rd.lineId, address: rd.address,
+        petName: rd.petName, petBreed: rd.petBreed, petAge: rd.petAge, petWeight: rd.petWeight,
+        petPersonality: rd.petPersonality, petHealth: rd.petHealth, petPhoto:null,
+        customerCode: registerState.resultCode
+      };
+      registerState.resultCode = null;
+      registerState.data = { name:'',phone:'',lineId:'',address:'',petName:'',petBreed:'',petAge:'',petWeight:'',petPersonality:'',petHealth:'' };
+      state.mode = 'booking'; state.step = 1;
+      render();
+    });
+    return;
+  }
+  document.getElementById('regBack').addEventListener('click', ()=>{ state.mode = 'landing'; render(); });
+  document.getElementById('regSubmit').addEventListener('click', async ()=>{
+    const d = registerState.data;
+    d.name = document.getElementById('reg-name').value.trim();
+    d.phone = document.getElementById('reg-phone').value.trim();
+    d.lineId = document.getElementById('reg-lineid').value.trim();
+    d.address = document.getElementById('reg-address').value.trim();
+    d.petName = document.getElementById('reg-petname').value.trim();
+    d.petBreed = document.getElementById('reg-petbreed').value.trim();
+    d.petAge = document.getElementById('reg-petage').value.trim();
+    d.petWeight = document.getElementById('reg-petweight').value.trim();
+    d.petPersonality = document.getElementById('reg-personality').value.trim();
+    d.petHealth = document.getElementById('reg-health').value.trim();
+
+    const errEl = document.getElementById('reg-err');
+    if(!d.name || !d.phone || !d.address || !d.petName || !d.petBreed){
+      errEl.textContent = '請完整填寫姓名、電話、地址、寵物名稱與品種。';
+      errEl.style.display = 'block';
+      return;
+    }
+    if(!GOOGLE_SCRIPT_URL){ errEl.textContent='目前尚未連結試算表，無法建立資料。'; errEl.style.display='block'; return; }
+    errEl.style.display = 'none';
+    const btn = document.getElementById('regSubmit');
+    btn.disabled = true; btn.textContent = '建立中...';
+    try{
+      const res = await fetch(GOOGLE_SCRIPT_URL, {
+        method:'POST', headers:{ 'Content-Type':'text/plain;charset=utf-8' },
+        body: JSON.stringify({
+          action:'addCustomer', ownerName:d.name, phone:d.phone, lineId:d.lineId, address:d.address,
+          petName:d.petName, petBreed:d.petBreed, petAge:d.petAge, petWeight:d.petWeight,
+          petPersonality:d.petPersonality, petHealth:d.petHealth
+        })
+      });
+      const result = await res.json();
+      if(!result.success) throw new Error(result.error || '建立失敗');
+      registerState.resultCode = result.customerCode;
+      render();
+    }catch(err){
+      btn.disabled = false; btn.textContent = '建立資料';
+      errEl.textContent = '建立失敗，請確認網路連線後再試一次。';
+      errEl.style.display = 'block';
+      console.error('建立客人資料失敗：', err);
+    }
+  });
+}
+
 function tplStep1(){
   const s = state.service;
   const showDogHair = s.animalType==='dog';
@@ -439,6 +667,7 @@ function tplStep1(){
   }
 
   return `
+    <button type="button" id="backToLanding" style="background:none;border:none;color:var(--ink-soft);font-size:12px;text-decoration:underline;cursor:pointer;padding:0;margin-bottom:14px;">‹ 返回首頁日曆</button>
     <h2 class="card-title">選擇服務與時段</h2>
     <p class="card-desc">選好服務類型後，下方會立即顯示可預約的日期與時段，一目了然。<b style="color:var(--apricot-dark);">此為快速預覽時段，實際可預約時間可能因地點而有所變動。</b></p>
     <div class="svc-grid" id="svc-grid">
@@ -518,6 +747,7 @@ function renderSlotSection(){
   `;
 }
 function bindStep1(){
+  document.getElementById('backToLanding').addEventListener('click', ()=>{ state.mode='landing'; render(); });
   document.getElementById('svc-grid').addEventListener('click', e=>{
     const c = e.target.closest('.svc-card'); if(!c) return;
     state.service.category = c.dataset.svc;
@@ -894,7 +1124,9 @@ function tplSuccess(){
 }
 document.addEventListener('click', e=>{
   if(e.target && e.target.id==='newBooking'){
+    state.mode = 'landing';
     state.step = 1;
+    state.landingDate = null;
     state.owner = {name:'',phone:'',lineId:'',address:'',petName:'',petBreed:'',petAge:'',petWeight:'',petPersonality:'',petHealth:'',petPhoto:null};
     state.service = {category:'',animalType:'',hairLength:'',duration:0,label:''};
     state.booking = {date:null,time:null};
@@ -903,11 +1135,13 @@ document.addEventListener('click', e=>{
     state.confirmCode = null; state.customerCode = null;
     travelState.loaded = false; travelState.loading = false; travelState.blockedRanges = []; travelState.forDate = null; travelState.error = '';
     render();
+    loadAreaHints();
   }
 });
 
 render();
 loadAvailability().then(()=>{ render(); });
+loadAreaHints().then(()=>{ if(state.mode==='landing') render(); });
 
 if('serviceWorker' in navigator){
   window.addEventListener('load', ()=>{ navigator.serviceWorker.register('sw.js').catch(()=>{}); });
