@@ -260,6 +260,20 @@ async function loadAreaHints(){
   }catch(err){ console.error('讀取地區提示失敗：', err); }
 }
 
+const landingAvailability = { blockedSlotsByDate:{}, fullyBookedDates:new Set(), loaded:false };
+async function loadLandingAvailability(){
+  if(!GOOGLE_SCRIPT_URL){ landingAvailability.loaded = true; return; }
+  try{
+    const res = await fetch(GOOGLE_SCRIPT_URL + '?action=getLandingAvailability');
+    const data = await res.json();
+    if(data.success){
+      landingAvailability.blockedSlotsByDate = data.blockedSlotsByDate || {};
+      landingAvailability.fullyBookedDates = new Set(data.fullyBookedDates || []);
+    }
+  }catch(err){ console.error('讀取當日可預約狀況失敗：', err); }
+  landingAvailability.loaded = true;
+}
+
 const availability = { closedDates: new Set(), blockedSlots: {}, extendedDates: new Set(), taichungDates: new Set(), loaded:false };
 
 const STEP_LABELS = ['選服務時段','填寫資料','確認時段','確認預約'];
@@ -498,9 +512,10 @@ function renderLandingCalGrid(){
     const dateStr = fmtDate(dt);
     const past = isPastDate(dt);
     const closed = isDateFullyClosed(dateStr);
+    const fullyBooked = landingAvailability.fullyBookedDates.has(dateStr);
     const extended = availability.extendedDates.has(dateStr);
     const taichung = availability.taichungDates.has(dateStr);
-    const disabled = past || closed;
+    const disabled = past || closed || fullyBooked;
     const isToday = fmtDate(dt) === fmtDate(today);
     const isSelected = state.landingDate === dateStr;
     let cls = 'cal-cell';
@@ -511,7 +526,8 @@ function renderLandingCalGrid(){
     const tag = taichung ? `<span class="cal-tag">台中</span>` : '';
     const hintAddr = landingHints[dateStr];
     const areaHint = (!disabled && hintAddr) ? `<span class="area-hint">${esc(extractCityDistrict(hintAddr))}</span>` : '';
-    html += `<div class="${cls}" data-date="${disabled?'':dateStr}"><span>${d}</span>${tag}${areaHint}</div>`;
+    const fullLabel = (!past && !closed && fullyBooked) ? `<span class="area-hint">已約滿</span>` : '';
+    html += `<div class="${cls}" data-date="${disabled?'':dateStr}"><span>${d}</span>${tag}${areaHint}${fullLabel}</div>`;
   }
   return html;
 }
@@ -519,11 +535,21 @@ function renderLandingDateInfo(){
   const d = state.landingDate;
   const end = getBusinessEnd(d);
   const hint = landingHints[d];
+  const blocked = new Set(landingAvailability.blockedSlotsByDate[d] || []);
+  const slots = [];
+  for(let t=BUSINESS_START; t<end; t+=30){ slots.push(fmtTime(t)); }
   return `
     <div class="empty-note" style="text-align:left;margin-bottom:16px;">
       <b>${d}</b>　營業時間 09:00–${fmtTime(end)}
       ${hint ? `<br>托比當天已經會到「${esc(extractCityDistrict(hint))}」附近服務，順路預約更好安排喔！` : ''}
     </div>
+    <div class="slot-grid" style="margin-bottom:16px;">
+      ${slots.map(t=>{
+        const taken = blocked.has(t);
+        return `<div class="slot${taken?' taken':''}" style="cursor:default;">${t}</div>`;
+      }).join('')}
+    </div>
+    <p class="card-desc" style="margin-bottom:16px;">以上為當天時段大致狀況（灰色為已被占用）；實際可預約時間仍需依選擇的服務內容為準。</p>
   `;
 }
 function bindLanding(){
@@ -1176,12 +1202,14 @@ document.addEventListener('click', e=>{
     travelState.loaded = false; travelState.loading = false; travelState.blockedRanges = []; travelState.forDate = null; travelState.error = '';
     render();
     loadAreaHints();
+    loadLandingAvailability();
   }
 });
 
 render();
 loadAvailability().then(()=>{ render(); });
 loadAreaHints().then(()=>{ if(state.mode==='landing') render(); });
+loadLandingAvailability().then(()=>{ if(state.mode==='landing') render(); });
 
 if('serviceWorker' in navigator){
   window.addEventListener('load', ()=>{ navigator.serviceWorker.register('sw.js').catch(()=>{}); });
