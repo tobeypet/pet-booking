@@ -113,12 +113,13 @@
   .cal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
   .cal-head .mo{font-family:"Baloo 2","Noto Sans TC",sans-serif;font-weight:700;font-size:16px;color:var(--pine);}
   .cal-nav button{height:30px;border-radius:8px;border:1.5px solid var(--line);background:var(--cream);cursor:pointer;font-size:12.5px;color:var(--pine);padding:0 10px;font-family:inherit;font-weight:600;}
-  .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-bottom:8px;}
+  .cal-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px;margin-bottom:8px;}
   .cal-dow{text-align:center;font-size:11px;color:var(--ink-soft);font-weight:700;padding-bottom:4px;}
   .cal-cell{
     aspect-ratio:1/1;display:flex;flex-direction:column;align-items:center;justify-content:center;
     border-radius:10px;font-size:13.5px;font-weight:600;cursor:pointer;border:1.5px solid transparent;
     color:var(--ink);background:transparent;gap:1px;position:relative;
+    min-width:0;overflow:hidden;
   }
   .cal-cell.empty{visibility:hidden;cursor:default;}
   .cal-cell.avail{background:#FFFFFF;border-color:var(--line);box-shadow:0 1px 3px rgba(26,58,86,0.06);}
@@ -128,9 +129,9 @@
   .cal-cell.today{box-shadow:inset 0 0 0 1.5px var(--pine);}
   .cal-cell.extended{background:#DFF6FC;border-color:var(--apricot);box-shadow:inset 0 0 0 1.5px var(--apricot);color:var(--apricot-dark);}
   .cal-cell.extended.selected{background:var(--apricot);color:#fff;}
-  .cal-tag{font-size:8.5px;font-weight:700;line-height:1;background:var(--pine);color:#fff;padding:1.5px 4px;border-radius:5px;letter-spacing:0.5px;}
+  .cal-tag{font-size:8.5px;font-weight:700;line-height:1;background:var(--pine);color:#fff;padding:1.5px 4px;border-radius:5px;letter-spacing:0.5px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;box-sizing:border-box;}
   .cal-cell.selected .cal-tag{background:#fff;color:var(--pine);}
-  .area-hint{font-size:7.5px;line-height:1;color:var(--ink-soft);opacity:0.75;letter-spacing:0.2px;}
+  .area-hint{font-size:7.5px;line-height:1;color:var(--ink-soft);opacity:0.75;letter-spacing:0.2px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
   .cal-legend{display:flex;gap:16px;font-size:11.5px;color:var(--ink-soft);margin:6px 0 18px;flex-wrap:wrap;}
   .cal-legend span{display:inline-flex;align-items:center;gap:5px;}
   .dot{width:9px;height:9px;border-radius:50%;display:inline-block;}
