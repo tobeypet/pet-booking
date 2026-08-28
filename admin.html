@@ -61,6 +61,8 @@
   .cal-cell.extended{background:#DFF6FC;border-color:var(--apricot);box-shadow:inset 0 0 0 1.5px var(--apricot);color:var(--apricot-dark);}
   .cal-tag{font-size:8.5px;font-weight:700;line-height:1;background:var(--pine);color:#fff;padding:1.5px 4px;border-radius:5px;letter-spacing:0.5px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;box-sizing:border-box;}
   .cal-cell.selected .cal-tag{background:#fff;color:var(--pine);}
+  .taichung-dot{width:6px;height:6px;border-radius:50%;background:var(--pine);display:inline-block;flex-shrink:0;}
+  .cal-cell.selected .taichung-dot{background:#fff;}
   .cal-legend{display:flex;gap:16px;font-size:11.5px;color:var(--ink-soft);margin:6px 0 18px;flex-wrap:wrap;}
   .cal-legend span{display:inline-flex;align-items:center;gap:5px;}
   .dot{width:9px;height:9px;border-radius:50%;display:inline-block;}
@@ -699,7 +701,7 @@ function renderNBCalGrid(){
     if(!disabled && extended) cls += ' extended';
     if(isToday) cls += ' today';
     if(isSelected) cls += ' selected';
-    const tag = taichung ? `<span class="cal-tag">台中</span>` : '';
+    const tag = taichung ? `<span class="taichung-dot"></span>` : '';
     html += `<div class="${cls}" data-date="${disabled?'':dateStr}"><span>${d}</span>${tag}</div>`;
   }
   return html;
@@ -971,7 +973,7 @@ function tplAdmin(){
       <span><i class="dot e"></i>延長營業至20:00</span>
       <span><i class="dot c"></i>整天不可預約</span>
       <span><i class="dot d"></i>已過去</span>
-      <span><span class="cal-tag" style="position:static;">台中</span>台中服務日</span>
+      <span><span class="taichung-dot"></span>台中服務日</span>
     </div>
 
     <div id="admin-detail">${renderAdminDetail()}</div>
@@ -1005,7 +1007,7 @@ function renderAdminCalGrid(){
     else{ cls += ' avail'; if(extended) cls += ' extended'; }
     if(isToday) cls += ' today';
     if(isSelected) cls += ' selected';
-    const tag = taichung ? `<span class="cal-tag">台中</span>` : '';
+    const tag = taichung ? `<span class="taichung-dot"></span>` : '';
     html += `<div class="${cls}" data-date="${past?'':dateStr}"><span>${d}</span>${tag}</div>`;
   }
   return html;
