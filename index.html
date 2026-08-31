@@ -269,6 +269,12 @@ function resetMultiDayState(){
   multiDayState.results = [];
 }
 
+const lookupBookingsState = { code:'', customer:null, bookings:[], error:'' };
+function resetLookupBookingsState(){
+  lookupBookingsState.code = ''; lookupBookingsState.customer = null;
+  lookupBookingsState.bookings = []; lookupBookingsState.error = '';
+}
+
 const landingHints = {}; // 'yyyy-mm-dd' -> 地址（顯示時會擷取縣市區）
 async function loadAreaHints(){
   if(!GOOGLE_SCRIPT_URL) return;
@@ -476,6 +482,12 @@ function render(){
     bindMultiDay();
     return;
   }
+  if(state.mode === 'lookupBookings'){
+    document.getElementById('progress').innerHTML = '';
+    card.innerHTML = tplLookupBookings();
+    bindLookupBookings();
+    return;
+  }
   renderProgress();
   if(state.step===1) card.innerHTML = tplStep1();
   else if(state.step===2) card.innerHTML = tplStep2();
@@ -508,7 +520,10 @@ function renderProgress(){
 function tplLanding(){
   const infoBlock = state.landingDate ? renderLandingDateInfo() : '';
   return `
-    <button type="button" id="toMultiDay" class="btn btn-ghost" style="width:100%;margin-bottom:16px;padding:8px 12px;font-size:12.5px;flex:none;">用專屬代碼一次約多天</button>
+    <div style="display:flex;gap:8px;margin-bottom:16px;">
+      <button type="button" id="toMultiDay" class="btn btn-ghost" style="flex:1;padding:8px 10px;font-size:12.5px;">用專屬代碼一次約多天</button>
+      <button type="button" id="toLookupBookings" class="btn btn-ghost" style="flex:1;padding:8px 10px;font-size:12.5px;">查詢預約記錄</button>
+    </div>
     <h2 class="card-title">選個日子看看托比什麼時候有空</h2>
     <p class="card-desc">下方是簡易日曆，可以先看看哪天開放預約；選好服務後會顯示更精確的可預約時段。<br><span style="color:var(--ink-soft);font-size:12px;">（備註：小型犬美容約需 1 小時、大型犬美容約需 2 小時，實際時間依現場評估為準）</span></p>
     <div class="cal-head">
@@ -603,6 +618,10 @@ function bindLanding(){
   document.getElementById('toMultiDay').addEventListener('click', ()=>{
     state.mode = 'multiDay';
     multiDayState.step = 'code';
+    render();
+  });
+  document.getElementById('toLookupBookings').addEventListener('click', ()=>{
+    state.mode = 'lookupBookings';
     render();
   });
 }
@@ -1108,6 +1127,56 @@ function bindMultiDayDone(){
     resetMultiDayState();
     render();
     loadAreaHints(); loadLandingAvailability();
+  });
+}
+
+/* ================= 查詢預約記錄 ================= */
+function tplLookupBookings(){
+  const s = lookupBookingsState;
+  return `
+    <h2 class="card-title">查詢預約記錄</h2>
+    <p class="card-desc">輸入您的專屬代碼，查詢過去與即將到來的預約狀態。</p>
+    <div class="field"><label>專屬代碼</label><input type="text" id="lb-code" placeholder="例如 C1A2B3" value="${esc(s.code)}"></div>
+    <div class="err" id="lb-err" style="display:${s.error?'block':'none'};">${s.error||''}</div>
+    <div class="actions"><button class="btn btn-ghost" id="lbBackLanding" style="flex:0 0 100px;">返回</button><button class="btn btn-primary" id="lbSearchBtn" style="flex:1;">查詢</button></div>
+    ${s.customer ? `
+      <div class="masked-card">
+        <h4>${esc(s.customer.ownerName)} 的預約記錄</h4>
+        <div class="review-line"><span class="k">寵物</span><span class="v">${esc(s.customer.petName)}（${esc(s.customer.petBreed)}）</span></div>
+      </div>
+      ${s.bookings.length===0 ? `<div class="empty-note">目前沒有任何預約記錄。</div>` : s.bookings.map(b=>`
+        <div class="review-block">
+          <div class="review-line"><span class="k">日期時段</span><span class="v">${esc(b.date)} ${esc(b.time)}–${esc(b.endTime)}</span></div>
+          <div class="review-line"><span class="k">服務項目</span><span class="v">${esc(b.serviceLabel)}</span></div>
+          <div class="review-line"><span class="k">狀態</span><span class="v" style="color:${b.status==='已確認'?'var(--pine)':'var(--apricot-dark)'};">${esc(b.status)||'—'}</span></div>
+        </div>
+      `).join('')}
+    ` : ''}
+  `;
+}
+function bindLookupBookings(){
+  document.getElementById('lbBackLanding').addEventListener('click', ()=>{ state.mode='landing'; resetLookupBookingsState(); render(); });
+  document.getElementById('lbSearchBtn').addEventListener('click', async ()=>{
+    const code = document.getElementById('lb-code').value.trim();
+    const errEl = document.getElementById('lb-err');
+    errEl.style.display = 'none';
+    if(!code){ errEl.textContent='請輸入代碼。'; errEl.style.display='block'; return; }
+    lookupBookingsState.code = code;
+    if(!GOOGLE_SCRIPT_URL){ errEl.textContent='目前尚未連結試算表，無法查詢。'; errEl.style.display='block'; return; }
+    const btn = document.getElementById('lbSearchBtn');
+    btn.disabled = true; btn.textContent = '查詢中...';
+    try{
+      const res = await fetch(GOOGLE_SCRIPT_URL + '?action=getBookingsByCode&code=' + encodeURIComponent(code));
+      const data = await res.json();
+      if(!data.success) throw new Error(data.error || '查無資料');
+      lookupBookingsState.customer = data.customer;
+      lookupBookingsState.bookings = data.bookings || [];
+      render();
+    }catch(err){
+      btn.disabled = false; btn.textContent = '查詢';
+      errEl.textContent = '查無此代碼的預約記錄，請確認代碼是否正確。';
+      errEl.style.display = 'block';
+    }
   });
 }
 
