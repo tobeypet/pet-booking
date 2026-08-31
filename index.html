@@ -61,6 +61,8 @@
   .bubbles span:nth-child(3){width:5px;height:5px;}
   .bubbles span:nth-child(4){width:13px;height:13px;background:linear-gradient(160deg,#fff,var(--apricot));opacity:.5;}
   .bubbles span:nth-child(5){width:7px;height:7px;}
+  .pet-strip{display:flex;align-items:center;justify-content:center;gap:14px;margin:18px 0 10px;}
+  .pet-strip-icon{width:34px;height:34px;flex-shrink:0;}
 
   .card{background:var(--white);border-radius:var(--radius);border:1px solid var(--line);box-shadow:0 10px 30px rgba(38,67,58,0.08);padding:26px 22px 24px;}
   .card-title{font-family:"Baloo 2","Noto Sans TC",sans-serif;font-weight:700;font-size:20px;color:var(--pine);margin:0 0 4px;}
@@ -223,7 +225,64 @@
   </div>
 
   <div class="progress" id="progress"></div>
-  <div class="bubbles"><span></span><span></span><span></span><span></span><span></span></div>
+  <div class="pet-strip">
+    <svg viewBox="0 0 64 64" fill="none" class="pet-strip-icon">
+      <path d="M17 24 12 9 27 20z" fill="#A8DAF0"/>
+      <path d="M47 24 52 9 37 20z" fill="#A8DAF0"/>
+      <circle cx="44" cy="32" r="10" fill="#A8DAF0"/>
+      <circle cx="38" cy="23" r="10" fill="#A8DAF0"/>
+      <circle cx="26" cy="23" r="10" fill="#A8DAF0"/>
+      <circle cx="20" cy="32" r="10" fill="#A8DAF0"/>
+      <circle cx="26" cy="41" r="10" fill="#A8DAF0"/>
+      <circle cx="38" cy="41" r="10" fill="#A8DAF0"/>
+      <circle cx="32" cy="32" r="14" fill="#A8DAF0"/>
+      <path d="M14 34 L22 33 M14 39 L22 37" stroke="#1A3A56" stroke-width="1.6" stroke-linecap="round"/>
+      <ellipse cx="37" cy="27" rx="1.9" ry="2.6" fill="#1A3A56"/>
+      <ellipse cx="44.5" cy="27" rx="1.9" ry="2.6" fill="#1A3A56"/>
+      <path d="M39 34 L44 34 L41.5 37z" fill="#1A3A56"/>
+    </svg>
+    <svg viewBox="0 0 64 64" fill="none" class="pet-strip-icon">
+      <circle cx="44" cy="32" r="11" fill="#C3D3F0"/>
+      <circle cx="38" cy="21.6" r="11" fill="#C3D3F0"/>
+      <circle cx="26" cy="21.6" r="11" fill="#C3D3F0"/>
+      <circle cx="20" cy="32" r="11" fill="#C3D3F0"/>
+      <circle cx="26" cy="42.4" r="11" fill="#C3D3F0"/>
+      <circle cx="38" cy="42.4" r="11" fill="#C3D3F0"/>
+      <circle cx="32" cy="32" r="15" fill="#C3D3F0"/>
+      <path d="M16 20 Q10 26 16 32 Q22 38 16 44" stroke="#1A3A56" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+      <ellipse cx="37" cy="27" rx="1.9" ry="2.6" fill="#1A3A56"/>
+      <ellipse cx="44.5" cy="27" rx="1.9" ry="2.6" fill="#1A3A56"/>
+      <rect x="38.5" y="33" width="5.5" height="4.5" rx="1.6" fill="#1A3A56"/>
+    </svg>
+    <svg viewBox="0 0 64 64" fill="none" class="pet-strip-icon">
+      <path d="M17 24 12 9 27 20z" fill="#A8DAF0"/>
+      <path d="M47 24 52 9 37 20z" fill="#A8DAF0"/>
+      <circle cx="44" cy="32" r="10" fill="#A8DAF0"/>
+      <circle cx="38" cy="23" r="10" fill="#A8DAF0"/>
+      <circle cx="26" cy="23" r="10" fill="#A8DAF0"/>
+      <circle cx="20" cy="32" r="10" fill="#A8DAF0"/>
+      <circle cx="26" cy="41" r="10" fill="#A8DAF0"/>
+      <circle cx="38" cy="41" r="10" fill="#A8DAF0"/>
+      <circle cx="32" cy="32" r="14" fill="#A8DAF0"/>
+      <path d="M14 34 L22 33 M14 39 L22 37" stroke="#1A3A56" stroke-width="1.6" stroke-linecap="round"/>
+      <ellipse cx="37" cy="27" rx="1.9" ry="2.6" fill="#1A3A56"/>
+      <ellipse cx="44.5" cy="27" rx="1.9" ry="2.6" fill="#1A3A56"/>
+      <path d="M39 34 L44 34 L41.5 37z" fill="#1A3A56"/>
+    </svg>
+    <svg viewBox="0 0 64 64" fill="none" class="pet-strip-icon">
+      <circle cx="44" cy="32" r="11" fill="#C3D3F0"/>
+      <circle cx="38" cy="21.6" r="11" fill="#C3D3F0"/>
+      <circle cx="26" cy="21.6" r="11" fill="#C3D3F0"/>
+      <circle cx="20" cy="32" r="11" fill="#C3D3F0"/>
+      <circle cx="26" cy="42.4" r="11" fill="#C3D3F0"/>
+      <circle cx="38" cy="42.4" r="11" fill="#C3D3F0"/>
+      <circle cx="32" cy="32" r="15" fill="#C3D3F0"/>
+      <path d="M16 20 Q10 26 16 32 Q22 38 16 44" stroke="#1A3A56" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+      <ellipse cx="37" cy="27" rx="1.9" ry="2.6" fill="#1A3A56"/>
+      <ellipse cx="44.5" cy="27" rx="1.9" ry="2.6" fill="#1A3A56"/>
+      <rect x="38.5" y="33" width="5.5" height="4.5" rx="1.6" fill="#1A3A56"/>
+    </svg>
+  </div>
   <div class="card" id="card"></div>
 </div>
 
