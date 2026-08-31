@@ -11,6 +11,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="毛孩預約">
 <link rel="preconnect" href="https://fonts.googleapis.com">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Noto+Sans+TC:wght@400;500;600;700;900&display=swap" rel="stylesheet">
 <style>
   :root{
@@ -1140,17 +1141,23 @@ function tplLookupBookings(){
     <div class="err" id="lb-err" style="display:${s.error?'block':'none'};">${s.error||''}</div>
     <div class="actions"><button class="btn btn-ghost" id="lbBackLanding" style="flex:0 0 100px;">返回</button><button class="btn btn-primary" id="lbSearchBtn" style="flex:1;">查詢</button></div>
     ${s.customer ? `
-      <div class="masked-card">
-        <h4>${esc(s.customer.ownerName)} 的預約記錄</h4>
-        <div class="review-line"><span class="k">寵物</span><span class="v">${esc(s.customer.petName)}（${esc(s.customer.petBreed)}）</span></div>
-      </div>
-      ${s.bookings.length===0 ? `<div class="empty-note">目前沒有任何預約記錄。</div>` : s.bookings.map(b=>`
-        <div class="review-block">
-          <div class="review-line"><span class="k">日期時段</span><span class="v">${esc(b.date)} ${esc(b.time)}–${esc(b.endTime)}</span></div>
-          <div class="review-line"><span class="k">服務項目</span><span class="v">${esc(b.serviceLabel)}</span></div>
-          <div class="review-line"><span class="k">狀態</span><span class="v" style="color:${b.status==='已確認'?'var(--pine)':'var(--apricot-dark)'};">${esc(b.status)||'—'}</span></div>
+      <div id="lb-export-area" style="background:#FFFFFF;padding:16px;border-radius:14px;">
+        <div style="text-align:center;margin-bottom:14px;">
+          <div style="font-family:'Baloo 2','Noto Sans TC',sans-serif;font-weight:800;font-size:16px;color:var(--pine);">毛孩預約 · 預約記錄</div>
         </div>
-      `).join('')}
+        <div class="masked-card">
+          <h4>${esc(s.customer.ownerName)} 的預約記錄</h4>
+          <div class="review-line"><span class="k">寵物</span><span class="v">${esc(s.customer.petName)}（${esc(s.customer.petBreed)}）</span></div>
+        </div>
+        ${s.bookings.length===0 ? `<div class="empty-note">目前沒有任何預約記錄。</div>` : s.bookings.map(b=>`
+          <div class="review-block">
+            <div class="review-line"><span class="k">日期時段</span><span class="v">${esc(b.date)} ${esc(b.time)}–${esc(b.endTime)}</span></div>
+            <div class="review-line"><span class="k">服務項目</span><span class="v">${esc(b.serviceLabel)}</span></div>
+            <div class="review-line"><span class="k">狀態</span><span class="v" style="color:${b.status==='已確認'?'var(--pine)':'var(--apricot-dark)'};">${esc(b.status)||'—'}</span></div>
+          </div>
+        `).join('')}
+      </div>
+      ${s.bookings.length>0 ? `<div class="actions"><button class="btn btn-primary" id="lbDownloadBtn" style="flex:1;">下載記錄圖片</button></div>` : ''}
     ` : ''}
   `;
 }
@@ -1178,6 +1185,27 @@ function bindLookupBookings(){
       errEl.style.display = 'block';
     }
   });
+  const downloadBtn = document.getElementById('lbDownloadBtn');
+  if(downloadBtn){
+    downloadBtn.addEventListener('click', async ()=>{
+      const el = document.getElementById('lb-export-area');
+      if(!el || typeof html2canvas === 'undefined') return;
+      downloadBtn.disabled = true; downloadBtn.textContent = '產生圖片中...';
+      try{
+        const canvas = await html2canvas(el, { backgroundColor:'#FFFFFF', scale:2 });
+        const link = document.createElement('a');
+        const name = (lookupBookingsState.customer && lookupBookingsState.customer.ownerName) ? lookupBookingsState.customer.ownerName : '預約記錄';
+        link.download = name + '_預約記錄.png';
+        link.href = canvas.toDataURL('image/png');
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+      }catch(err){
+        console.error('產生圖片失敗：', err);
+      }
+      downloadBtn.disabled = false; downloadBtn.textContent = '下載記錄圖片';
+    });
+  }
 }
 
 function tplStep1(){
