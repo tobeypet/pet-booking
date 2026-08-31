@@ -127,7 +127,7 @@
   .cal-cell.avail:hover{border-color:var(--sage);}
   .cal-cell.selected{background:var(--apricot);border-color:var(--apricot);color:#fff;}
   .cal-cell.today{box-shadow:inset 0 0 0 1.5px var(--pine);}
-  .cal-cell.extended{background:#DFF6FC;border-color:var(--apricot);box-shadow:inset 0 0 0 1.5px var(--apricot);color:var(--apricot-dark);}
+  .cal-cell.extended{background:#FDF7EF;border-color:var(--apricot);color:var(--ink);}
   .cal-cell.extended.selected{background:var(--apricot);color:#fff;}
   .cal-tag{font-size:8.5px;font-weight:700;line-height:1;background:var(--pine);color:#fff;padding:1.5px 4px;border-radius:5px;letter-spacing:0.5px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;box-sizing:border-box;}
   .cal-cell.selected .cal-tag{background:#fff;color:var(--pine);}
@@ -252,6 +252,22 @@ const registerState = {
   data:{ name:'',phone:'',lineId:'',address:'',petName:'',petBreed:'',petAge:'',petWeight:'',petPersonality:'',petHealth:'',petPhoto:null },
   error:'', resultCode:null
 };
+
+const multiDayState = {
+  step: 'code', // 'code' | 'service' | 'dates' | 'review' | 'done'
+  lookupCode: '', lookupResult: null, error: '',
+  service: { category:'', animalType:'', hairLength:'', duration:0, label:'' },
+  monthView: { year:new Date().getFullYear(), month:new Date().getMonth() },
+  selectedDates: [], timesByDate: {}, travelByDate: {},
+  results: []
+};
+function resetMultiDayState(){
+  multiDayState.step = 'code';
+  multiDayState.lookupCode = ''; multiDayState.lookupResult = null; multiDayState.error = '';
+  multiDayState.service = { category:'', animalType:'', hairLength:'', duration:0, label:'' };
+  multiDayState.selectedDates = []; multiDayState.timesByDate = {}; multiDayState.travelByDate = {};
+  multiDayState.results = [];
+}
 
 const landingHints = {}; // 'yyyy-mm-dd' -> 地址（顯示時會擷取縣市區）
 async function loadAreaHints(){
@@ -454,6 +470,12 @@ function render(){
     bindRegister();
     return;
   }
+  if(state.mode === 'multiDay'){
+    document.getElementById('progress').innerHTML = '';
+    card.innerHTML = tplMultiDay();
+    bindMultiDay();
+    return;
+  }
   renderProgress();
   if(state.step===1) card.innerHTML = tplStep1();
   else if(state.step===2) card.innerHTML = tplStep2();
@@ -486,8 +508,9 @@ function renderProgress(){
 function tplLanding(){
   const infoBlock = state.landingDate ? renderLandingDateInfo() : '';
   return `
+    <button type="button" id="toMultiDay" class="btn btn-ghost" style="width:100%;margin-bottom:16px;padding:8px 12px;font-size:12.5px;flex:none;">用專屬代碼一次約多天</button>
     <h2 class="card-title">選個日子看看托比什麼時候有空</h2>
-    <p class="card-desc">下方是簡易日曆，可以先看看哪天開放預約；選好服務後會顯示更精確的可預約時段。</p>
+    <p class="card-desc">下方是簡易日曆，可以先看看哪天開放預約；選好服務後會顯示更精確的可預約時段。<br><span style="color:var(--ink-soft);font-size:12px;">（備註：小型犬美容約需 1 小時、大型犬美容約需 2 小時，實際時間依現場評估為準）</span></p>
     <div class="cal-head">
       <button class="cal-nav" id="cal-prev">‹ 上個月</button>
       <div class="mo">${custView.year} 年 ${custView.month+1} 月</div>
@@ -577,6 +600,11 @@ function bindLanding(){
     state.mode = 'register';
     render();
   });
+  document.getElementById('toMultiDay').addEventListener('click', ()=>{
+    state.mode = 'multiDay';
+    multiDayState.step = 'code';
+    render();
+  });
 }
 
 /* ================= 先建立個人資料 ================= */
@@ -595,7 +623,7 @@ function tplRegister(){
       </div>
       <div class="actions">
         <button class="btn btn-ghost" id="regBackLanding" style="flex:1;">返回首頁</button>
-        <button class="btn btn-primary" id="regGoBooking" style="flex:1;">前往預約</button>
+        <button class="btn btn-primary" id="regGoBooking" style="flex:1;">使用專屬代碼預約</button>
       </div>
     `;
   }
@@ -710,6 +738,379 @@ function bindRegister(){
   });
 }
 
+/* ================= 用專屬代碼一次約多天 ================= */
+function tplMultiDay(){
+  if(multiDayState.step==='code') return tplMultiDayCode();
+  if(multiDayState.step==='service') return tplMultiDayService();
+  if(multiDayState.step==='dates') return tplMultiDayDates();
+  if(multiDayState.step==='review') return tplMultiDayReview();
+  if(multiDayState.step==='done') return tplMultiDayDone();
+  return '';
+}
+function bindMultiDay(){
+  if(multiDayState.step==='code') bindMultiDayCode();
+  else if(multiDayState.step==='service') bindMultiDayService();
+  else if(multiDayState.step==='dates') bindMultiDayDates();
+  else if(multiDayState.step==='review') bindMultiDayReview();
+  else if(multiDayState.step==='done') bindMultiDayDone();
+}
+
+function tplMultiDayCode(){
+  const r = multiDayState.lookupResult;
+  return `
+    <h2 class="card-title">用專屬代碼一次約多天</h2>
+    <p class="card-desc">輸入您的專屬代碼，確認身分後即可一次為多個日期安排預約（同一種服務）。</p>
+    <div class="field"><label>專屬代碼</label><input type="text" id="md-code" placeholder="例如 C1A2B3" value="${esc(multiDayState.lookupCode)}"></div>
+    <div class="err" id="md-err" style="display:${multiDayState.error?'block':'none'};">${multiDayState.error||''}</div>
+    <div class="actions"><button class="btn btn-ghost" id="mdBackLanding" style="flex:0 0 100px;">返回</button><button class="btn btn-primary" id="mdLookupBtn" style="flex:1;">查詢</button></div>
+    ${r ? `
+      <div class="masked-card">
+        <h4>請確認是您本人</h4>
+        <div class="review-line"><span class="k">姓名</span><span class="v">${maskName(r.ownerName)}</span></div>
+        <div class="review-line"><span class="k">寵物</span><span class="v">${esc(r.petName)}</span></div>
+        <div class="review-line"><span class="k">地區</span><span class="v">${esc(extractCityDistrict(r.address))}</span></div>
+      </div>
+      <div class="actions">
+        <button class="btn btn-ghost" id="mdNotMe">不是我</button>
+        <button class="btn btn-primary" id="mdConfirmMe">對，是我，繼續</button>
+      </div>
+    ` : ''}
+  `;
+}
+function bindMultiDayCode(){
+  document.getElementById('mdBackLanding').addEventListener('click', ()=>{ state.mode='landing'; resetMultiDayState(); render(); });
+  document.getElementById('mdLookupBtn').addEventListener('click', async ()=>{
+    const code = document.getElementById('md-code').value.trim();
+    const errEl = document.getElementById('md-err');
+    errEl.style.display = 'none';
+    if(!code){ errEl.textContent='請輸入代碼。'; errEl.style.display='block'; return; }
+    multiDayState.lookupCode = code;
+    if(!GOOGLE_SCRIPT_URL){ errEl.textContent='目前尚未連結試算表，無法查詢代碼。'; errEl.style.display='block'; return; }
+    const btn = document.getElementById('mdLookupBtn');
+    btn.disabled = true; btn.textContent = '查詢中...';
+    try{
+      const res = await fetch(GOOGLE_SCRIPT_URL + '?action=lookupByCode&code=' + encodeURIComponent(code));
+      const data = await res.json();
+      if(!data.success) throw new Error(data.error || '找不到這個代碼');
+      multiDayState.lookupResult = data.customer;
+      render();
+    }catch(err){
+      btn.disabled = false; btn.textContent = '查詢';
+      errEl.textContent = '查無此代碼，請確認輸入正確。';
+      errEl.style.display = 'block';
+    }
+  });
+  const notMeBtn = document.getElementById('mdNotMe');
+  if(notMeBtn) notMeBtn.addEventListener('click', ()=>{ multiDayState.lookupResult=null; multiDayState.lookupCode=''; render(); });
+  const confirmBtn = document.getElementById('mdConfirmMe');
+  if(confirmBtn) confirmBtn.addEventListener('click', ()=>{ multiDayState.step='service'; render(); });
+}
+
+function tplMultiDayService(){
+  const s = multiDayState.service;
+  const showDogHair = s.animalType==='dog';
+  return `
+    <h2 class="card-title">選擇服務類型</h2>
+    <p class="card-desc">這幾天預約的服務類型會相同，選好後即可挑選多個日期。</p>
+    <div class="svc-grid" id="md-svc-grid">
+      <div class="svc-card ${s.category==='grooming'?'active':''}" data-svc="grooming"><span class="svc-icon">${svgScissorsIcon()}</span><div class="svc-name">美容</div><div class="svc-sub">貓／狗均約 2 小時</div></div>
+      <div class="svc-card ${s.category==='bath'?'active':''}" data-svc="bath"><span class="svc-icon">${svgBathIcon()}</span><div class="svc-name">洗澡</div><div class="svc-sub">依貓／狗與毛長，時間不同</div></div>
+    </div>
+    <div class="field">
+      <label>寵物類別</label>
+      <div class="choice-row" id="md-animal-row">
+        <div class="choice-pill icon-pill ${s.animalType==='cat'?'active':''}" data-a="cat">${svgCatIcon()}<span>貓咪</span></div>
+        <div class="choice-pill icon-pill ${s.animalType==='dog'?'active':''}" data-a="dog">${svgDogIcon()}<span>狗狗</span></div>
+      </div>
+    </div>
+    ${showDogHair ? `
+    <div class="field">
+      <label>毛長類型</label>
+      <div class="choice-row" id="md-hair-row">
+        <div class="choice-pill ${s.hairLength==='long'?'active':''}" data-h="long">長毛</div>
+        <div class="choice-pill ${s.hairLength==='short'?'active':''}" data-h="short">短毛</div>
+      </div>
+    </div>` : ''}
+    ${s.duration ? `<div class="duration-box"><span>預估所需時間</span><b>${s.duration/60 % 1===0? s.duration/60 : (s.duration/60).toFixed(1)} 小時</b></div>` : ''}
+    <div class="actions">
+      <button class="btn btn-ghost" id="mdBackToCode" style="flex:0 0 100px;">上一步</button>
+      <button class="btn btn-primary" id="mdToDates" ${s.duration?'':'disabled'}>下一步：選擇日期</button>
+    </div>
+  `;
+}
+function updateMultiDayDuration(){
+  const s = multiDayState.service;
+  let r = null;
+  if(s.category && s.animalType==='cat') r = SERVICE_DEF[s.category].rules.cat;
+  else if(s.category && s.animalType==='dog' && s.hairLength) r = s.hairLength==='long' ? SERVICE_DEF[s.category].rules.dogLong : SERVICE_DEF[s.category].rules.dogShort;
+  if(r){ s.duration = r.duration; s.label = r.label + '（' + SERVICE_DEF[s.category].name + '）'; }
+  else { s.duration = 0; s.label = ''; }
+}
+function bindMultiDayService(){
+  document.getElementById('mdBackToCode').addEventListener('click', ()=>{ multiDayState.step='code'; render(); });
+  document.getElementById('md-svc-grid').addEventListener('click', e=>{
+    const c = e.target.closest('.svc-card'); if(!c) return;
+    multiDayState.service.category = c.dataset.svc; updateMultiDayDuration(); render();
+  });
+  document.getElementById('md-animal-row').addEventListener('click', e=>{
+    const p = e.target.closest('.choice-pill'); if(!p) return;
+    multiDayState.service.animalType = p.dataset.a;
+    if(p.dataset.a==='cat') multiDayState.service.hairLength='';
+    updateMultiDayDuration(); render();
+  });
+  const hairRow = document.getElementById('md-hair-row');
+  if(hairRow){
+    hairRow.addEventListener('click', e=>{
+      const p = e.target.closest('.choice-pill'); if(!p) return;
+      multiDayState.service.hairLength = p.dataset.h;
+      updateMultiDayDuration(); render();
+    });
+  }
+  document.getElementById('mdToDates').addEventListener('click', ()=>{
+    if(!multiDayState.service.duration) return;
+    multiDayState.step = 'dates'; render();
+  });
+}
+
+function renderMultiDayCalGrid(){
+  const {year, month} = multiDayState.monthView;
+  const first = new Date(year, month, 1);
+  const startOffset = first.getDay();
+  const daysInMonth = new Date(year, month+1, 0).getDate();
+  const today = new Date(); today.setHours(0,0,0,0);
+  let html = ['日','一','二','三','四','五','六'].map(d=>`<div class="cal-dow">${d}</div>`).join('');
+  for(let i=0;i<startOffset;i++) html += `<div class="cal-cell empty"></div>`;
+  for(let d=1; d<=daysInMonth; d++){
+    const dt = new Date(year, month, d);
+    const dateStr = fmtDate(dt);
+    const past = isPastDate(dt);
+    const closed = isDateFullyClosed(dateStr);
+    const extended = availability.extendedDates.has(dateStr);
+    const taichung = availability.taichungDates.has(dateStr);
+    const disabled = past || closed;
+    const isToday = fmtDate(dt) === fmtDate(today);
+    const isSelected = multiDayState.selectedDates.includes(dateStr);
+    let cls = 'cal-cell';
+    cls += disabled ? ' disabled' : ' avail';
+    if(!disabled && extended) cls += ' extended';
+    if(isToday) cls += ' today';
+    if(isSelected) cls += ' selected';
+    const tag = taichung ? `<span class="taichung-dot"></span>` : '';
+    html += `<div class="${cls}" data-date="${disabled?'':dateStr}"><span>${d}</span>${tag}</div>`;
+  }
+  return html;
+}
+function isSlotBlockedByTravelForDate(date, startMin, durationMin){
+  const info = multiDayState.travelByDate[date];
+  if(!info || !info.loaded) return false;
+  for(const range of info.blockedRanges){
+    if(startMin < range[1] && (startMin+durationMin) > range[0]) return true;
+  }
+  return false;
+}
+async function loadMultiDayTravelForDate(date){
+  multiDayState.travelByDate[date] = { loaded:false, blockedRanges:[] };
+  if(!GOOGLE_SCRIPT_URL){ multiDayState.travelByDate[date] = { loaded:true, blockedRanges:[] }; return; }
+  try{
+    const addr = multiDayState.lookupResult ? multiDayState.lookupResult.address : '';
+    const res = await fetch(GOOGLE_SCRIPT_URL + '?action=getTravelBlockedSlots&date=' + encodeURIComponent(date) + '&address=' + encodeURIComponent(addr));
+    const data = await res.json();
+    multiDayState.travelByDate[date] = { loaded:true, blockedRanges: (data.success && data.blockedRanges) ? data.blockedRanges : [] };
+  }catch(err){
+    multiDayState.travelByDate[date] = { loaded:true, blockedRanges: [] };
+  }
+}
+function renderMultiDayDateList(){
+  if(multiDayState.selectedDates.length===0){ return `<div class="empty-note">請先在上方日曆點選想預約的日期（可點多個）。</div>`; }
+  return multiDayState.selectedDates.map(date=>{
+    const info = multiDayState.travelByDate[date];
+    const time = multiDayState.timesByDate[date];
+    let slotHtml;
+    if(!info || !info.loaded){
+      slotHtml = `<div class="empty-note">讀取可預約時段中...</div>`;
+    } else {
+      const duration = multiDayState.service.duration;
+      const end = getBusinessEnd(date);
+      const slots = [];
+      for(let start=BUSINESS_START; start+duration<=end; start+=30){
+        const taken = isSlotBlocked(date, start, duration) || isSlotBlockedByTravelForDate(date, start, duration);
+        slots.push({ start, taken });
+      }
+      slotHtml = slots.length===0 ? `<div class="empty-note">此服務所需時間較長，當日時段不足，請移除此日期。</div>` : `
+        <div class="slot-grid">
+          ${slots.map(s=>{
+            const val = fmtTime(s.start);
+            const isSel = time===val;
+            let cls = 'slot';
+            if(s.taken) cls += ' taken'; else if(isSel) cls += ' selected';
+            return `<div class="${cls}" data-date="${date}" data-time="${s.taken?'':val}">${val}</div>`;
+          }).join('')}
+        </div>
+      `;
+    }
+    return `
+      <div class="review-block">
+        <h4 style="display:flex;justify-content:space-between;align-items:center;">
+          <span>${date}${time?`　已選 ${time}`:''}</span>
+          <button data-remove-date="${date}" style="color:var(--danger);background:none;border:none;font-weight:700;cursor:pointer;font-size:12px;">移除</button>
+        </h4>
+        ${slotHtml}
+      </div>
+    `;
+  }).join('');
+}
+function tplMultiDayDates(){
+  const md = multiDayState;
+  return `
+    <h2 class="card-title">選擇多個日期</h2>
+    <p class="card-desc">點選日曆上的日期加入預約清單（可點多個），每個日期都要選一個時段。</p>
+    <div class="cal-head">
+      <button class="cal-nav" id="md-cal-prev">‹ 上個月</button>
+      <div class="mo">${md.monthView.year} 年 ${md.monthView.month+1} 月</div>
+      <button class="cal-nav" id="md-cal-next">下個月 ›</button>
+    </div>
+    <div class="cal-grid" id="md-cal-grid">${renderMultiDayCalGrid()}</div>
+    <div class="cal-legend">
+      <span><i class="dot a"></i>可預約</span>
+      <span><i class="dot e"></i>延長營業至20:00</span>
+      <span><i class="dot d"></i>不開放／已無空檔</span>
+    </div>
+    <div id="md-date-list">${renderMultiDayDateList()}</div>
+    <div class="err" id="md-err2" style="display:none;"></div>
+    <div class="actions">
+      <button class="btn btn-ghost" id="mdBackToService" style="flex:0 0 100px;">上一步</button>
+      <button class="btn btn-primary" id="mdToReview">確認預約（${md.selectedDates.length} 天）</button>
+    </div>
+  `;
+}
+function bindMultiDayDates(){
+  document.getElementById('mdBackToService').addEventListener('click', ()=>{ multiDayState.step='service'; render(); });
+  document.getElementById('md-cal-prev').addEventListener('click', ()=>{ multiDayState.monthView.month--; if(multiDayState.monthView.month<0){multiDayState.monthView.month=11; multiDayState.monthView.year--;} render(); });
+  document.getElementById('md-cal-next').addEventListener('click', ()=>{ multiDayState.monthView.month++; if(multiDayState.monthView.month>11){multiDayState.monthView.month=0; multiDayState.monthView.year++;} render(); });
+  document.getElementById('md-cal-grid').addEventListener('click', e=>{
+    const c = e.target.closest('.cal-cell.avail'); if(!c) return;
+    const date = c.dataset.date;
+    if(multiDayState.selectedDates.includes(date)) return;
+    multiDayState.selectedDates.push(date);
+    render();
+    loadMultiDayTravelForDate(date).then(()=>{ if(multiDayState.step==='dates') render(); });
+  });
+  document.getElementById('md-date-list').addEventListener('click', e=>{
+    const rem = e.target.closest('[data-remove-date]');
+    if(rem){
+      const date = rem.dataset.removeDate;
+      multiDayState.selectedDates = multiDayState.selectedDates.filter(d=>d!==date);
+      delete multiDayState.timesByDate[date];
+      delete multiDayState.travelByDate[date];
+      render();
+      return;
+    }
+    const slot = e.target.closest('.slot');
+    if(slot && !slot.classList.contains('taken') && slot.dataset.time){
+      multiDayState.timesByDate[slot.dataset.date] = slot.dataset.time;
+      render();
+    }
+  });
+  document.getElementById('mdToReview').addEventListener('click', ()=>{
+    const errEl = document.getElementById('md-err2');
+    if(multiDayState.selectedDates.length===0){ errEl.textContent='請至少選擇一個日期。'; errEl.style.display='block'; return; }
+    const missing = multiDayState.selectedDates.filter(d=>!multiDayState.timesByDate[d]);
+    if(missing.length>0){ errEl.textContent='還有日期尚未選擇時段：' + missing.join('、'); errEl.style.display='block'; return; }
+    errEl.style.display = 'none';
+    multiDayState.step = 'review'; render();
+  });
+}
+
+function tplMultiDayReview(){
+  const md = multiDayState, r = md.lookupResult;
+  return `
+    <h2 class="card-title">確認多天預約</h2>
+    <p class="card-desc">請確認以下內容無誤後送出，系統會依序建立每一天的預約。</p>
+    <div class="review-block">
+      <h4>客人資訊</h4>
+      <div class="review-line"><span class="k">姓名</span><span class="v">${esc(r.ownerName)}</span></div>
+      <div class="review-line"><span class="k">寵物</span><span class="v">${esc(r.petName)}（${esc(r.petBreed)}）</span></div>
+    </div>
+    <div class="review-block">
+      <h4>服務內容</h4>
+      <div class="review-line"><span class="k">服務項目</span><span class="v">${md.service.label}</span></div>
+    </div>
+    <div class="review-block">
+      <h4>預約日期（共 ${md.selectedDates.length} 天）</h4>
+      ${md.selectedDates.map(d=>`<div class="review-line"><span class="k">${d}</span><span class="v">${md.timesByDate[d]} – ${fmtTime(toMin(md.timesByDate[d])+md.service.duration)}</span></div>`).join('')}
+    </div>
+    <div class="err" id="md-err3" style="display:none;"></div>
+    <div class="actions">
+      <button class="btn btn-ghost" id="mdBackToDates" style="flex:0 0 100px;">上一步</button>
+      <button class="btn btn-primary" id="mdSubmitAll">送出全部 ${md.selectedDates.length} 筆預約</button>
+    </div>
+  `;
+}
+function bindMultiDayReview(){
+  document.getElementById('mdBackToDates').addEventListener('click', ()=>{ multiDayState.step='dates'; render(); });
+  document.getElementById('mdSubmitAll').addEventListener('click', submitMultiDayBookings);
+}
+async function submitMultiDayBookings(){
+  const md = multiDayState, r = md.lookupResult;
+  const btn = document.getElementById('mdSubmitAll');
+  const errEl = document.getElementById('md-err3');
+  errEl.style.display = 'none';
+  if(!GOOGLE_SCRIPT_URL){ errEl.textContent='目前尚未連結試算表，無法送出。'; errEl.style.display='block'; return; }
+  btn.disabled = true; btn.textContent = '送出中...';
+  const results = [];
+  for(const date of md.selectedDates){
+    const time = md.timesByDate[date];
+    const code = genCode();
+    const payload = {
+      action:'booking', customerCode: r.customerCode,
+      confirmCode: code, ownerName:r.ownerName, phone:r.phone, lineId:r.lineId, address:r.address,
+      petName:r.petName, petBreed:r.petBreed, petAge:r.petAge, petWeight:r.petWeight,
+      petPersonality:r.petPersonality, petHealth:r.petHealth,
+      serviceLabel: md.service.label, durationMinutes: md.service.duration,
+      date: date, time: time, endTime: fmtTime(toMin(time)+md.service.duration),
+      taichung: availability.taichungDates.has(date)
+    };
+    try{
+      const res = await fetch(GOOGLE_SCRIPT_URL, {
+        method:'POST', headers:{ 'Content-Type':'text/plain;charset=utf-8' }, body: JSON.stringify(payload)
+      });
+      const result = await res.json();
+      results.push({ date, time, success: !!result.success, error: result.error });
+    }catch(err){
+      results.push({ date, time, success:false, error: err.message });
+    }
+  }
+  md.results = results;
+  md.step = 'done';
+  render();
+}
+
+function tplMultiDayDone(){
+  const md = multiDayState;
+  const successCount = md.results.filter(r=>r.success).length;
+  return `
+    <div class="success">
+      <div class="paw">${svgPaw()}</div>
+      <h2>已送出 ${successCount} / ${md.results.length} 筆預約</h2>
+      <div class="pending-badge">⏳ 需等托比確認</div>
+    </div>
+    ${md.results.map(r=>`
+      <div class="review-block">
+        <div class="review-line"><span class="k">${r.date}　${r.time}</span><span class="v" style="color:${r.success?'var(--pine)':'var(--danger)'};">${r.success?'已送出':'失敗：'+(r.error||'未知錯誤')}</span></div>
+      </div>
+    `).join('')}
+    <div class="actions"><button class="btn btn-primary" id="mdBackHome" style="flex:1;">返回首頁</button></div>
+  `;
+}
+function bindMultiDayDone(){
+  document.getElementById('mdBackHome').addEventListener('click', ()=>{
+    state.mode = 'landing';
+    resetMultiDayState();
+    render();
+    loadAreaHints(); loadLandingAvailability();
+  });
+}
+
 function tplStep1(){
   const s = state.service;
   const showDogHair = s.animalType==='dog';
@@ -763,7 +1164,7 @@ function tplStep1(){
     ${ready ? calendarBlock : `<div class="empty-note">請先選擇服務與寵物類型，即可查看可預約時段。</div>`}
     <div class="err" id="step1-err" style="display:none;"></div>
     <div class="actions">
-      <button class="btn btn-primary" id="toStep2" ${canProceed?'':'disabled'}>前往填寫資料，準備預約</button>
+      <button class="btn btn-primary" id="toStep2" ${canProceed?'':'disabled'}>${(state.owner.customerCode && state.owner.name && state.owner.phone) ? '確認可預約時段' : '前往填寫資料，準備預約'}</button>
     </div>
   `;
 }
@@ -850,7 +1251,9 @@ function bindStep1(){
   bindSlotGrid();
   document.getElementById('toStep2').addEventListener('click', ()=>{
     if(!state.booking.date || !state.booking.time) return;
-    state.step = 2; render();
+    const hasIdentity = state.owner.customerCode && state.owner.name && state.owner.phone;
+    state.step = hasIdentity ? 3 : 2;
+    render();
   });
 }
 function updateDurationLabel(){
