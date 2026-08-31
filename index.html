@@ -125,12 +125,12 @@
     min-width:0;overflow:hidden;
   }
   .cal-cell.empty{visibility:hidden;cursor:default;}
-  .cal-cell.avail{background:#C3D3F0;border-color:#AEC0E6;box-shadow:0 1px 3px rgba(26,58,86,0.06);}
+  .cal-cell.avail{background:#9FB3DF;border-color:#869BD1;box-shadow:0 1px 3px rgba(26,58,86,0.06);}
   .cal-cell.disabled{color:#B7C4D6;background:transparent;cursor:not-allowed;}
   .cal-cell.avail:hover{border-color:var(--sage);}
   .cal-cell.selected{background:var(--apricot);border-color:var(--apricot);color:#fff;}
   .cal-cell.today{box-shadow:inset 0 0 0 1.5px var(--pine);}
-  .cal-cell.extended{background:#A8DAF0;border-color:#8FC6E3;color:var(--ink);}
+  .cal-cell.extended{background:#9EC6F3;border-color:#7CB8EC;color:var(--ink);}
   .cal-cell.extended.selected{background:var(--apricot);color:#fff;}
   .cal-tag{font-size:8.5px;font-weight:700;line-height:1;background:var(--pine);color:#fff;padding:1.5px 4px;border-radius:5px;letter-spacing:0.5px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;box-sizing:border-box;}
   .cal-cell.selected .cal-tag{background:#fff;color:var(--pine);}
@@ -140,9 +140,9 @@
   .cal-legend{display:flex;gap:16px;font-size:11.5px;color:var(--ink-soft);margin:6px 0 18px;flex-wrap:wrap;}
   .cal-legend span{display:inline-flex;align-items:center;gap:5px;}
   .dot{width:9px;height:9px;border-radius:50%;display:inline-block;}
-  .dot.a{background:#C3D3F0;border:1.5px solid #AEC0E6;}
+  .dot.a{background:#9FB3DF;border:1.5px solid #869BD1;}
   .dot.d{background:transparent;border:1.5px dashed #B7C4D6;}
-  .dot.e{background:#A8DAF0;border:1.5px solid #8FC6E3;}
+  .dot.e{background:#9EC6F3;border:1.5px solid #7CB8EC;}
 
   .slot-title{font-size:13px;font-weight:700;color:var(--pine);margin:4px 0 10px;}
   .slot-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;}
@@ -227,56 +227,56 @@
   <div class="progress" id="progress"></div>
   <div class="pet-strip">
     <svg viewBox="0 0 64 64" fill="none" class="pet-strip-icon">
-      <path d="M17 24 12 9 27 20z" fill="#A8DAF0"/>
-      <path d="M47 24 52 9 37 20z" fill="#A8DAF0"/>
-      <circle cx="44" cy="32" r="10" fill="#A8DAF0"/>
-      <circle cx="38" cy="23" r="10" fill="#A8DAF0"/>
-      <circle cx="26" cy="23" r="10" fill="#A8DAF0"/>
-      <circle cx="20" cy="32" r="10" fill="#A8DAF0"/>
-      <circle cx="26" cy="41" r="10" fill="#A8DAF0"/>
-      <circle cx="38" cy="41" r="10" fill="#A8DAF0"/>
-      <circle cx="32" cy="32" r="14" fill="#A8DAF0"/>
+      <path d="M17 24 12 9 27 20z" fill="#9EC6F3"/>
+      <path d="M47 24 52 9 37 20z" fill="#9EC6F3"/>
+      <circle cx="44" cy="32" r="10" fill="#9EC6F3"/>
+      <circle cx="38" cy="23" r="10" fill="#9EC6F3"/>
+      <circle cx="26" cy="23" r="10" fill="#9EC6F3"/>
+      <circle cx="20" cy="32" r="10" fill="#9EC6F3"/>
+      <circle cx="26" cy="41" r="10" fill="#9EC6F3"/>
+      <circle cx="38" cy="41" r="10" fill="#9EC6F3"/>
+      <circle cx="32" cy="32" r="14" fill="#9EC6F3"/>
       <path d="M14 34 L22 33 M14 39 L22 37" stroke="#1A3A56" stroke-width="1.6" stroke-linecap="round"/>
       <ellipse cx="37" cy="27" rx="1.9" ry="2.6" fill="#1A3A56"/>
       <ellipse cx="44.5" cy="27" rx="1.9" ry="2.6" fill="#1A3A56"/>
       <path d="M39 34 L44 34 L41.5 37z" fill="#1A3A56"/>
     </svg>
     <svg viewBox="0 0 64 64" fill="none" class="pet-strip-icon">
-      <circle cx="44" cy="32" r="11" fill="#C3D3F0"/>
-      <circle cx="38" cy="21.6" r="11" fill="#C3D3F0"/>
-      <circle cx="26" cy="21.6" r="11" fill="#C3D3F0"/>
-      <circle cx="20" cy="32" r="11" fill="#C3D3F0"/>
-      <circle cx="26" cy="42.4" r="11" fill="#C3D3F0"/>
-      <circle cx="38" cy="42.4" r="11" fill="#C3D3F0"/>
-      <circle cx="32" cy="32" r="15" fill="#C3D3F0"/>
+      <circle cx="44" cy="32" r="11" fill="#9FB3DF"/>
+      <circle cx="38" cy="21.6" r="11" fill="#9FB3DF"/>
+      <circle cx="26" cy="21.6" r="11" fill="#9FB3DF"/>
+      <circle cx="20" cy="32" r="11" fill="#9FB3DF"/>
+      <circle cx="26" cy="42.4" r="11" fill="#9FB3DF"/>
+      <circle cx="38" cy="42.4" r="11" fill="#9FB3DF"/>
+      <circle cx="32" cy="32" r="15" fill="#9FB3DF"/>
       <path d="M16 20 Q10 26 16 32 Q22 38 16 44" stroke="#1A3A56" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
       <ellipse cx="37" cy="27" rx="1.9" ry="2.6" fill="#1A3A56"/>
       <ellipse cx="44.5" cy="27" rx="1.9" ry="2.6" fill="#1A3A56"/>
       <rect x="38.5" y="33" width="5.5" height="4.5" rx="1.6" fill="#1A3A56"/>
     </svg>
     <svg viewBox="0 0 64 64" fill="none" class="pet-strip-icon">
-      <path d="M17 24 12 9 27 20z" fill="#A8DAF0"/>
-      <path d="M47 24 52 9 37 20z" fill="#A8DAF0"/>
-      <circle cx="44" cy="32" r="10" fill="#A8DAF0"/>
-      <circle cx="38" cy="23" r="10" fill="#A8DAF0"/>
-      <circle cx="26" cy="23" r="10" fill="#A8DAF0"/>
-      <circle cx="20" cy="32" r="10" fill="#A8DAF0"/>
-      <circle cx="26" cy="41" r="10" fill="#A8DAF0"/>
-      <circle cx="38" cy="41" r="10" fill="#A8DAF0"/>
-      <circle cx="32" cy="32" r="14" fill="#A8DAF0"/>
+      <path d="M17 24 12 9 27 20z" fill="#9EC6F3"/>
+      <path d="M47 24 52 9 37 20z" fill="#9EC6F3"/>
+      <circle cx="44" cy="32" r="10" fill="#9EC6F3"/>
+      <circle cx="38" cy="23" r="10" fill="#9EC6F3"/>
+      <circle cx="26" cy="23" r="10" fill="#9EC6F3"/>
+      <circle cx="20" cy="32" r="10" fill="#9EC6F3"/>
+      <circle cx="26" cy="41" r="10" fill="#9EC6F3"/>
+      <circle cx="38" cy="41" r="10" fill="#9EC6F3"/>
+      <circle cx="32" cy="32" r="14" fill="#9EC6F3"/>
       <path d="M14 34 L22 33 M14 39 L22 37" stroke="#1A3A56" stroke-width="1.6" stroke-linecap="round"/>
       <ellipse cx="37" cy="27" rx="1.9" ry="2.6" fill="#1A3A56"/>
       <ellipse cx="44.5" cy="27" rx="1.9" ry="2.6" fill="#1A3A56"/>
       <path d="M39 34 L44 34 L41.5 37z" fill="#1A3A56"/>
     </svg>
     <svg viewBox="0 0 64 64" fill="none" class="pet-strip-icon">
-      <circle cx="44" cy="32" r="11" fill="#C3D3F0"/>
-      <circle cx="38" cy="21.6" r="11" fill="#C3D3F0"/>
-      <circle cx="26" cy="21.6" r="11" fill="#C3D3F0"/>
-      <circle cx="20" cy="32" r="11" fill="#C3D3F0"/>
-      <circle cx="26" cy="42.4" r="11" fill="#C3D3F0"/>
-      <circle cx="38" cy="42.4" r="11" fill="#C3D3F0"/>
-      <circle cx="32" cy="32" r="15" fill="#C3D3F0"/>
+      <circle cx="44" cy="32" r="11" fill="#9FB3DF"/>
+      <circle cx="38" cy="21.6" r="11" fill="#9FB3DF"/>
+      <circle cx="26" cy="21.6" r="11" fill="#9FB3DF"/>
+      <circle cx="20" cy="32" r="11" fill="#9FB3DF"/>
+      <circle cx="26" cy="42.4" r="11" fill="#9FB3DF"/>
+      <circle cx="38" cy="42.4" r="11" fill="#9FB3DF"/>
+      <circle cx="32" cy="32" r="15" fill="#9FB3DF"/>
       <path d="M16 20 Q10 26 16 32 Q22 38 16 44" stroke="#1A3A56" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
       <ellipse cx="37" cy="27" rx="1.9" ry="2.6" fill="#1A3A56"/>
       <ellipse cx="44.5" cy="27" rx="1.9" ry="2.6" fill="#1A3A56"/>
@@ -426,13 +426,13 @@ function svgPaw(color){
 }
 function svgDogIcon(){
   return `<svg viewBox="0 0 64 64" fill="none">
-    <circle cx="44" cy="32" r="11" fill="#C3D3F0"/>
-    <circle cx="38" cy="21.6" r="11" fill="#C3D3F0"/>
-    <circle cx="26" cy="21.6" r="11" fill="#C3D3F0"/>
-    <circle cx="20" cy="32" r="11" fill="#C3D3F0"/>
-    <circle cx="26" cy="42.4" r="11" fill="#C3D3F0"/>
-    <circle cx="38" cy="42.4" r="11" fill="#C3D3F0"/>
-    <circle cx="32" cy="32" r="15" fill="#C3D3F0"/>
+    <circle cx="44" cy="32" r="11" fill="#9FB3DF"/>
+    <circle cx="38" cy="21.6" r="11" fill="#9FB3DF"/>
+    <circle cx="26" cy="21.6" r="11" fill="#9FB3DF"/>
+    <circle cx="20" cy="32" r="11" fill="#9FB3DF"/>
+    <circle cx="26" cy="42.4" r="11" fill="#9FB3DF"/>
+    <circle cx="38" cy="42.4" r="11" fill="#9FB3DF"/>
+    <circle cx="32" cy="32" r="15" fill="#9FB3DF"/>
     <path d="M16 20 Q10 26 16 32 Q22 38 16 44" stroke="#1A3A56" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
     <ellipse cx="37" cy="27" rx="1.9" ry="2.6" fill="#1A3A56"/>
     <ellipse cx="44.5" cy="27" rx="1.9" ry="2.6" fill="#1A3A56"/>
@@ -462,15 +462,15 @@ function svgBathIcon(){
 }
 function svgCatIcon(){
   return `<svg viewBox="0 0 64 64" fill="none">
-    <path d="M17 24 12 9 27 20z" fill="#A8DAF0"/>
-    <path d="M47 24 52 9 37 20z" fill="#A8DAF0"/>
-    <circle cx="44" cy="32" r="10" fill="#A8DAF0"/>
-    <circle cx="38" cy="23" r="10" fill="#A8DAF0"/>
-    <circle cx="26" cy="23" r="10" fill="#A8DAF0"/>
-    <circle cx="20" cy="32" r="10" fill="#A8DAF0"/>
-    <circle cx="26" cy="41" r="10" fill="#A8DAF0"/>
-    <circle cx="38" cy="41" r="10" fill="#A8DAF0"/>
-    <circle cx="32" cy="32" r="14" fill="#A8DAF0"/>
+    <path d="M17 24 12 9 27 20z" fill="#9EC6F3"/>
+    <path d="M47 24 52 9 37 20z" fill="#9EC6F3"/>
+    <circle cx="44" cy="32" r="10" fill="#9EC6F3"/>
+    <circle cx="38" cy="23" r="10" fill="#9EC6F3"/>
+    <circle cx="26" cy="23" r="10" fill="#9EC6F3"/>
+    <circle cx="20" cy="32" r="10" fill="#9EC6F3"/>
+    <circle cx="26" cy="41" r="10" fill="#9EC6F3"/>
+    <circle cx="38" cy="41" r="10" fill="#9EC6F3"/>
+    <circle cx="32" cy="32" r="14" fill="#9EC6F3"/>
     <path d="M14 34 L22 33 M14 39 L22 37" stroke="#1A3A56" stroke-width="1.6" stroke-linecap="round"/>
     <ellipse cx="37" cy="27" rx="1.9" ry="2.6" fill="#1A3A56"/>
     <ellipse cx="44.5" cy="27" rx="1.9" ry="2.6" fill="#1A3A56"/>
