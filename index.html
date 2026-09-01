@@ -1640,10 +1640,14 @@ function renderCustCalGrid(){
 function renderSlotSection(){
   if(!availability.loaded){ return `<div class="empty-note">讀取可預約時段中...</div>`; }
   if(!state.booking.date){ return `<div class="empty-note">請先選擇日期，即可查看可預約時段。</div>`; }
+  if(travelState.forDate !== state.booking.date || !travelState.loaded){ return `<div class="empty-note">讀取當日預約狀況中...</div>`; }
   const duration = state.service.duration || 120;
   const end = getBusinessEnd(state.booking.date);
   const slots = [];
-  for(let start=BUSINESS_START; start+duration<=end; start+=30){ slots.push({ start, taken: isSlotBlocked(state.booking.date, start, duration) }); }
+  for(let start=BUSINESS_START; start+duration<=end; start+=30){
+    const taken = isSlotBlocked(state.booking.date, start, duration) || isSlotBlockedByTravel(start, duration);
+    slots.push({ start, taken });
+  }
   if(slots.length===0){ return `<div class="empty-note">此服務所需時間較長，當日時段不足，請選擇其他日期。</div>`; }
   return `
     <div class="slot-title">${state.booking.date} 可預約時段</div>
@@ -1713,6 +1717,11 @@ function bindCustCalGrid(){
     document.getElementById('slot-section').innerHTML = renderSlotSection();
     bindCustCalGrid(); bindSlotGrid();
     const btn = document.getElementById('toStep2'); if(btn) btn.disabled = true;
+    loadTravelBlockedSlots(state.booking.date).then(()=>{
+      const slotSection = document.getElementById('slot-section');
+      if(slotSection) slotSection.innerHTML = renderSlotSection();
+      bindSlotGrid();
+    });
   });
 }
 function bindSlotGrid(){
