@@ -347,6 +347,9 @@ function resetRescheduleState(){
   rescheduleState.travelLoaded=false; rescheduleState.travelBlockedRanges=[]; rescheduleState.error='';
 }
 
+const codeEntryState = { code:'', result:null, error:'' };
+function resetCodeEntryState(){ codeEntryState.code=''; codeEntryState.result=null; codeEntryState.error=''; }
+
 const landingHints = {}; // 'yyyy-mm-dd' -> 地址（顯示時會擷取縣市區）
 async function loadAreaHints(){
   if(!GOOGLE_SCRIPT_URL) return;
@@ -560,6 +563,12 @@ function render(){
     bindLookupBookings();
     return;
   }
+  if(state.mode === 'codeEntry'){
+    document.getElementById('progress').innerHTML = '';
+    card.innerHTML = tplCodeEntry();
+    bindCodeEntry();
+    return;
+  }
   renderProgress();
   if(state.step===1) card.innerHTML = tplStep1();
   else if(state.step===2) card.innerHTML = tplStep2();
@@ -679,8 +688,8 @@ function bindLanding(){
     render();
   });
   document.getElementById('toBooking').addEventListener('click', ()=>{
-    state.mode = 'booking';
-    state.step = 1;
+    state.mode = 'codeEntry';
+    resetCodeEntryState();
     render();
   });
   document.getElementById('toRegister').addEventListener('click', ()=>{
@@ -1477,6 +1486,70 @@ async function refreshLookupBookings(){
       lookupBookingsState.bookings = data.bookings || [];
     }
   }catch(err){ console.error('重新讀取預約記錄失敗：', err); }
+}
+
+/* ================= 專屬代碼預約：先輸入代碼再進入選服務流程 ================= */
+function tplCodeEntry(){
+  const r = codeEntryState.result;
+  return `
+    <h2 class="card-title">專屬代碼預約</h2>
+    <p class="card-desc">輸入您的專屬代碼，確認身分後即可直接選擇服務與時段，不用重新填寫資料。</p>
+    <div class="field"><label>專屬代碼</label><input type="text" id="ce-code" placeholder="例如 C1A2B3" value="${esc(codeEntryState.code)}"></div>
+    <div class="err" id="ce-err" style="display:${codeEntryState.error?'block':'none'};">${codeEntryState.error||''}</div>
+    <div class="actions"><button class="btn btn-ghost" id="ceBackLanding" style="flex:0 0 100px;">返回</button><button class="btn btn-primary" id="ceLookupBtn" style="flex:1;">查詢</button></div>
+    ${r ? `
+      <div class="masked-card">
+        <h4>請確認是您本人</h4>
+        <div class="review-line"><span class="k">姓名</span><span class="v">${maskName(r.ownerName)}</span></div>
+        <div class="review-line"><span class="k">寵物</span><span class="v">${esc(r.petName)}</span></div>
+        <div class="review-line"><span class="k">地區</span><span class="v">${esc(extractCityDistrict(r.address))}</span></div>
+      </div>
+      <div class="actions">
+        <button class="btn btn-ghost" id="ceNotMe">不是我</button>
+        <button class="btn btn-primary" id="ceConfirmMe">對，是我，繼續</button>
+      </div>
+    ` : `
+      <div class="empty-note" style="text-align:left;margin-top:16px;">還沒有專屬代碼嗎？可以回首頁點「先建立個人資料」建立一組。</div>
+    `}
+  `;
+}
+function bindCodeEntry(){
+  document.getElementById('ceBackLanding').addEventListener('click', ()=>{ state.mode='landing'; resetCodeEntryState(); render(); });
+  document.getElementById('ceLookupBtn').addEventListener('click', async ()=>{
+    const code = document.getElementById('ce-code').value.trim();
+    const errEl = document.getElementById('ce-err');
+    errEl.style.display = 'none';
+    if(!code){ errEl.textContent='請輸入代碼。'; errEl.style.display='block'; return; }
+    codeEntryState.code = code;
+    if(!GOOGLE_SCRIPT_URL){ errEl.textContent='目前尚未連結試算表，無法查詢代碼。'; errEl.style.display='block'; return; }
+    const btn = document.getElementById('ceLookupBtn');
+    btn.disabled = true; btn.textContent = '查詢中...';
+    try{
+      const res = await fetch(GOOGLE_SCRIPT_URL + '?action=lookupByCode&code=' + encodeURIComponent(code));
+      const data = await res.json();
+      if(!data.success) throw new Error(data.error || '找不到這個代碼');
+      codeEntryState.result = data.customer;
+      render();
+    }catch(err){
+      btn.disabled = false; btn.textContent = '查詢';
+      errEl.textContent = '查無此代碼，請確認輸入正確，或改用「先建立個人資料」。';
+      errEl.style.display = 'block';
+    }
+  });
+  const notMeBtn = document.getElementById('ceNotMe');
+  if(notMeBtn) notMeBtn.addEventListener('click', ()=>{ codeEntryState.result=null; codeEntryState.code=''; render(); });
+  const confirmBtn = document.getElementById('ceConfirmMe');
+  if(confirmBtn) confirmBtn.addEventListener('click', ()=>{
+    const r = codeEntryState.result;
+    state.owner = {
+      name:r.ownerName||'', phone:r.phone||'', lineId:r.lineId||'', address:r.address||'',
+      petName:r.petName||'', petBreed:r.petBreed||'', petAge:r.petAge||'', petWeight:r.petWeight||'',
+      petPersonality:r.petPersonality||'', petHealth:r.petHealth||'', petPhoto:null, customerCode:r.customerCode||null
+    };
+    resetCodeEntryState();
+    state.mode = 'booking'; state.step = 1;
+    render();
+  });
 }
 
 function tplStep1(){
