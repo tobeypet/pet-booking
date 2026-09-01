@@ -1279,7 +1279,7 @@ function tplLookupBookings(){
             <div class="review-line"><span class="k">日期時段</span><span class="v">${esc(b.date)} ${esc(b.time)}–${esc(b.endTime)}</span></div>
             <div class="review-line"><span class="k">服務項目</span><span class="v">${esc(b.serviceLabel)}</span></div>
             <div class="review-line"><span class="k">狀態</span><span class="v" style="color:${b.status==='已確認'?'var(--pine)':'var(--apricot-dark)'};">${esc(b.status)||'—'}</span></div>
-            ${isFuture ? `<div class="actions" style="margin-top:10px;"><button class="btn btn-ghost" style="flex:1;padding:8px;font-size:12.5px;" data-reschedule="${esc(b.confirmCode)}" data-duration="${dur}" data-old-date="${esc(b.date)}" data-old-time="${esc(b.time)}">修改時段</button></div>` : ''}
+            ${isFuture ? `<div class="actions no-export" style="margin-top:10px;"><button class="btn btn-ghost" style="flex:1;padding:8px;font-size:12.5px;" data-reschedule="${esc(b.confirmCode)}" data-duration="${dur}" data-old-date="${esc(b.date)}" data-old-time="${esc(b.time)}">修改時段</button></div>` : ''}
           </div>
         `;}).join('')}
       </div>
@@ -1329,8 +1329,13 @@ function bindLookupBookings(){
       const el = document.getElementById('lb-export-area');
       if(!el || typeof html2canvas === 'undefined') return;
       downloadBtn.disabled = true; downloadBtn.textContent = '產生圖片中...';
+      // 截圖前先把「修改時段」這類不需要出現在匯出圖片裡的元素暫時藏起來，截完再還原，不影響畫面上原本的操作
+      const hideEls = Array.from(el.querySelectorAll('.no-export'));
+      const prevDisplay = hideEls.map(n=>n.style.display);
+      hideEls.forEach(n=>{ n.style.display = 'none'; });
       try{
         const canvas = await html2canvas(el, { backgroundColor:'#FFFFFF', scale:2 });
+        hideEls.forEach((n,i)=>{ n.style.display = prevDisplay[i]; });
         const name = (lookupBookingsState.customer && lookupBookingsState.customer.ownerName) ? lookupBookingsState.customer.ownerName : '預約記錄';
         const filename = name + '_預約記錄.png';
 
@@ -1359,6 +1364,7 @@ function bindLookupBookings(){
         }, 'image/png');
       }catch(err){
         console.error('產生圖片失敗：', err);
+        hideEls.forEach((n,i)=>{ n.style.display = prevDisplay[i]; });
         downloadBtn.disabled = false; downloadBtn.textContent = '下載記錄圖片';
       }
     });
