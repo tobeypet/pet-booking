@@ -1252,19 +1252,46 @@ function bindLookupBookings(){
       downloadBtn.disabled = true; downloadBtn.textContent = '產生圖片中...';
       try{
         const canvas = await html2canvas(el, { backgroundColor:'#FFFFFF', scale:2 });
-        const link = document.createElement('a');
         const name = (lookupBookingsState.customer && lookupBookingsState.customer.ownerName) ? lookupBookingsState.customer.ownerName : '預約記錄';
-        link.download = name + '_預約記錄.png';
-        link.href = canvas.toDataURL('image/png');
-        document.body.appendChild(link);
-        link.click();
-        link.remove();
+        const filename = name + '_預約記錄.png';
+
+        canvas.toBlob(async (blob)=>{
+          if(!blob){ downloadBtn.disabled=false; downloadBtn.textContent='下載記錄圖片'; return; }
+          const file = new File([blob], filename, { type:'image/png' });
+
+          if(navigator.canShare && navigator.canShare({ files:[file] })){
+            try{
+              await navigator.share({ files:[file], title:filename });
+            }catch(shareErr){
+              if(shareErr.name !== 'AbortError'){ openImageFallback(canvas.toDataURL('image/png')); }
+            }
+          } else {
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url; link.download = filename;
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            setTimeout(()=>URL.revokeObjectURL(url), 2000);
+            // 部分手機瀏覽器不支援 download 屬性，額外開一個分頁保底，讓使用者可以長按儲存
+            openImageFallback(canvas.toDataURL('image/png'));
+          }
+          downloadBtn.disabled = false; downloadBtn.textContent = '下載記錄圖片';
+        }, 'image/png');
       }catch(err){
         console.error('產生圖片失敗：', err);
+        downloadBtn.disabled = false; downloadBtn.textContent = '下載記錄圖片';
       }
-      downloadBtn.disabled = false; downloadBtn.textContent = '下載記錄圖片';
     });
   }
+}
+function openImageFallback(dataUrl){
+  try{
+    const win = window.open();
+    if(win){
+      win.document.write('<title>長按圖片即可儲存</title><body style="margin:0;background:#111;display:flex;align-items:center;justify-content:center;min-height:100vh;"><img src="'+dataUrl+'" style="max-width:100%;height:auto;"></body>');
+    }
+  }catch(err){ console.error('開啟圖片失敗：', err); }
 }
 
 function tplStep1(){
