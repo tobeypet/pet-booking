@@ -335,6 +335,18 @@ function resetLookupBookingsState(){
   lookupBookingsState.bookings = []; lookupBookingsState.error = '';
 }
 
+const rescheduleState = {
+  active:false, confirmCode:'', duration:0, oldDate:'', oldTime:'',
+  monthView:{ year:new Date().getFullYear(), month:new Date().getMonth() },
+  date:null, time:null, travelLoaded:false, travelBlockedRanges:[], error:''
+};
+function resetRescheduleState(){
+  rescheduleState.active = false; rescheduleState.confirmCode=''; rescheduleState.duration=0;
+  rescheduleState.oldDate=''; rescheduleState.oldTime='';
+  rescheduleState.date=null; rescheduleState.time=null;
+  rescheduleState.travelLoaded=false; rescheduleState.travelBlockedRanges=[]; rescheduleState.error='';
+}
+
 const landingHints = {}; // 'yyyy-mm-dd' -> 地址（顯示時會擷取縣市區）
 async function loadAreaHints(){
   if(!GOOGLE_SCRIPT_URL) return;
@@ -1192,7 +1204,9 @@ function bindMultiDayDone(){
 
 /* ================= 查詢預約記錄 ================= */
 function tplLookupBookings(){
+  if(rescheduleState.active) return tplReschedule();
   const s = lookupBookingsState;
+  const todayStr = fmtDate(new Date());
   return `
     <h2 class="card-title">查詢預約記錄</h2>
     <p class="card-desc">輸入您的專屬代碼，查詢過去與即將到來的預約狀態。</p>
@@ -1208,19 +1222,24 @@ function tplLookupBookings(){
           <h4>${esc(s.customer.ownerName)} 的預約記錄</h4>
           <div class="review-line"><span class="k">寵物</span><span class="v">${esc(s.customer.petName)}（${esc(s.customer.petBreed)}）</span></div>
         </div>
-        ${s.bookings.length===0 ? `<div class="empty-note">目前沒有任何預約記錄。</div>` : s.bookings.map(b=>`
+        ${s.bookings.length===0 ? `<div class="empty-note">目前沒有任何預約記錄。</div>` : s.bookings.map(b=>{
+          const isFuture = b.date >= todayStr;
+          const dur = toMin(b.endTime) - toMin(b.time);
+          return `
           <div class="review-block">
             <div class="review-line"><span class="k">日期時段</span><span class="v">${esc(b.date)} ${esc(b.time)}–${esc(b.endTime)}</span></div>
             <div class="review-line"><span class="k">服務項目</span><span class="v">${esc(b.serviceLabel)}</span></div>
             <div class="review-line"><span class="k">狀態</span><span class="v" style="color:${b.status==='已確認'?'var(--pine)':'var(--apricot-dark)'};">${esc(b.status)||'—'}</span></div>
+            ${isFuture ? `<div class="actions" style="margin-top:10px;"><button class="btn btn-ghost" style="flex:1;padding:8px;font-size:12.5px;" data-reschedule="${esc(b.confirmCode)}" data-duration="${dur}" data-old-date="${esc(b.date)}" data-old-time="${esc(b.time)}">修改時段</button></div>` : ''}
           </div>
-        `).join('')}
+        `;}).join('')}
       </div>
       ${s.bookings.length>0 ? `<div class="actions"><button class="btn btn-primary" id="lbDownloadBtn" style="flex:1;">下載記錄圖片</button></div>` : ''}
     ` : ''}
   `;
 }
 function bindLookupBookings(){
+  if(rescheduleState.active){ bindReschedule(); return; }
   document.getElementById('lbBackLanding').addEventListener('click', ()=>{ state.mode='landing'; resetLookupBookingsState(); render(); });
   document.getElementById('lbSearchBtn').addEventListener('click', async ()=>{
     const code = document.getElementById('lb-code').value.trim();
@@ -1243,6 +1262,17 @@ function bindLookupBookings(){
       errEl.textContent = '查無此代碼的預約記錄，請確認代碼是否正確。';
       errEl.style.display = 'block';
     }
+  });
+  document.querySelectorAll('[data-reschedule]').forEach(el=>{
+    el.addEventListener('click', ()=>{
+      resetRescheduleState();
+      rescheduleState.active = true;
+      rescheduleState.confirmCode = el.dataset.reschedule;
+      rescheduleState.duration = parseInt(el.dataset.duration, 10);
+      rescheduleState.oldDate = el.dataset.oldDate;
+      rescheduleState.oldTime = el.dataset.oldTime;
+      render();
+    });
   });
   const downloadBtn = document.getElementById('lbDownloadBtn');
   if(downloadBtn){
@@ -1292,6 +1322,161 @@ function openImageFallback(dataUrl){
       win.document.write('<title>長按圖片即可儲存</title><body style="margin:0;background:#111;display:flex;align-items:center;justify-content:center;min-height:100vh;"><img src="'+dataUrl+'" style="max-width:100%;height:auto;"></body>');
     }
   }catch(err){ console.error('開啟圖片失敗：', err); }
+}
+
+/* ================= 修改預約時段（僅限未來的預約） ================= */
+function renderRescheduleCalGrid(){
+  const {year, month} = rescheduleState.monthView;
+  const first = new Date(year, month, 1);
+  const startOffset = first.getDay();
+  const daysInMonth = new Date(year, month+1, 0).getDate();
+  const today = new Date(); today.setHours(0,0,0,0);
+  let html = ['日','一','二','三','四','五','六'].map(d=>`<div class="cal-dow">${d}</div>`).join('');
+  for(let i=0;i<startOffset;i++) html += `<div class="cal-cell empty"></div>`;
+  for(let d=1; d<=daysInMonth; d++){
+    const dt = new Date(year, month, d);
+    const dateStr = fmtDate(dt);
+    const past = isPastDate(dt);
+    const closed = isDateFullyClosed(dateStr);
+    const extended = availability.extendedDates.has(dateStr);
+    const taichung = availability.taichungDates.has(dateStr);
+    const disabled = past || closed;
+    const isToday = fmtDate(dt) === fmtDate(today);
+    const isSelected = rescheduleState.date === dateStr;
+    let cls = 'cal-cell';
+    cls += disabled ? ' disabled' : ' avail';
+    if(!disabled && extended) cls += ' extended';
+    if(isToday) cls += ' today';
+    if(isSelected) cls += ' selected';
+    const tag = taichung ? `<span class="taichung-dot"></span>` : '';
+    html += `<div class="${cls}" data-date="${disabled?'':dateStr}"><span>${d}</span>${tag}</div>`;
+  }
+  return html;
+}
+function isSlotBlockedByRescheduleTravel(startMin, durationMin){
+  if(!rescheduleState.travelLoaded) return false;
+  for(const range of rescheduleState.travelBlockedRanges){
+    if(startMin < range[1] && (startMin+durationMin) > range[0]) return true;
+  }
+  return false;
+}
+async function loadRescheduleTravel(date){
+  rescheduleState.travelLoaded = false;
+  if(!GOOGLE_SCRIPT_URL){ rescheduleState.travelBlockedRanges=[]; rescheduleState.travelLoaded=true; return; }
+  try{
+    const addr = lookupBookingsState.customer ? lookupBookingsState.customer.address : '';
+    const res = await fetch(GOOGLE_SCRIPT_URL + '?action=getTravelBlockedSlots&date=' + encodeURIComponent(date) + '&address=' + encodeURIComponent(addr) + '&excludeCode=' + encodeURIComponent(rescheduleState.confirmCode));
+    const data = await res.json();
+    rescheduleState.travelBlockedRanges = (data.success && data.blockedRanges) ? data.blockedRanges : [];
+  }catch(err){ rescheduleState.travelBlockedRanges = []; }
+  rescheduleState.travelLoaded = true;
+}
+function renderRescheduleSlotSection(){
+  if(!rescheduleState.date){ return `<div class="empty-note">請先選擇日期，即可查看可預約時段。</div>`; }
+  if(!rescheduleState.travelLoaded){ return `<div class="empty-note">檢查行程時間中...</div>`; }
+  const duration = rescheduleState.duration || 60;
+  const end = getBusinessEnd(rescheduleState.date);
+  const slots = [];
+  for(let start=BUSINESS_START; start+duration<=end; start+=30){
+    const taken = isSlotBlocked(rescheduleState.date, start, duration) || isSlotBlockedByRescheduleTravel(start, duration);
+    slots.push({ start, taken });
+  }
+  if(slots.length===0){ return `<div class="empty-note">此服務所需時間較長，當日時段不足，請選擇其他日期。</div>`; }
+  return `
+    <div class="slot-title">${rescheduleState.date} 可預約時段</div>
+    <div class="slot-grid" id="rs-slot-grid">
+      ${slots.map(s=>{
+        const val = fmtTime(s.start);
+        const isSel = rescheduleState.time === val;
+        let cls = 'slot';
+        if(s.taken) cls += ' taken'; else if(isSel) cls += ' selected';
+        return `<div class="${cls}" data-time="${s.taken?'':val}">${val}</div>`;
+      }).join('')}
+    </div>
+  `;
+}
+function tplReschedule(){
+  const rs = rescheduleState;
+  const hrs = rs.duration/60;
+  return `
+    <h2 class="card-title">修改預約時段</h2>
+    <p class="card-desc">原本時間：<b>${esc(rs.oldDate)} ${esc(rs.oldTime)}</b>。請選擇新的日期與時段，服務時間維持 ${hrs % 1===0?hrs:hrs.toFixed(1)} 小時。只能改到還沒到的時段。</p>
+    <div class="cal-head">
+      <button class="cal-nav" id="rs-cal-prev">‹ 上個月</button>
+      <div class="mo">${rs.monthView.year} 年 ${rs.monthView.month+1} 月</div>
+      <button class="cal-nav" id="rs-cal-next">下個月 ›</button>
+    </div>
+    <div class="cal-grid" id="rs-cal-grid">${renderRescheduleCalGrid()}</div>
+    <div class="cal-legend">
+      <span><i class="dot a"></i>可預約</span>
+      <span><i class="dot e"></i>延長營業至20:00</span>
+      <span><i class="dot d"></i>不開放／已無空檔</span>
+    </div>
+    <div id="rs-slot-section">${renderRescheduleSlotSection()}</div>
+    <div class="err" id="rs-err" style="display:${rs.error?'block':'none'};">${rs.error||''}</div>
+    <div class="actions">
+      <button class="btn btn-ghost" id="rsCancel" style="flex:0 0 100px;">取消</button>
+      <button class="btn btn-primary" id="rsConfirm" ${(!rs.date||!rs.time)?'disabled':''}>確認改期</button>
+    </div>
+  `;
+}
+function bindReschedule(){
+  document.getElementById('rsCancel').addEventListener('click', ()=>{ resetRescheduleState(); render(); });
+  document.getElementById('rs-cal-prev').addEventListener('click', ()=>{ rescheduleState.monthView.month--; if(rescheduleState.monthView.month<0){rescheduleState.monthView.month=11; rescheduleState.monthView.year--;} rescheduleState.date=null; rescheduleState.time=null; render(); });
+  document.getElementById('rs-cal-next').addEventListener('click', ()=>{ rescheduleState.monthView.month++; if(rescheduleState.monthView.month>11){rescheduleState.monthView.month=0; rescheduleState.monthView.year++;} rescheduleState.date=null; rescheduleState.time=null; render(); });
+  document.getElementById('rs-cal-grid').addEventListener('click', e=>{
+    const c = e.target.closest('.cal-cell.avail'); if(!c) return;
+    rescheduleState.date = c.dataset.date; rescheduleState.time = null;
+    render();
+    loadRescheduleTravel(rescheduleState.date).then(()=>{ if(rescheduleState.active) render(); });
+  });
+  const slotGrid = document.getElementById('rs-slot-grid');
+  if(slotGrid){
+    slotGrid.addEventListener('click', e=>{
+      const s = e.target.closest('.slot'); if(!s || s.classList.contains('taken')) return;
+      rescheduleState.time = s.dataset.time;
+      render();
+    });
+  }
+  document.getElementById('rsConfirm').addEventListener('click', async ()=>{
+    const rs = rescheduleState;
+    const errEl = document.getElementById('rs-err');
+    errEl.style.display = 'none';
+    if(!rs.date || !rs.time) return;
+    if(!GOOGLE_SCRIPT_URL){ errEl.textContent='目前尚未連結試算表，無法送出。'; errEl.style.display='block'; return; }
+    const btn = document.getElementById('rsConfirm');
+    btn.disabled = true; btn.textContent = '送出中...';
+    const payload = {
+      action:'rescheduleBooking', confirmCode: rs.confirmCode,
+      customerCode: lookupBookingsState.customer.customerCode,
+      newDate: rs.date, newTime: rs.time, newEndTime: fmtTime(toMin(rs.time)+rs.duration)
+    };
+    try{
+      const res = await fetch(GOOGLE_SCRIPT_URL, {
+        method:'POST', headers:{ 'Content-Type':'text/plain;charset=utf-8' }, body: JSON.stringify(payload)
+      });
+      const result = await res.json();
+      if(!result.success) throw new Error(result.error || '修改失敗');
+      resetRescheduleState();
+      await refreshLookupBookings();
+      render();
+    }catch(err){
+      btn.disabled = false; btn.textContent = '確認改期';
+      errEl.textContent = err.message || '修改失敗，請確認網路連線後再試一次。';
+      errEl.style.display = 'block';
+    }
+  });
+}
+async function refreshLookupBookings(){
+  if(!GOOGLE_SCRIPT_URL || !lookupBookingsState.code) return;
+  try{
+    const res = await fetch(GOOGLE_SCRIPT_URL + '?action=getBookingsByCode&code=' + encodeURIComponent(lookupBookingsState.code));
+    const data = await res.json();
+    if(data.success){
+      lookupBookingsState.customer = data.customer;
+      lookupBookingsState.bookings = data.bookings || [];
+    }
+  }catch(err){ console.error('重新讀取預約記錄失敗：', err); }
 }
 
 function tplStep1(){
