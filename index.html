@@ -1255,9 +1255,10 @@ function tplLookupBookings(){
   if(rescheduleState.active) return tplReschedule();
   const s = lookupBookingsState;
   const todayStr = fmtDate(new Date());
+  const upcomingBookings = s.bookings.filter(b => b.date >= todayStr);
   return `
     <h2 class="card-title">查詢預約記錄</h2>
-    <p class="card-desc">輸入您的專屬代碼，查詢過去與即將到來的預約狀態。</p>
+    <p class="card-desc">輸入您的專屬代碼，查詢即將到來的預約狀態。</p>
     <div class="field"><label>專屬代碼</label><input type="text" id="lb-code" placeholder="例如 C1A2B3" value="${esc(s.code)}"></div>
     <div class="err" id="lb-err" style="display:${s.error?'block':'none'};">${s.error||''}</div>
     <div class="actions"><button class="btn btn-ghost" id="lbBackLanding" style="flex:0 0 100px;">返回</button><button class="btn btn-primary" id="lbSearchBtn" style="flex:1;">查詢</button></div>
@@ -1270,7 +1271,7 @@ function tplLookupBookings(){
           <h4>${esc(s.customer.ownerName)} 的預約記錄</h4>
           <div class="review-line"><span class="k">寵物</span><span class="v">${esc(s.customer.petName)}（${esc(s.customer.petBreed)}）</span></div>
         </div>
-        ${s.bookings.length===0 ? `<div class="empty-note">目前沒有任何預約記錄。</div>` : s.bookings.map(b=>{
+        ${upcomingBookings.length===0 ? `<div class="empty-note">目前沒有即將到來的預約記錄。</div>` : upcomingBookings.map(b=>{
           const isFuture = b.date >= todayStr;
           const dur = toMin(b.endTime) - toMin(b.time);
           return `
@@ -1282,7 +1283,7 @@ function tplLookupBookings(){
           </div>
         `;}).join('')}
       </div>
-      ${s.bookings.length>0 ? `<div class="actions"><button class="btn btn-primary" id="lbDownloadBtn" style="flex:1;">下載記錄圖片</button></div>` : ''}
+      ${upcomingBookings.length>0 ? `<div class="actions"><button class="btn btn-primary" id="lbDownloadBtn" style="flex:1;">下載記錄圖片</button></div>` : ''}
     ` : ''}
   `;
 }
