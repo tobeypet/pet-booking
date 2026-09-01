@@ -374,7 +374,7 @@ async function loadLandingAvailability(){
   landingAvailability.loaded = true;
 }
 
-const availability = { closedDates: new Set(), blockedSlots: {}, extendedDates: new Set(), taichungDates: new Set(), loaded:false };
+const availability = { closedDates: new Set(), blockedSlots: {}, extendedDates: new Set(), taichungDates: new Set(), taichungRegionSlots: {}, loaded:false };
 
 const STEP_LABELS = ['選服務時段','填寫資料','確認時段','確認預約'];
 const travelState = { loaded:false, loading:false, blockedRanges:[], forDate:null, error:'' };
@@ -416,14 +416,34 @@ function isSlotBlocked(dateStr, startMin, durationMin){
   for(let t=startMin; t<startMin+durationMin; t+=30){ if(blocked.has(fmtTime(t))) return true; }
   return false;
 }
+// 依地址文字判斷客人屬於台中還是雙北（台北/新北），都不是的話算「其他地區」
+function getAddressRegion(address){
+  address = String(address == null ? '' : address);
+  if(address.indexOf('台中') !== -1) return 'taichung';
+  if(address.indexOf('台北') !== -1 || address.indexOf('新北') !== -1) return 'shuangbei';
+  return 'other';
+}
+// 如果這天是「台中服務日」，時段要看客人屬於台中／雙北，只能選店家在後台為該地區開放的時段；
+// 不屬於台中、雙北的客人這天完全不能預約。address 還不知道時（例如還沒填資料）先不擋，等後面步驟知道地址再驗一次。
+function isSlotAllowedForRegion(dateStr, startMin, durationMin, address){
+  if(!availability.taichungDates.has(dateStr)) return true;
+  if(!address) return true;
+  const region = getAddressRegion(address);
+  if(region === 'other') return false;
+  const dayRegions = availability.taichungRegionSlots[dateStr];
+  const allowed = dayRegions ? dayRegions[region] : null;
+  if(!allowed || allowed.size === 0) return false;
+  for(let t=startMin; t<startMin+durationMin; t+=30){ if(!allowed.has(fmtTime(t))) return false; }
+  return true;
+}
 // 用「目前選的服務需要幾分鐘」去掃過當天營業時間，看看還有沒有任何一個起始時間可以完整塞得下
 // 如果整天都找不到任何一個空檔，代表這天對這個服務來說已經約滿了，日曆格子應該直接顯示成不可點選
-function isDateFullyBookedForDuration(dateStr, durationMin){
+function isDateFullyBookedForDuration(dateStr, durationMin, address){
   if(isDateFullyClosed(dateStr)) return true;
   if(!durationMin) return false;
   const end = getBusinessEnd(dateStr);
   for(let start=BUSINESS_START; start+durationMin<=end; start+=30){
-    if(!isSlotBlocked(dateStr, start, durationMin)) return false;
+    if(!isSlotBlocked(dateStr, start, durationMin) && isSlotAllowedForRegion(dateStr, start, durationMin, address)) return false;
   }
   return true;
 }
@@ -524,6 +544,11 @@ async function loadAvailability(){
       availability.closedDates = new Set(data.settings.closedDates || []);
       availability.extendedDates = new Set(data.settings.extendedDates || []);
       availability.taichungDates = new Set(data.settings.taichungDates || []);
+      const trs = {};
+      Object.entries(data.settings.taichungRegionSlots || {}).forEach(([d, obj])=>{
+        trs[d] = { taichung: new Set((obj && obj.taichung) || []), shuangbei: new Set((obj && obj.shuangbei) || []) };
+      });
+      availability.taichungRegionSlots = trs;
       const bs = {};
       Object.entries(data.settings.blockedSlots || {}).forEach(([d,arr])=>{ bs[d] = new Set(arr); });
       availability.blockedSlots = bs;
@@ -998,7 +1023,7 @@ function renderMultiDayCalGrid(){
     const closed = isDateFullyClosed(dateStr);
     const extended = availability.extendedDates.has(dateStr);
     const taichung = availability.taichungDates.has(dateStr);
-    const fullyBooked = !past && !closed && isDateFullyBookedForDuration(dateStr, multiDayState.service.duration);
+    const fullyBooked = !past && !closed && isDateFullyBookedForDuration(dateStr, multiDayState.service.duration, multiDayState.lookupResult ? multiDayState.lookupResult.address : '');
     const disabled = past || closed || fullyBooked;
     const isToday = fmtDate(dt) === fmtDate(today);
     const isSelected = multiDayState.selectedDates.includes(dateStr);
@@ -1046,7 +1071,8 @@ function renderMultiDayDateList(){
       const end = getBusinessEnd(date);
       const slots = [];
       for(let start=BUSINESS_START; start+duration<=end; start+=30){
-        const taken = isSlotBlocked(date, start, duration) || isSlotBlockedByTravelForDate(date, start, duration);
+        const addr = multiDayState.lookupResult ? multiDayState.lookupResult.address : '';
+        const taken = isSlotBlocked(date, start, duration) || isSlotBlockedByTravelForDate(date, start, duration) || !isSlotAllowedForRegion(date, start, duration, addr);
         slots.push({ start, taken });
       }
       slotHtml = slots.length===0 ? `<div class="empty-note">此服務所需時間較長，當日時段不足，請移除此日期。</div>` : `
@@ -1362,7 +1388,7 @@ function renderRescheduleCalGrid(){
     const closed = isDateFullyClosed(dateStr);
     const extended = availability.extendedDates.has(dateStr);
     const taichung = availability.taichungDates.has(dateStr);
-    const fullyBooked = !past && !closed && isDateFullyBookedForDuration(dateStr, rescheduleState.duration);
+    const fullyBooked = !past && !closed && isDateFullyBookedForDuration(dateStr, rescheduleState.duration, lookupBookingsState.customer ? lookupBookingsState.customer.address : '');
     const disabled = past || closed || fullyBooked;
     const isToday = fmtDate(dt) === fmtDate(today);
     const isSelected = rescheduleState.date === dateStr;
@@ -1402,7 +1428,8 @@ function renderRescheduleSlotSection(){
   const end = getBusinessEnd(rescheduleState.date);
   const slots = [];
   for(let start=BUSINESS_START; start+duration<=end; start+=30){
-    const taken = isSlotBlocked(rescheduleState.date, start, duration) || isSlotBlockedByRescheduleTravel(start, duration);
+    const addr = lookupBookingsState.customer ? lookupBookingsState.customer.address : '';
+    const taken = isSlotBlocked(rescheduleState.date, start, duration) || isSlotBlockedByRescheduleTravel(start, duration) || !isSlotAllowedForRegion(rescheduleState.date, start, duration, addr);
     slots.push({ start, taken });
   }
   if(slots.length===0){ return `<div class="empty-note">此服務所需時間較長，當日時段不足，請選擇其他日期。</div>`; }
@@ -1639,7 +1666,7 @@ function renderCustCalGrid(){
     const closed = isDateFullyClosed(dateStr);
     const extended = availability.extendedDates.has(dateStr);
     const taichung = availability.taichungDates.has(dateStr);
-    const fullyBooked = !past && !closed && isDateFullyBookedForDuration(dateStr, state.service.duration);
+    const fullyBooked = !past && !closed && isDateFullyBookedForDuration(dateStr, state.service.duration, state.owner.address);
     const disabled = past || closed || fullyBooked;
     const isToday = fmtDate(dt) === fmtDate(today);
     const isSelected = state.booking.date === dateStr;
@@ -1662,7 +1689,7 @@ function renderSlotSection(){
   const end = getBusinessEnd(state.booking.date);
   const slots = [];
   for(let start=BUSINESS_START; start+duration<=end; start+=30){
-    const taken = isSlotBlocked(state.booking.date, start, duration) || isSlotBlockedByTravel(start, duration);
+    const taken = isSlotBlocked(state.booking.date, start, duration) || isSlotBlockedByTravel(start, duration) || !isSlotAllowedForRegion(state.booking.date, start, duration, state.owner.address);
     slots.push({ start, taken });
   }
   if(slots.length===0){ return `<div class="empty-note">此服務所需時間較長，當日時段不足，請選擇其他日期。</div>`; }
@@ -1924,7 +1951,7 @@ function renderSlotSectionStep3(){
   const end = getBusinessEnd(state.booking.date);
   const slots = [];
   for(let start=BUSINESS_START; start+duration<=end; start+=30){
-    const taken = isSlotBlocked(state.booking.date, start, duration) || isSlotBlockedByTravel(start, duration);
+    const taken = isSlotBlocked(state.booking.date, start, duration) || isSlotBlockedByTravel(start, duration) || !isSlotAllowedForRegion(state.booking.date, start, duration, state.owner.address);
     slots.push({ start, taken });
   }
   if(slots.length===0){ return `<div class="empty-note">此服務所需時間較長，當日時段不足，請選擇其他日期。</div>`; }
@@ -1963,6 +1990,18 @@ function bindStep3(){
   document.getElementById('next3').addEventListener('click', ()=>{
     const errEl = document.getElementById('step3-err');
     if(!state.booking.date || !state.booking.time){ errEl.textContent = '請選擇預約日期與時段。'; errEl.style.display='block'; return; }
+    const duration = state.service.duration || 120;
+    const startMin = toMin(state.booking.time);
+    const stillOk = !isSlotBlocked(state.booking.date, startMin, duration)
+      && !isSlotBlockedByTravel(startMin, duration)
+      && isSlotAllowedForRegion(state.booking.date, startMin, duration, state.owner.address);
+    if(!stillOk){
+      state.booking.time = null;
+      errEl.textContent = '這個時段依你留的地址判斷目前不能預約，請重新選擇其他時段。';
+      errEl.style.display = 'block';
+      render();
+      return;
+    }
     errEl.style.display = 'none';
     state.step = 4; render();
   });

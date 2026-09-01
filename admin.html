@@ -85,6 +85,16 @@
   .admin-slot-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:8px;}
   .admin-slot{padding:9px 4px;border-radius:9px;border:1.5px solid var(--line);background:var(--cream);text-align:center;font-size:12.5px;font-weight:600;color:var(--pine);cursor:pointer;}
   .admin-slot.blocked{background:var(--danger-light);border-color:var(--danger);color:var(--danger);text-decoration:line-through;}
+  .region-cell{user-select:none;-webkit-user-select:none;touch-action:none;}
+  .region-cell.region-on-tc{background:#3D6FA8;border-color:#2A5480;color:#fff;}
+  .region-cell.region-on-sb{background:#3E9B6B;border-color:#2F7A53;color:#fff;}
+  .region-cell.dragging{outline:2px dashed var(--ink);outline-offset:-2px;}
+  .region-legend{display:flex;gap:16px;font-size:11.5px;color:var(--ink-soft);margin:2px 0 10px;flex-wrap:wrap;}
+  .region-legend span{display:inline-flex;align-items:center;gap:5px;}
+  .region-dot{width:9px;height:9px;border-radius:4px;display:inline-block;}
+  .region-dot.tc{background:#3D6FA8;}
+  .region-dot.sb{background:#3E9B6B;}
+  .link-btn{background:none;border:none;color:var(--ink-soft);font-size:11.5px;text-decoration:underline;cursor:pointer;padding:0 0 16px;}
   .empty-note{font-size:13px;color:var(--ink-soft);background:var(--cream);border-radius:10px;padding:14px;text-align:${'left'};}
 
   .summary-box{background:var(--cream);border-radius:12px;padding:14px;margin-top:18px;}
@@ -183,7 +193,7 @@
    此網址同時用來讀取／儲存後台設定（與客人端 index.html 共用同一個網址）*/
 const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwfwpOEL4l_iqzXx0Ky9_J2l-HzFsHZD-nURQ8VRpGPrs_NYAN6u5RTtVE607RutPH6/exec";
 
-const adminConfig = { closedDates:new Set(), blockedSlots:{}, extendedDates:new Set(), taichungDates:new Set() };
+const adminConfig = { closedDates:new Set(), blockedSlots:{}, extendedDates:new Set(), taichungDates:new Set(), taichungRegionSlots:{} };
 const adminView = { year:new Date().getFullYear(), month:new Date().getMonth(), selectedDate:null };
 const BUSINESS_START = 9*60, DEFAULT_BUSINESS_END = 13*60, EXTENDED_BUSINESS_END = 20*60;
 
@@ -246,6 +256,11 @@ async function loadSettings(){
       adminConfig.closedDates = new Set(data.settings.closedDates || []);
       adminConfig.extendedDates = new Set(data.settings.extendedDates || []);
       adminConfig.taichungDates = new Set(data.settings.taichungDates || []);
+      const trs = {};
+      Object.entries(data.settings.taichungRegionSlots || {}).forEach(([d, obj])=>{
+        trs[d] = { taichung: new Set((obj && obj.taichung) || []), shuangbei: new Set((obj && obj.shuangbei) || []) };
+      });
+      adminConfig.taichungRegionSlots = trs;
       const bs = {};
       Object.entries(data.settings.blockedSlots || {}).forEach(([d,arr])=>{ bs[d] = new Set(arr); });
       adminConfig.blockedSlots = bs;
@@ -262,6 +277,7 @@ async function saveSettings(){
     closedDates: Array.from(adminConfig.closedDates),
     extendedDates: Array.from(adminConfig.extendedDates),
     taichungDates: Array.from(adminConfig.taichungDates),
+    taichungRegionSlots: Object.fromEntries(Object.entries(adminConfig.taichungRegionSlots).map(([k,v])=>[k, { taichung: Array.from(v.taichung||[]), shuangbei: Array.from(v.shuangbei||[]) }])),
     blockedSlots: Object.fromEntries(Object.entries(adminConfig.blockedSlots).map(([k,v])=>[k, Array.from(v)]))
   };
   try{
@@ -1036,6 +1052,31 @@ function renderAdminDetail(){
     </div>
     `;
     const end = getBusinessEnd(date);
+    if(taichung){
+      const regionData = adminConfig.taichungRegionSlots[date] || { taichung: new Set(), shuangbei: new Set() };
+      const tcSet = regionData.taichung || new Set();
+      const sbSet = regionData.shuangbei || new Set();
+      html += `
+      <div class="slot-title">台中／雙北可預約時段</div>
+      <div class="region-legend">
+        <span><i class="region-dot tc"></i>台中客人可約</span>
+        <span><i class="region-dot sb"></i>雙北客人可約</span>
+      </div>
+      <div class="empty-note" style="margin-bottom:14px;">在下面各拖曳圈選一段連續時間（點一下再拖到結尾放開即可）；地址判斷不是台中、也不是雙北的客人，這天將完全無法預約任何時段。</div>
+      <div class="field"><label>台中客人可預約時段</label>
+        <div class="admin-slot-grid region-grid" id="admin-region-grid-taichung" data-region="taichung">
+          ${baseSlots(end).map(t=>{ const val=fmtTime(t); return `<div class="admin-slot region-cell ${tcSet.has(val)?'region-on-tc':''}" data-time="${val}">${val}</div>`; }).join('')}
+        </div>
+        <button type="button" class="link-btn" data-clear-region="taichung">清除台中時段</button>
+      </div>
+      <div class="field"><label>雙北客人可預約時段</label>
+        <div class="admin-slot-grid region-grid" id="admin-region-grid-shuangbei" data-region="shuangbei">
+          ${baseSlots(end).map(t=>{ const val=fmtTime(t); return `<div class="admin-slot region-cell ${sbSet.has(val)?'region-on-sb':''}" data-time="${val}">${val}</div>`; }).join('')}
+        </div>
+        <button type="button" class="link-btn" data-clear-region="shuangbei">清除雙北時段</button>
+      </div>
+      `;
+    }
     const blocked = adminConfig.blockedSlots[date] || new Set();
     html += `<div class="slot-title">個別時段設定（點選切換，共 ${baseSlots(end).length} 個時段）</div>
       <div class="admin-slot-grid" id="admin-slot-grid">
@@ -1107,6 +1148,63 @@ function bindAdmin(){
   document.querySelectorAll('[data-remove-taichung]').forEach(btn=>{ btn.addEventListener('click', ()=>{ adminConfig.taichungDates.delete(btn.dataset.removeTaichung); render(); saveSettings(); }); });
   document.querySelectorAll('[data-remove-extended]').forEach(btn=>{ btn.addEventListener('click', ()=>{ adminConfig.extendedDates.delete(btn.dataset.removeExtended); render(); saveSettings(); }); });
   document.querySelectorAll('[data-remove-blocked]').forEach(btn=>{ btn.addEventListener('click', ()=>{ delete adminConfig.blockedSlots[btn.dataset.removeBlocked]; render(); saveSettings(); }); });
+
+  bindRegionDragGrid(document.getElementById('admin-region-grid-taichung'), 'taichung');
+  bindRegionDragGrid(document.getElementById('admin-region-grid-shuangbei'), 'shuangbei');
+  document.querySelectorAll('[data-clear-region]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const date = adminView.selectedDate;
+      const region = btn.dataset.clearRegion;
+      if(!adminConfig.taichungRegionSlots[date]) adminConfig.taichungRegionSlots[date] = { taichung:new Set(), shuangbei:new Set() };
+      adminConfig.taichungRegionSlots[date][region] = new Set();
+      render(); saveSettings();
+    });
+  });
+}
+
+// 讓「台中可預約時段」「雙北可預約時段」這兩條時段列可以用拖曳圈選一段連續時間
+// 拖曳放開時，會把那段時間整段設成該地區可預約（取代掉這個地區原本選的那段）
+function bindRegionDragGrid(gridEl, region){
+  if(!gridEl) return;
+  const cells = Array.from(gridEl.querySelectorAll('.region-cell'));
+  let dragging = false, startIdx = null;
+  function idxFromPoint(x, y){
+    const el = document.elementFromPoint(x, y);
+    const cell = el && el.closest ? el.closest('.region-cell') : null;
+    return (cell && cells.includes(cell)) ? cells.indexOf(cell) : null;
+  }
+  function previewRange(a, b){
+    const lo = Math.min(a,b), hi = Math.max(a,b);
+    cells.forEach((c,i)=>{ c.classList.toggle('dragging', i>=lo && i<=hi); });
+  }
+  function commitRange(a, b){
+    const lo = Math.min(a,b), hi = Math.max(a,b);
+    const date = adminView.selectedDate;
+    if(!adminConfig.taichungRegionSlots[date]) adminConfig.taichungRegionSlots[date] = { taichung:new Set(), shuangbei:new Set() };
+    const times = cells.slice(lo, hi+1).map(c=>c.dataset.time);
+    adminConfig.taichungRegionSlots[date][region] = new Set(times);
+    render(); saveSettings();
+  }
+  gridEl.addEventListener('pointerdown', e=>{
+    const cell = e.target.closest('.region-cell'); if(!cell) return;
+    dragging = true;
+    startIdx = cells.indexOf(cell);
+    previewRange(startIdx, startIdx);
+    e.preventDefault();
+  });
+  gridEl.addEventListener('pointermove', e=>{
+    if(!dragging) return;
+    const idx = idxFromPoint(e.clientX, e.clientY);
+    if(idx != null) previewRange(startIdx, idx);
+    e.preventDefault();
+  });
+  window.addEventListener('pointerup', e=>{
+    if(!dragging) return;
+    dragging = false;
+    const idx = idxFromPoint(e.clientX, e.clientY);
+    const endIdx = (idx == null) ? startIdx : idx;
+    commitRange(startIdx, endIdx);
+  });
 }
 
 loadSettings();
