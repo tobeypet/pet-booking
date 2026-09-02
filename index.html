@@ -302,6 +302,7 @@ const state = {
   service:{ category:'', animalType:'', hairLength:'', duration:0, label:'' },
   booking:{ date:null, time:null },
   identifyMode:'new', // 'new' | 'returning'
+  identityConfirmed:false, // 是否已經透過專屬代碼確認過身分（不管姓名/電話欄位是否剛好都有值，都算已確認）
   lookupCode:'',
   lookupResult:null, // 完整資料（先隱藏，確認後才套用）
   confirmCode:null,
@@ -811,6 +812,7 @@ function bindRegister(){
         petPersonality: rd.petPersonality, petHealth: rd.petHealth, petPhoto: rd.petPhoto,
         customerCode: registerState.resultCode
       };
+      state.identityConfirmed = true;
       registerState.resultCode = null;
       registerState.data = { name:'',phone:'',lineId:'',address:'',petName:'',petBreed:'',petAge:'',petWeight:'',petPersonality:'',petHealth:'',petPhoto:null };
       state.mode = 'booking'; state.step = 1;
@@ -1595,6 +1597,7 @@ function bindCodeEntry(){
       petName:r.petName||'', petBreed:r.petBreed||'', petAge:r.petAge||'', petWeight:r.petWeight||'',
       petPersonality:r.petPersonality||'', petHealth:r.petHealth||'', petPhoto:null, customerCode:r.customerCode||null
     };
+    state.identityConfirmed = true;
     resetCodeEntryState();
     state.mode = 'booking'; state.step = 1;
     render();
@@ -1654,7 +1657,7 @@ function tplStep1(){
     ${ready ? calendarBlock : `<div class="empty-note">請先選擇服務與寵物類型，即可查看可預約時段。</div>`}
     <div class="err" id="step1-err" style="display:none;"></div>
     <div class="actions">
-      <button class="btn btn-primary" id="toStep2" ${canProceed?'':'disabled'}>${(state.owner.customerCode && state.owner.name && state.owner.phone) ? '確認可預約時段' : '前往填寫資料，準備預約'}</button>
+      <button class="btn btn-primary" id="toStep2" ${canProceed?'':'disabled'}>${state.identityConfirmed ? '確認可預約時段' : '前往填寫資料，準備預約'}</button>
     </div>
   `;
 }
@@ -1683,8 +1686,10 @@ function renderCustCalGrid(){
     if(isToday) cls += ' today';
     if(isSelected) cls += ' selected';
     const tag = taichung ? `<span class="taichung-dot"></span>` : '';
+    const hintAddr = landingHints[dateStr];
+    const areaHint = (!disabled && hintAddr) ? `<span class="area-hint">${esc(extractDistrictOnly(hintAddr))}</span>` : '';
     const fullLabel = fullyBooked ? `<span class="area-hint">已約滿</span>` : '';
-    html += `<div class="${cls}" data-date="${disabled?'':dateStr}"><span>${d}</span>${tag}${fullLabel}</div>`;
+    html += `<div class="${cls}" data-date="${disabled?'':dateStr}"><span>${d}</span>${tag}${areaHint}${fullLabel}</div>`;
   }
   return html;
 }
@@ -1747,7 +1752,7 @@ function bindStep1(){
   bindSlotGrid();
   document.getElementById('toStep2').addEventListener('click', ()=>{
     if(!state.booking.date || !state.booking.time) return;
-    const hasIdentity = state.owner.customerCode && state.owner.name && state.owner.phone;
+    const hasIdentity = state.identityConfirmed;
     state.step = hasIdentity ? 3 : 2;
     render();
   });
@@ -1892,6 +1897,7 @@ function bindStep2(){
         petName:r.petName||'', petBreed:r.petBreed||'', petAge:r.petAge||'', petWeight:r.petWeight||'',
         petPersonality:r.petPersonality||'', petHealth:r.petHealth||'', petPhoto:null, customerCode:r.customerCode||null
       };
+      state.identityConfirmed = true;
       state.step = 3; render();
     });
     return;
@@ -1923,6 +1929,7 @@ function bindStep2(){
     const errEl = document.getElementById('step2-err');
     if(required.some(v=>!v)){ errEl.textContent = '請完整填寫姓名、電話、地址、寵物名稱與品種。'; errEl.style.display='block'; return; }
     errEl.style.display='none';
+    state.identityConfirmed = true;
     state.step = 3; render();
   });
 }
@@ -2121,6 +2128,7 @@ document.addEventListener('click', e=>{
     state.service = {category:'',animalType:'',hairLength:'',duration:0,label:''};
     state.booking = {date:null,time:null};
     state.identifyMode = 'new';
+    state.identityConfirmed = false;
     state.lookupCode = ''; state.lookupResult = null;
     state.confirmCode = null; state.customerCode = null;
     travelState.loaded = false; travelState.loading = false; travelState.blockedRanges = []; travelState.forDate = null; travelState.error = '';
