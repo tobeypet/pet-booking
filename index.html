@@ -99,6 +99,14 @@
   .svc-card{border:1.5px solid var(--line);border-radius:14px;padding:16px 14px;cursor:pointer;background:var(--cream);transition:all .15s ease;text-align:left;}
   .svc-card:hover{border-color:var(--sage);}
   .svc-card.active{border-color:var(--apricot);background:#E5F8FD;box-shadow:0 0 0 3px rgba(228,148,61,0.15);}
+  .svc-grid-small{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:18px;}
+  .svc-card.small{padding:10px 12px;}
+  .svc-card.small .svc-icon{font-size:18px;}
+  .svc-card.small .svc-name{font-size:13px;}
+  .svc-card.small .svc-sub{font-size:10.5px;}
+  .addon-panel{background:var(--cream);border:1.5px solid var(--line);border-radius:12px;padding:14px;margin:-8px 0 18px;}
+  .addon-check{display:flex;align-items:center;gap:8px;font-size:13.5px;color:var(--ink);cursor:pointer;margin-bottom:10px;}
+  .addon-check input{width:16px;height:16px;}
   .svc-icon{display:block;margin-bottom:6px;}
   .svc-icon svg{width:36px;height:36px;}
   .svc-name{font-weight:700;font-size:15px;color:var(--pine);}
@@ -299,7 +307,7 @@ const state = {
     name:'', phone:'', lineId:'', address:'',
     petName:'', petBreed:'', petAge:'', petWeight:'', petPersonality:'', petHealth:'', petPhoto:null
   },
-  service:{ category:'', animalType:'', hairLength:'', duration:0, label:'' },
+  service:{ category:'', animalType:'', hairLength:'', duration:0, label:'', addons:{brushTeeth:false, other:''}, addonsOpen:false },
   booking:{ date:null, time:null },
   identifyMode:'new', // 'new' | 'returning'
   identityConfirmed:false, // 是否已經透過專屬代碼確認過身分（不管姓名/電話欄位是否剛好都有值，都算已確認）
@@ -561,14 +569,30 @@ async function loadAvailability(){
 /* ================= service durations ================= */
 const SERVICE_DEF = {
   grooming: { name:'美容', rules:{ cat:{duration:120,label:'貓咪美容'}, dogLong:{duration:120,label:'長毛狗美容'}, dogShort:{duration:120,label:'短毛狗美容'} } },
-  bath: { name:'洗澡', rules:{ cat:{duration:120,label:'貓咪洗澡'}, dogLong:{duration:90,label:'長毛狗洗澡'}, dogShort:{duration:60,label:'短毛狗洗澡'} } }
+  bath: { name:'洗澡', rules:{ cat:{duration:120,label:'貓咪洗澡'}, dogLong:{duration:90,label:'長毛狗洗澡'}, dogShort:{duration:60,label:'短毛狗洗澡'} } },
+  nail: { name:'剪指甲', rules:{ cat:{duration:30,label:'貓咪剪指甲'}, dogLong:{duration:30,label:'狗狗剪指甲'}, dogShort:{duration:30,label:'狗狗剪指甲'} } }
 };
 function computeDuration(){
   const s = state.service;
   if(!s.category || !s.animalType) return null;
   if(s.animalType==='cat') return SERVICE_DEF[s.category].rules.cat;
-  if(s.animalType==='dog'){ if(!s.hairLength) return null; return s.hairLength==='long' ? SERVICE_DEF[s.category].rules.dogLong : SERVICE_DEF[s.category].rules.dogShort; }
+  if(s.animalType==='dog'){
+    if(s.category==='nail') return SERVICE_DEF[s.category].rules.dogShort; // 剪指甲不分毛長
+    if(!s.hairLength) return null;
+    return s.hairLength==='long' ? SERVICE_DEF[s.category].rules.dogLong : SERVICE_DEF[s.category].rules.dogShort;
+  }
   return null;
+}
+// 把「刷牙」「其他」這些附加項目併進服務項目文字，送出預約跟確認頁顯示時都用這個
+function buildServiceLabelWithAddons(s){
+  let label = s.label || '';
+  const extras = [];
+  if(s.addons){
+    if(s.addons.brushTeeth) extras.push('刷牙');
+    if(s.addons.other && s.addons.other.trim()) extras.push(s.addons.other.trim());
+  }
+  if(extras.length) label += '＋' + extras.join('、');
+  return label;
 }
 
 const custView = { year:new Date().getFullYear(), month:new Date().getMonth() };
@@ -1610,7 +1634,7 @@ function bindCodeEntry(){
 
 function tplStep1(){
   const s = state.service;
-  const showDogHair = s.animalType==='dog';
+  const showDogHair = s.animalType==='dog' && s.category!=='nail';
   const dur = computeDuration();
   const ready = !!dur;
   const canProceed = ready && state.booking.date && state.booking.time;
@@ -1642,6 +1666,15 @@ function tplStep1(){
       <div class="svc-card ${s.category==='grooming'?'active':''}" data-svc="grooming"><span class="svc-icon">${svgScissorsIcon()}</span><div class="svc-name">美容</div><div class="svc-sub">貓／狗（長毛・短毛）均約 2 小時</div></div>
       <div class="svc-card ${s.category==='bath'?'active':''}" data-svc="bath"><span class="svc-icon">${svgBathIcon()}</span><div class="svc-name">洗澡</div><div class="svc-sub">依貓／狗與毛長，時間不同</div></div>
     </div>
+    <div class="svc-grid-small" id="svc-grid-small">
+      <div class="svc-card small ${s.category==='nail'?'active':''}" data-svc="nail"><div class="svc-name">剪指甲</div><div class="svc-sub">貓／狗約 30 分鐘</div></div>
+      <div class="svc-card small ${s.addonsOpen?'active':''}" data-addon-toggle="1"><div class="svc-name">附加項目</div><div class="svc-sub">刷牙・其他需求</div></div>
+    </div>
+    ${s.addonsOpen ? `
+    <div class="addon-panel" id="addon-panel">
+      <label class="addon-check"><input type="checkbox" id="addon-brush" ${s.addons.brushTeeth?'checked':''}> 刷牙</label>
+      <div class="field" style="margin-bottom:0;"><label>其他 <span class="hint">(選填，可自己輸入)</span></label><input type="text" id="addon-other" placeholder="例如：順便剪毛遮眼、耳朵清潔…" value="${esc(s.addons.other)}"></div>
+    </div>` : ''}
     <div class="field">
       <label>寵物類別</label>
       <div class="choice-row" id="animal-row">
@@ -1657,7 +1690,7 @@ function tplStep1(){
         <div class="choice-pill ${s.hairLength==='short'?'active':''}" data-h="short">短毛</div>
       </div>
     </div>` : ''}
-    ${ready ? `<div class="duration-box"><span>預估所需時間</span><b>${dur.duration/60 % 1===0? dur.duration/60 : (dur.duration/60).toFixed(1)} 小時</b></div>` : ''}
+    ${ready ? `<div class="duration-box"><span>預估所需時間</span><b>${dur.duration<60 ? dur.duration+' 分鐘' : (dur.duration/60 % 1===0? dur.duration/60 : (dur.duration/60).toFixed(1)) + ' 小時'}</b></div>` : ''}
     ${ready ? calendarBlock : `<div class="empty-note">請先選擇服務與寵物類型，即可查看可預約時段。</div>`}
     <div class="err" id="step1-err" style="display:none;"></div>
     <div class="actions">
@@ -1731,6 +1764,23 @@ function bindStep1(){
     state.booking.date=null; state.booking.time=null;
     render();
   });
+  document.getElementById('svc-grid-small').addEventListener('click', e=>{
+    const c = e.target.closest('.svc-card'); if(!c) return;
+    if(c.dataset.addonToggle){
+      state.service.addonsOpen = !state.service.addonsOpen;
+      render();
+      return;
+    }
+    state.service.category = c.dataset.svc;
+    if(state.service.animalType==='dog') state.service.hairLength=''; // 剪指甲不分毛長，切回其他服務時要重問
+    updateDurationLabel();
+    state.booking.date=null; state.booking.time=null;
+    render();
+  });
+  const addonBrush = document.getElementById('addon-brush');
+  if(addonBrush) addonBrush.addEventListener('change', ()=>{ state.service.addons.brushTeeth = addonBrush.checked; });
+  const addonOther = document.getElementById('addon-other');
+  if(addonOther) addonOther.addEventListener('input', ()=>{ state.service.addons.other = addonOther.value; });
   document.getElementById('animal-row').addEventListener('click', e=>{
     const p = e.target.closest('.choice-pill'); if(!p) return;
     state.service.animalType = p.dataset.a; if(p.dataset.a==='cat') state.service.hairLength='';
@@ -2070,8 +2120,9 @@ function tplStep4(){
     </div>
     <div class="review-block">
       <h4>服務內容</h4>
-      <div class="review-line"><span class="k">服務項目</span><span class="v">${s.label}</span></div>
-      <div class="review-line"><span class="k">預估時間</span><span class="v">${hrs % 1===0?hrs:hrs.toFixed(1)} 小時</span></div>
+      <div class="review-line"><span class="k">服務項目</span><span class="v">${esc(buildServiceLabelWithAddons(s))}</span></div>
+      ${(s.addons.brushTeeth || (s.addons.other && s.addons.other.trim())) ? `<div class="review-line"><span class="k">附加項目</span><span class="v">${esc([s.addons.brushTeeth?'刷牙':null, s.addons.other && s.addons.other.trim() ? s.addons.other.trim() : null].filter(Boolean).join('、'))}</span></div>` : ''}
+      <div class="review-line"><span class="k">預估時間</span><span class="v">${s.duration<60 ? s.duration+' 分鐘' : (hrs % 1===0?hrs:hrs.toFixed(1))+' 小時'}</span></div>
       <div class="review-line"><span class="k">預約日期</span><span class="v">${b.date}</span></div>
       <div class="review-line"><span class="k">預約時段</span><span class="v">${b.time} – ${fmtTime(toMin(b.time)+s.duration)}</span></div>
     </div>
@@ -2091,7 +2142,7 @@ function bindStep4(){
       action:'booking', customerCode: o.customerCode || undefined,
       confirmCode: code, ownerName: o.name, phone: o.phone, lineId: o.lineId, address: o.address,
       petName: o.petName, petBreed: o.petBreed, petAge: o.petAge, petWeight: o.petWeight,
-      petPersonality: o.petPersonality, petHealth: o.petHealth, petPhoto: o.petPhoto || '', serviceLabel: s.label, durationMinutes: s.duration,
+      petPersonality: o.petPersonality, petHealth: o.petHealth, petPhoto: o.petPhoto || '', serviceLabel: buildServiceLabelWithAddons(s), durationMinutes: s.duration,
       date: b.date, time: b.time, endTime: fmtTime(toMin(b.time) + s.duration), taichung: availability.taichungDates.has(b.date)
     };
     if(!GOOGLE_SCRIPT_URL){ state.confirmCode = code; state.customerCode = null; state.step = 5; render(); return; }
@@ -2145,7 +2196,7 @@ document.addEventListener('click', e=>{
     state.step = 1;
     state.landingDate = null;
     state.owner = {name:'',phone:'',lineId:'',address:'',petName:'',petBreed:'',petAge:'',petWeight:'',petPersonality:'',petHealth:'',petPhoto:null};
-    state.service = {category:'',animalType:'',hairLength:'',duration:0,label:''};
+    state.service = {category:'',animalType:'',hairLength:'',duration:0,label:'',addons:{brushTeeth:false,other:''},addonsOpen:false};
     state.booking = {date:null,time:null};
     state.identifyMode = 'new';
     state.identityConfirmed = false;
