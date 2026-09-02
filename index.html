@@ -900,7 +900,7 @@ function tplMultiDayCode(){
     <p class="card-desc">輸入您的專屬代碼，確認身分後即可一次為多個日期安排預約（同一種服務）。</p>
     <div class="field"><label>專屬代碼</label><input type="text" id="md-code" placeholder="例如 C1A2B3" value="${esc(multiDayState.lookupCode)}"></div>
     <div class="err" id="md-err" style="display:${multiDayState.error?'block':'none'};">${multiDayState.error||''}</div>
-    <div class="actions"><button class="btn btn-ghost" id="mdBackLanding" style="flex:0 0 100px;">返回</button><button class="btn btn-primary" id="mdLookupBtn" style="flex:1;">查詢</button></div>
+    ${!r ? `<div class="actions"><button class="btn btn-ghost" id="mdBackLanding" style="flex:0 0 100px;">返回</button><button class="btn btn-primary" id="mdLookupBtn" style="flex:1;">查詢</button></div>` : ''}
     ${r ? `
       <div class="masked-card">
         <h4>請確認是您本人</h4>
@@ -916,8 +916,10 @@ function tplMultiDayCode(){
   `;
 }
 function bindMultiDayCode(){
-  document.getElementById('mdBackLanding').addEventListener('click', ()=>{ state.mode='landing'; resetMultiDayState(); render(); });
-  document.getElementById('mdLookupBtn').addEventListener('click', async ()=>{
+  const backBtn = document.getElementById('mdBackLanding');
+  if(backBtn) backBtn.addEventListener('click', ()=>{ state.mode='landing'; resetMultiDayState(); render(); });
+  const lookupBtn = document.getElementById('mdLookupBtn');
+  if(lookupBtn) lookupBtn.addEventListener('click', async ()=>{
     const code = document.getElementById('md-code').value.trim();
     const errEl = document.getElementById('md-err');
     errEl.style.display = 'none';
@@ -1547,7 +1549,7 @@ function tplCodeEntry(){
     <p class="card-desc">輸入您的專屬代碼，確認身分後即可直接選擇服務與時段，不用重新填寫資料。</p>
     <div class="field"><label>專屬代碼</label><input type="text" id="ce-code" placeholder="例如 C1A2B3" value="${esc(codeEntryState.code)}"></div>
     <div class="err" id="ce-err" style="display:${codeEntryState.error?'block':'none'};">${codeEntryState.error||''}</div>
-    <div class="actions"><button class="btn btn-ghost" id="ceBackLanding" style="flex:0 0 100px;">返回</button><button class="btn btn-primary" id="ceLookupBtn" style="flex:1;">查詢</button></div>
+    ${!r ? `<div class="actions"><button class="btn btn-ghost" id="ceBackLanding" style="flex:0 0 100px;">返回</button><button class="btn btn-primary" id="ceLookupBtn" style="flex:1;">查詢</button></div>` : ''}
     ${r ? `
       <div class="masked-card">
         <h4>請確認是您本人</h4>
@@ -1565,8 +1567,10 @@ function tplCodeEntry(){
   `;
 }
 function bindCodeEntry(){
-  document.getElementById('ceBackLanding').addEventListener('click', ()=>{ state.mode='landing'; resetCodeEntryState(); render(); });
-  document.getElementById('ceLookupBtn').addEventListener('click', async ()=>{
+  const backBtn = document.getElementById('ceBackLanding');
+  if(backBtn) backBtn.addEventListener('click', ()=>{ state.mode='landing'; resetCodeEntryState(); render(); });
+  const lookupBtn = document.getElementById('ceLookupBtn');
+  if(lookupBtn) lookupBtn.addEventListener('click', async ()=>{
     const code = document.getElementById('ce-code').value.trim();
     const errEl = document.getElementById('ce-err');
     errEl.style.display = 'none';
@@ -1811,7 +1815,7 @@ function tplReturning(){
       <input type="text" id="f-code" placeholder="例如 C1A2B3" value="${esc(state.lookupCode)}">
     </div>
     <div class="err" id="lookup-err" style="display:none;"></div>
-    <div class="actions" style="margin-top:6px;"><button class="btn btn-primary" id="lookupBtn" style="flex:1;">帶入資料</button></div>
+    ${!r ? `<div class="actions" style="margin-top:6px;"><button class="btn btn-primary" id="lookupBtn" style="flex:1;">帶入資料</button></div>` : ''}
     ${r ? `
     <div class="masked-card">
       <h4>請確認是您本人</h4>
@@ -1866,7 +1870,8 @@ function bindStep2(){
   });
 
   if(state.identifyMode==='returning'){
-    document.getElementById('lookupBtn').addEventListener('click', async ()=>{
+    const lookupBtn2 = document.getElementById('lookupBtn');
+    if(lookupBtn2) lookupBtn2.addEventListener('click', async ()=>{
       const code = document.getElementById('f-code').value.trim();
       const errEl = document.getElementById('lookup-err');
       errEl.style.display='none';
