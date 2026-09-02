@@ -1756,8 +1756,23 @@ function bindStep1(){
   bindSlotGrid();
   document.getElementById('toStep2').addEventListener('click', ()=>{
     if(!state.booking.date || !state.booking.time) return;
-    const hasIdentity = state.identityConfirmed;
-    state.step = hasIdentity ? 3 : 2;
+    if(state.identityConfirmed){
+      // 已經確認過身分的客人，地址跟行程時間在這一頁選時段時就已經即時算過了，
+      // 不需要再跳到一模一樣的日曆重選一次，直接進確認預約頁面即可
+      const duration = state.service.duration || 120;
+      const startMin = toMin(state.booking.time);
+      const stillOk = !isSlotBlocked(state.booking.date, startMin, duration)
+        && !isSlotBlockedByTravel(startMin, duration)
+        && isSlotAllowedForRegion(state.booking.date, startMin, duration, state.owner.address);
+      if(!stillOk){
+        state.booking.time = null;
+        render();
+        return;
+      }
+      state.step = 4;
+    } else {
+      state.step = 2;
+    }
     render();
   });
 }
@@ -2065,7 +2080,7 @@ function tplStep4(){
   `;
 }
 function bindStep4(){
-  document.getElementById('back4').addEventListener('click', ()=>{ state.step=3; render(); });
+  document.getElementById('back4').addEventListener('click', ()=>{ state.step = state.identityConfirmed ? 1 : 3; render(); });
   document.getElementById('submit4').addEventListener('click', async ()=>{
     const btn = document.getElementById('submit4');
     const errEl = document.getElementById('step4-err');
