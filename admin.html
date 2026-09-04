@@ -198,6 +198,7 @@ const adminView = { year:new Date().getFullYear(), month:new Date().getMonth(), 
 const BUSINESS_START = 9*60, DEFAULT_BUSINESS_END = 13*60, EXTENDED_BUSINESS_END = 20*60;
 
 const pageState = { view:'calendar' }; // 'calendar' | 'diary' | 'newCustomer' | 'newBooking'
+const adminAuth = { password: sessionStorage.getItem('adminAuthPassword') || '', verified:false, error:'' };
 const diaryState = { field:'name', value:'', results:[], customer:null, entries:[], error:'' };
 const DIARY_FIELDS = { name:'飼主姓名', phone:'電話', line:'LINE ID', pet:'寵物名稱' };
 function esc(str){ return String(str==null?'':str).replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
@@ -246,6 +247,63 @@ function setStatus(mode){
   else if(mode==='loading'){ pill.textContent = '讀取設定中...'; pill.className='status-pill saving'; }
 }
 
+/* ================= 後台密碼登入 ================= */
+function renderAuthGate(){
+  document.getElementById('card').innerHTML = `
+    <h2 class="card-title">店家後台登入</h2>
+    <p class="card-desc">請輸入後台密碼才能繼續使用。</p>
+    <div class="field"><label>密碼</label><input type="password" id="auth-password" placeholder="請輸入密碼"></div>
+    <div class="err" id="auth-err" style="display:${adminAuth.error?'block':'none'};">${esc(adminAuth.error)}</div>
+    <div class="actions"><button class="btn btn-primary" id="authSubmitBtn" style="flex:1;">登入</button></div>
+  `;
+  const btn = document.getElementById('authSubmitBtn');
+  const input = document.getElementById('auth-password');
+  btn.addEventListener('click', submitAuth);
+  input.addEventListener('keydown', e=>{ if(e.key==='Enter') submitAuth(); });
+  input.focus();
+}
+async function submitAuth(){
+  const input = document.getElementById('auth-password');
+  const errEl = document.getElementById('auth-err');
+  const btn = document.getElementById('authSubmitBtn');
+  const pw = input.value;
+  if(!pw){ errEl.textContent='請輸入密碼。'; errEl.style.display='block'; return; }
+  if(!GOOGLE_SCRIPT_URL){ errEl.textContent='尚未連結試算表，無法驗證密碼。'; errEl.style.display='block'; return; }
+  errEl.style.display='none';
+  btn.disabled = true; btn.textContent = '驗證中...';
+  try{
+    const res = await fetch(GOOGLE_SCRIPT_URL + '?action=checkAdminPassword&adminPassword=' + encodeURIComponent(pw));
+    const data = await res.json();
+    if(data.success){
+      adminAuth.password = pw;
+      adminAuth.verified = true;
+      sessionStorage.setItem('adminAuthPassword', pw);
+      loadSettings();
+    } else {
+      errEl.textContent = '密碼錯誤，請再試一次。';
+      errEl.style.display = 'block';
+      btn.disabled = false; btn.textContent = '登入';
+    }
+  }catch(err){
+    console.error('驗證密碼失敗：', err);
+    errEl.textContent = '驗證失敗，請確認網路連線後再試一次。';
+    errEl.style.display = 'block';
+    btn.disabled = false; btn.textContent = '登入';
+  }
+}
+// 進站時先確認密碼：本機示範模式（沒接試算表）不需要密碼；有記住密碼的話先偷偷驗一次，驗過才載入正式內容
+async function initAdminAuth(){
+  if(!GOOGLE_SCRIPT_URL){ loadSettings(); return; }
+  if(adminAuth.password){
+    try{
+      const res = await fetch(GOOGLE_SCRIPT_URL + '?action=checkAdminPassword&adminPassword=' + encodeURIComponent(adminAuth.password));
+      const data = await res.json();
+      if(data.success){ adminAuth.verified = true; loadSettings(); return; }
+    }catch(err){ console.error('驗證密碼失敗：', err); }
+  }
+  renderAuthGate();
+}
+
 async function loadSettings(){
   if(!GOOGLE_SCRIPT_URL){ setStatus(); render(); return; }
   setStatus('loading');
@@ -283,7 +341,7 @@ async function saveSettings(){
   try{
     const res = await fetch(GOOGLE_SCRIPT_URL, {
       method:'POST', headers:{ 'Content-Type':'text/plain;charset=utf-8' },
-      body: JSON.stringify({ action:'saveSettings', settings })
+      body: JSON.stringify({ action:'saveSettings', adminPassword: adminAuth.password, settings })
     });
     const result = await res.json();
     if(!result.success) throw new Error(result.error || '儲存失敗');
@@ -294,6 +352,9 @@ async function saveSettings(){
 /* ================= render ================= */
 function render(){
   const tabs = `
+    <div style="display:flex;justify-content:flex-end;margin-bottom:8px;">
+      <button type="button" id="logoutBtn" class="link-btn" style="padding:0;">登出後台</button>
+    </div>
     <div class="view-tabs" id="view-tabs">
       <button type="button" data-v="calendar" class="${pageState.view==='calendar'?'active':''}">預約時間管理</button>
       <button type="button" data-v="diary" class="${pageState.view==='diary'?'active':''}">寵物日記</button>
@@ -308,8 +369,14 @@ function render(){
   else bodyHtml = tplAdmin();
 
   document.getElementById('card').innerHTML = tabs + bodyHtml;
+  document.getElementById('logoutBtn').addEventListener('click', ()=>{
+    adminAuth.password=''; adminAuth.verified=false;
+    sessionStorage.removeItem('adminAuthPassword');
+    renderAuthGate();
+  });
   document.getElementById('view-tabs').addEventListener('click', e=>{
     const btn = e.target.closest('button'); if(!btn) return;
+    if(!btn.dataset.v) return;
     pageState.view = btn.dataset.v; render();
   });
   if(pageState.view==='diary') bindDiary();
@@ -382,7 +449,7 @@ async function searchDiary(){
   const btn = document.getElementById('diarySearchBtn');
   btn.disabled = true; btn.textContent = '查詢中...';
   try{
-    const res = await fetch(GOOGLE_SCRIPT_URL + '?action=searchDiaryCustomer&field=' + diaryState.field + '&value=' + encodeURIComponent(value));
+    const res = await fetch(GOOGLE_SCRIPT_URL + '?action=searchDiaryCustomer&field=' + diaryState.field + '&value=' + encodeURIComponent(value) + '&adminPassword=' + encodeURIComponent(adminAuth.password));
     const data = await res.json();
     if(!data.success) throw new Error(data.error || '查詢失敗');
     const results = data.results || [];
@@ -406,7 +473,7 @@ async function selectDiaryCustomer(customer){
   diaryState.results = [];
   diaryState.error = '';
   try{
-    const diaryRes = await fetch(GOOGLE_SCRIPT_URL + '?action=getDiary&phone=' + encodeURIComponent(customer.phone));
+    const diaryRes = await fetch(GOOGLE_SCRIPT_URL + '?action=getDiary&phone=' + encodeURIComponent(customer.phone) + '&adminPassword=' + encodeURIComponent(adminAuth.password));
     const diaryData = await diaryRes.json();
     diaryState.entries = (diaryData.success && diaryData.entries) ? diaryData.entries : [];
   }catch(err){
@@ -423,7 +490,7 @@ async function addDiaryEntry(){
   try{
     const res = await fetch(GOOGLE_SCRIPT_URL, {
       method:'POST', headers:{ 'Content-Type':'text/plain;charset=utf-8' },
-      body: JSON.stringify({ action:'addDiaryEntry', phone: diaryState.customer.phone, petName: diaryState.customer.petName, note })
+      body: JSON.stringify({ action:'addDiaryEntry', adminPassword: adminAuth.password, phone: diaryState.customer.phone, petName: diaryState.customer.petName, note })
     });
     const result = await res.json();
     if(!result.success) throw new Error(result.error || '新增失敗');
@@ -911,7 +978,7 @@ async function searchNBCustomer(){
   const btn = document.getElementById('nbSearchBtn');
   btn.disabled = true; btn.textContent = '查詢中...';
   try{
-    const res = await fetch(GOOGLE_SCRIPT_URL + '?action=searchDiaryCustomer&field=' + newBookingState.field + '&value=' + encodeURIComponent(value));
+    const res = await fetch(GOOGLE_SCRIPT_URL + '?action=searchDiaryCustomer&field=' + newBookingState.field + '&value=' + encodeURIComponent(value) + '&adminPassword=' + encodeURIComponent(adminAuth.password));
     const data = await res.json();
     if(!data.success) throw new Error(data.error || '查詢失敗');
     const results = data.results || [];
@@ -944,7 +1011,7 @@ async function submitNBBooking(){
   const c = newBookingState.customer, s = newBookingState.service, nb = newBookingState;
   const code = genBookingCode();
   const payload = {
-    action:'booking', createdByAdmin:true, customerCode: c.customerCode, hideAreaHint: nb.hideAreaHint,
+    action:'booking', createdByAdmin:true, adminPassword: adminAuth.password, customerCode: c.customerCode, hideAreaHint: nb.hideAreaHint,
     confirmCode: code, ownerName:c.ownerName, phone:c.phone, lineId:c.lineId, address:c.address,
     petName:c.petName, petBreed:c.petBreed, petAge:c.petAge, petWeight:c.petWeight,
     petPersonality:c.petPersonality, petHealth:c.petHealth,
@@ -1207,9 +1274,7 @@ function bindRegionDragGrid(gridEl, region){
   });
 }
 
-loadSettings();
-
-if('serviceWorker' in navigator){
+initAdminAuth();if('serviceWorker' in navigator){
   window.addEventListener('load', ()=>{ navigator.serviceWorker.register('sw.js').catch(()=>{}); });
 }
 
