@@ -199,7 +199,7 @@ const BUSINESS_START = 9*60, DEFAULT_BUSINESS_END = 13*60, EXTENDED_BUSINESS_END
 
 const pageState = { view:'calendar' }; // 'calendar' | 'diary' | 'newCustomer' | 'newBooking'
 const adminAuth = { password: sessionStorage.getItem('adminAuthPassword') || '', verified:false, error:'' };
-const diaryState = { field:'name', value:'', results:[], customer:null, entries:[], error:'', addPetOpen:false, newPetDraft:{ name:'',breed:'',age:'',weight:'',personality:'',health:'' } };
+const diaryState = { field:'name', value:'', results:[], customer:null, entries:[], error:'', addPetOpen:false, newPetDraft:{ name:'',breed:'',age:'',weight:'',personality:'',health:'' }, editingPetId:null, editPetDraft:{ name:'',breed:'',age:'',weight:'',personality:'',health:'' } };
 const DIARY_FIELDS = { name:'飼主姓名', phone:'電話', line:'LINE ID', pet:'寵物名稱' };
 function esc(str){ return String(str==null?'':str).replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
 
@@ -429,11 +429,23 @@ function tplDiary(){
         <div class="info-line"><span class="k">電話</span><span class="v">${esc(c.phone)}</span></div>
         <div class="info-line"><span class="k">LINE ID</span><span class="v">${esc(c.lineId)||'—'}</span></div>
       </div>
-      <div class="slot-title" style="margin-top:16px;">寵物名單</div>
+      <div class="slot-title" style="margin-top:16px;">寵物名單 <span class="hint">(點寵物卡片可修改資料)</span></div>
       <div class="svc-grid" id="diary-pet-grid">
-        ${(c.pets||[]).map(p=>`<div class="svc-card"><div class="svc-name">${esc(p.name)}</div><div class="svc-sub">${esc(p.breed||'')}</div></div>`).join('')}
+        ${(c.pets||[]).map(p=>`<div class="svc-card ${diaryState.editingPetId===p.id?'active':''}" data-pet-id="${esc(p.id)}"><div class="svc-name">${esc(p.name)}</div><div class="svc-sub">${esc(p.breed||'')}</div></div>`).join('')}
         <div class="svc-card ${diaryState.addPetOpen?'active':''}" id="diary-pet-add-card"><div class="svc-name">＋ 新增寵物</div></div>
       </div>
+      ${diaryState.editingPetId ? `
+      <div class="addon-panel" id="diary-edit-pet-panel">
+        <div class="slot-title">修改寵物資料</div>
+        <div class="field"><label>寵物名稱</label><input type="text" id="dep-name" value="${esc(diaryState.editPetDraft.name)}"></div>
+        <div class="field"><label>寵物品種</label><input type="text" id="dep-breed" value="${esc(diaryState.editPetDraft.breed)}"></div>
+        <div class="field"><label>年齡</label><input type="text" id="dep-age" value="${esc(diaryState.editPetDraft.age)}"></div>
+        <div class="field"><label>體重</label><input type="text" id="dep-weight" value="${esc(diaryState.editPetDraft.weight)}"></div>
+        <div class="field"><label>寵物個性</label><textarea id="dep-personality">${esc(diaryState.editPetDraft.personality)}</textarea></div>
+        <div class="field"><label>健康狀況</label><textarea id="dep-health">${esc(diaryState.editPetDraft.health)}</textarea></div>
+        <div class="err" id="dep-err" style="display:none;"></div>
+        <div class="actions" style="margin-top:6px;"><button class="btn btn-ghost" id="depCancelBtn">取消</button><button class="btn btn-primary" id="depSubmitBtn" style="flex:1;">儲存修改</button></div>
+      </div>` : ''}
       ${diaryState.addPetOpen ? `
       <div class="addon-panel" id="diary-add-pet-panel">
         <div class="field"><label>寵物名稱</label><input type="text" id="dnp-name" value="${esc(diaryState.newPetDraft.name)}"></div>
@@ -491,6 +503,8 @@ async function selectDiaryCustomer(customer){
   diaryState.error = '';
   diaryState.addPetOpen = false;
   diaryState.newPetDraft = { name:'',breed:'',age:'',weight:'',personality:'',health:'' };
+  diaryState.editingPetId = null;
+  diaryState.editPetDraft = { name:'',breed:'',age:'',weight:'',personality:'',health:'' };
   try{
     const diaryRes = await fetch(GOOGLE_SCRIPT_URL + '?action=getDiary&phone=' + encodeURIComponent(customer.phone) + '&adminPassword=' + encodeURIComponent(adminAuth.password));
     const diaryData = await diaryRes.json();
@@ -536,9 +550,52 @@ function bindDiary(){
   if(petGrid){
     petGrid.addEventListener('click', e=>{
       const addCard = e.target.closest('#diary-pet-add-card');
-      if(!addCard) return;
-      diaryState.addPetOpen = !diaryState.addPetOpen;
+      if(addCard){ diaryState.addPetOpen = !diaryState.addPetOpen; diaryState.editingPetId = null; render(); return; }
+      const card = e.target.closest('[data-pet-id]'); if(!card) return;
+      const pet = (diaryState.customer.pets||[]).find(p=>p.id===card.dataset.petId);
+      if(!pet) return;
+      if(diaryState.editingPetId === pet.id){ diaryState.editingPetId = null; }
+      else {
+        diaryState.editingPetId = pet.id;
+        diaryState.editPetDraft = { name:pet.name||'', breed:pet.breed||'', age:pet.age||'', weight:pet.weight||'', personality:pet.personality||'', health:pet.health||'' };
+        diaryState.addPetOpen = false;
+      }
       render();
+    });
+  }
+  const depCancelBtn = document.getElementById('depCancelBtn');
+  if(depCancelBtn) depCancelBtn.addEventListener('click', ()=>{ diaryState.editingPetId = null; render(); });
+  const depBtn = document.getElementById('depSubmitBtn');
+  if(depBtn){
+    depBtn.addEventListener('click', async ()=>{
+      const p = diaryState.editPetDraft;
+      p.name = document.getElementById('dep-name').value.trim();
+      p.breed = document.getElementById('dep-breed').value.trim();
+      p.age = document.getElementById('dep-age').value.trim();
+      p.weight = document.getElementById('dep-weight').value.trim();
+      p.personality = document.getElementById('dep-personality').value.trim();
+      p.health = document.getElementById('dep-health').value.trim();
+      const errEl = document.getElementById('dep-err');
+      if(!p.name || !p.breed){ errEl.textContent='請填寫寵物名稱與品種。'; errEl.style.display='block'; return; }
+      if(!GOOGLE_SCRIPT_URL){ errEl.textContent='尚未連結試算表，無法修改。'; errEl.style.display='block'; return; }
+      errEl.style.display='none';
+      depBtn.disabled = true; depBtn.textContent = '儲存中...';
+      try{
+        const res = await fetch(GOOGLE_SCRIPT_URL, {
+          method:'POST', headers:{ 'Content-Type':'text/plain;charset=utf-8' },
+          body: JSON.stringify({ action:'updatePet', adminPassword: adminAuth.password, customerCode: diaryState.customer.customerCode, petId: diaryState.editingPetId, petName:p.name, petBreed:p.breed, petAge:p.age, petWeight:p.weight, petPersonality:p.personality, petHealth:p.health })
+        });
+        const result = await res.json();
+        if(!result.success) throw new Error(result.error || '修改失敗');
+        diaryState.customer.pets = result.pets;
+        diaryState.editingPetId = null;
+        render();
+      }catch(err){
+        depBtn.disabled = false; depBtn.textContent = '儲存修改';
+        errEl.textContent = '修改失敗，請確認網路連線後再試一次。';
+        errEl.style.display = 'block';
+        console.error('修改寵物失敗：', err);
+      }
     });
   }
   const dnpBtn = document.getElementById('dnpSubmitBtn');
