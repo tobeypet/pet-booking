@@ -199,7 +199,7 @@ const BUSINESS_START = 9*60, DEFAULT_BUSINESS_END = 13*60, EXTENDED_BUSINESS_END
 
 const pageState = { view:'calendar' }; // 'calendar' | 'diary' | 'newCustomer' | 'newBooking'
 const adminAuth = { password: sessionStorage.getItem('adminAuthPassword') || '', verified:false, error:'' };
-const diaryState = { field:'name', value:'', results:[], customer:null, entries:[], error:'', addPetOpen:false, newPetDraft:{ name:'',breed:'',age:'',weight:'',personality:'',health:'' }, editingPetId:null, editPetDraft:{ name:'',breed:'',age:'',weight:'',personality:'',health:'' } };
+const diaryState = { field:'name', value:'', results:[], customer:null, entries:[], error:'', addPetOpen:false, newPetDraft:{ name:'',breed:'',age:'',weight:'',personality:'',health:'',species:'' }, editingPetId:null, editPetDraft:{ name:'',breed:'',age:'',weight:'',personality:'',health:'',species:'' } };
 const DIARY_FIELDS = { name:'飼主姓名', phone:'電話', line:'LINE ID', pet:'寵物名稱' };
 function esc(str){ return String(str==null?'':str).replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
 
@@ -228,7 +228,7 @@ const FLAT_SERVICES = ['walk','homecare']; // 這兩項不分貓狗，用「基�
 
 const newCustomerState = {
   data:{ ownerName:'',phone:'',lineId:'',address:'',remarks:'',contactPref:'' },
-  pets:[ { name:'',breed:'',age:'',weight:'',personality:'',health:'' } ],
+  pets:[ { name:'',breed:'',age:'',weight:'',personality:'',health:'',species:'' } ],
   resultCode:null, resultPets:null, lastCreated:null, error:''
 };
 
@@ -236,7 +236,7 @@ const newBookingState = {
   field:'name', value:'', results:[], customer:null, error:'',
   stage:'pets', // 'pets'（選寵物）| 'services'（每隻寵物選服務）| 'time'（選時間）
   selectedPets:[], petServices:{}, // petId -> {category,animalType,hairLength,multiplier,duration,label}
-  addPetOpen:false, newPetDraft:{ name:'',breed:'',age:'',weight:'',personality:'',health:'',photo:null },
+  addPetOpen:false, newPetDraft:{ name:'',breed:'',age:'',weight:'',personality:'',health:'',species:'',photo:null },
   service:{ category:'', duration:0, label:'' }, // 這是「所有選定寵物加總」的彙總結果，供日曆/時段邏輯共用
   date:null, time:null, customTime:false, hideAreaHint:false,
   monthView:{ year:new Date().getFullYear(), month:new Date().getMonth() }
@@ -441,6 +441,13 @@ function tplDiary(){
         <div class="slot-title">修改寵物資料</div>
         <div class="field"><label>寵物名稱</label><input type="text" id="dep-name" value="${esc(diaryState.editPetDraft.name)}"></div>
         <div class="field"><label>寵物品種</label><input type="text" id="dep-breed" value="${esc(diaryState.editPetDraft.breed)}"></div>
+        <div class="field">
+          <label>寵物類別</label>
+          <div class="choice-row" id="dep-species-row">
+            <div class="choice-pill ${diaryState.editPetDraft.species==='cat'?'active':''}" data-a="cat">貓咪</div>
+            <div class="choice-pill ${diaryState.editPetDraft.species==='dog'?'active':''}" data-a="dog">狗狗</div>
+          </div>
+        </div>
         <div class="field"><label>年齡</label><input type="text" id="dep-age" value="${esc(diaryState.editPetDraft.age)}"></div>
         <div class="field"><label>體重</label><input type="text" id="dep-weight" value="${esc(diaryState.editPetDraft.weight)}"></div>
         <div class="field"><label>寵物個性</label><textarea id="dep-personality">${esc(diaryState.editPetDraft.personality)}</textarea></div>
@@ -452,6 +459,13 @@ function tplDiary(){
       <div class="addon-panel" id="diary-add-pet-panel">
         <div class="field"><label>寵物名稱</label><input type="text" id="dnp-name" value="${esc(diaryState.newPetDraft.name)}"></div>
         <div class="field"><label>寵物品種</label><input type="text" id="dnp-breed" value="${esc(diaryState.newPetDraft.breed)}"></div>
+        <div class="field">
+          <label>寵物類別 <span class="hint">(選填，設定好下次預約就不用再選)</span></label>
+          <div class="choice-row" id="dnp-species-row">
+            <div class="choice-pill ${diaryState.newPetDraft.species==='cat'?'active':''}" data-a="cat">貓咪</div>
+            <div class="choice-pill ${diaryState.newPetDraft.species==='dog'?'active':''}" data-a="dog">狗狗</div>
+          </div>
+        </div>
         <div class="field"><label>年齡</label><input type="text" id="dnp-age" value="${esc(diaryState.newPetDraft.age)}"></div>
         <div class="field"><label>體重</label><input type="text" id="dnp-weight" value="${esc(diaryState.newPetDraft.weight)}"></div>
         <div class="field"><label>寵物個性</label><textarea id="dnp-personality">${esc(diaryState.newPetDraft.personality)}</textarea></div>
@@ -504,9 +518,9 @@ async function selectDiaryCustomer(customer){
   diaryState.results = [];
   diaryState.error = '';
   diaryState.addPetOpen = false;
-  diaryState.newPetDraft = { name:'',breed:'',age:'',weight:'',personality:'',health:'' };
+  diaryState.newPetDraft = { name:'',breed:'',age:'',weight:'',personality:'',health:'',species:'' };
   diaryState.editingPetId = null;
-  diaryState.editPetDraft = { name:'',breed:'',age:'',weight:'',personality:'',health:'' };
+  diaryState.editPetDraft = { name:'',breed:'',age:'',weight:'',personality:'',health:'',species:'' };
   try{
     const diaryRes = await fetch(GOOGLE_SCRIPT_URL + '?action=getDiary&phone=' + encodeURIComponent(customer.phone) + '&adminPassword=' + encodeURIComponent(adminAuth.password));
     const diaryData = await diaryRes.json();
@@ -559,7 +573,7 @@ function bindDiary(){
       if(diaryState.editingPetId === pet.id){ diaryState.editingPetId = null; }
       else {
         diaryState.editingPetId = pet.id;
-        diaryState.editPetDraft = { name:pet.name||'', breed:pet.breed||'', age:pet.age||'', weight:pet.weight||'', personality:pet.personality||'', health:pet.health||'' };
+        diaryState.editPetDraft = { name:pet.name||'', breed:pet.breed||'', age:pet.age||'', weight:pet.weight||'', personality:pet.personality||'', health:pet.health||'', species:pet.species||'' };
         diaryState.addPetOpen = false;
       }
       render();
@@ -567,6 +581,12 @@ function bindDiary(){
   }
   const depCancelBtn = document.getElementById('depCancelBtn');
   if(depCancelBtn) depCancelBtn.addEventListener('click', ()=>{ diaryState.editingPetId = null; render(); });
+  const depSpeciesRow = document.getElementById('dep-species-row');
+  if(depSpeciesRow) depSpeciesRow.addEventListener('click', e=>{
+    const pill = e.target.closest('.choice-pill'); if(!pill) return;
+    diaryState.editPetDraft.species = (diaryState.editPetDraft.species===pill.dataset.a) ? '' : pill.dataset.a;
+    render();
+  });
   const depBtn = document.getElementById('depSubmitBtn');
   if(depBtn){
     depBtn.addEventListener('click', async ()=>{
@@ -585,7 +605,7 @@ function bindDiary(){
       try{
         const res = await fetch(GOOGLE_SCRIPT_URL, {
           method:'POST', headers:{ 'Content-Type':'text/plain;charset=utf-8' },
-          body: JSON.stringify({ action:'updatePet', adminPassword: adminAuth.password, customerCode: diaryState.customer.customerCode, petId: diaryState.editingPetId, petName:p.name, petBreed:p.breed, petAge:p.age, petWeight:p.weight, petPersonality:p.personality, petHealth:p.health })
+          body: JSON.stringify({ action:'updatePet', adminPassword: adminAuth.password, customerCode: diaryState.customer.customerCode, petId: diaryState.editingPetId, petName:p.name, petBreed:p.breed, petSpecies:p.species||'', petAge:p.age, petWeight:p.weight, petPersonality:p.personality, petHealth:p.health })
         });
         const result = await res.json();
         if(!result.success) throw new Error(result.error || '修改失敗');
@@ -600,6 +620,12 @@ function bindDiary(){
       }
     });
   }
+  const dnpSpeciesRow = document.getElementById('dnp-species-row');
+  if(dnpSpeciesRow) dnpSpeciesRow.addEventListener('click', e=>{
+    const pill = e.target.closest('.choice-pill'); if(!pill) return;
+    diaryState.newPetDraft.species = (diaryState.newPetDraft.species===pill.dataset.a) ? '' : pill.dataset.a;
+    render();
+  });
   const dnpBtn = document.getElementById('dnpSubmitBtn');
   if(dnpBtn){
     dnpBtn.addEventListener('click', async ()=>{
@@ -618,13 +644,13 @@ function bindDiary(){
       try{
         const res = await fetch(GOOGLE_SCRIPT_URL, {
           method:'POST', headers:{ 'Content-Type':'text/plain;charset=utf-8' },
-          body: JSON.stringify({ action:'addPet', adminPassword: adminAuth.password, customerCode: diaryState.customer.customerCode, petName:p.name, petBreed:p.breed, petAge:p.age, petWeight:p.weight, petPersonality:p.personality, petHealth:p.health })
+          body: JSON.stringify({ action:'addPet', adminPassword: adminAuth.password, customerCode: diaryState.customer.customerCode, petName:p.name, petBreed:p.breed, petSpecies:p.species||'', petAge:p.age, petWeight:p.weight, petPersonality:p.personality, petHealth:p.health })
         });
         const result = await res.json();
         if(!result.success) throw new Error(result.error || '新增失敗');
         diaryState.customer.pets = result.pets;
         diaryState.addPetOpen = false;
-        diaryState.newPetDraft = { name:'',breed:'',age:'',weight:'',personality:'',health:'' };
+        diaryState.newPetDraft = { name:'',breed:'',age:'',weight:'',personality:'',health:'',species:'' };
         render();
       }catch(err){
         dnpBtn.disabled = false; dnpBtn.textContent = '新增這隻寵物';
@@ -643,6 +669,13 @@ function tplNewCustomer(){
     <div class="slot-title" style="margin-top:18px;">${newCustomerState.pets.length>1 ? `寵物 #${i+1}` : '寵物'}${newCustomerState.pets.length>1?` <button type="button" class="link-btn" data-remove-nc-pet="${i}" style="float:right;padding:0;">移除這隻</button>`:''}</div>
     <div class="field"><label>寵物名稱</label><input type="text" class="nc-petname" data-i="${i}" value="${esc(p.name)}"></div>
     <div class="field"><label>寵物品種</label><input type="text" class="nc-petbreed" data-i="${i}" value="${esc(p.breed)}"></div>
+    <div class="field">
+      <label>寵物類別 <span class="hint">(選填，設定好之後預約就不用再選)</span></label>
+      <div class="choice-row nc-species-row" data-i="${i}">
+        <div class="choice-pill ${p.species==='cat'?'active':''}" data-a="cat">貓咪</div>
+        <div class="choice-pill ${p.species==='dog'?'active':''}" data-a="dog">狗狗</div>
+      </div>
+    </div>
     <div class="field"><label>年齡</label><input type="text" class="nc-petage" data-i="${i}" value="${esc(p.age)}"></div>
     <div class="field"><label>體重</label><input type="text" class="nc-petweight" data-i="${i}" value="${esc(p.weight)}"></div>
     <div class="field"><label>寵物個性</label><textarea class="nc-personality" data-i="${i}">${esc(p.personality)}</textarea></div>
@@ -709,8 +742,16 @@ function bindNewCustomer(){
     });
   });
   document.getElementById('ncAddPet').addEventListener('click', ()=>{
-    newCustomerState.pets.push({ name:'',breed:'',age:'',weight:'',personality:'',health:'' });
+    newCustomerState.pets.push({ name:'',breed:'',age:'',weight:'',personality:'',health:'',species:'' });
     render();
+  });
+  document.querySelectorAll('.nc-species-row').forEach(row=>{
+    row.addEventListener('click', e=>{
+      const pill = e.target.closest('.choice-pill'); if(!pill) return;
+      const i = Number(row.dataset.i);
+      newCustomerState.pets[i].species = (newCustomerState.pets[i].species===pill.dataset.a) ? '' : pill.dataset.a;
+      render();
+    });
   });
   document.getElementById('ncSubmitBtn').addEventListener('click', async ()=>{
     const d = newCustomerState.data;
@@ -744,7 +785,7 @@ function bindNewCustomer(){
         body: JSON.stringify({
           action:'addCustomer', ownerName:d.ownerName, phone:d.phone, lineId:d.lineId, address:d.address,
           remarks:d.remarks, contactPref:d.contactPref,
-          pets: petsToSend.map(p=>({ petName:p.name, petBreed:p.breed, petAge:p.age, petWeight:p.weight, petPersonality:p.personality, petHealth:p.health }))
+          pets: petsToSend.map(p=>({ petName:p.name, petBreed:p.breed, petSpecies:p.species||'', petAge:p.age, petWeight:p.weight, petPersonality:p.personality, petHealth:p.health }))
         })
       });
       const result = await res.json();
@@ -756,7 +797,7 @@ function bindNewCustomer(){
         customerCode: result.customerCode, pets: result.pets || []
       };
       newCustomerState.data = { ownerName:'',phone:'',lineId:'',address:'',remarks:'',contactPref:'' };
-      newCustomerState.pets = [{ name:'',breed:'',age:'',weight:'',personality:'',health:'' }];
+      newCustomerState.pets = [{ name:'',breed:'',age:'',weight:'',personality:'',health:'',species:'' }];
       render();
     }catch(err){
       btn.disabled = false; btn.textContent = '新增客人資料';
@@ -779,8 +820,8 @@ function computeServiceDuration(s){
   if(s.animalType==='dog'){ if(!s.hairLength) return null; return s.hairLength==='long' ? SERVICE_DEF[s.category].rules.dogLong : SERVICE_DEF[s.category].rules.dogShort; }
   return null;
 }
-function ensurePetService(petId){
-  if(!newBookingState.petServices[petId]) newBookingState.petServices[petId] = { category:'', animalType:'', hairLength:'', multiplier:1, duration:0, label:'' };
+function ensurePetService(petId, defaultSpecies){
+  if(!newBookingState.petServices[petId]) newBookingState.petServices[petId] = { category:'', animalType: defaultSpecies||'', hairLength:'', multiplier:1, duration:0, label:'' };
   return newBookingState.petServices[petId];
 }
 function updatePetServiceDuration(petId){
@@ -849,34 +890,13 @@ function tplNewBooking(){
   const c = nb.customer;
   if(nb.stage==='pets'){
     const pets = c.pets || [];
-    return `
-      <h2 class="card-title">選擇這次要預約的寵物</h2>
-      <p class="card-desc">飼主：${esc(c.ownerName)}｜${esc(c.phone)}。可以勾選不只一隻，等一下會分別幫每隻選服務，並依你選的開始時間依序往後排。</p>
-      <div class="svc-grid" id="nb-pet-select-grid">
-        ${pets.map(p=>`<div class="svc-card ${nb.selectedPets.some(sp=>sp.id===p.id)?'active':''}" data-pet-id="${esc(p.id)}"><div class="svc-name">${esc(p.name)}</div><div class="svc-sub">${esc(p.breed||'')}</div></div>`).join('')}
-        <div class="svc-card ${nb.addPetOpen?'active':''}" id="nb-pet-add-card"><div class="svc-name">＋ 新增寵物</div></div>
-      </div>
-      ${nb.addPetOpen ? `
-      <div class="addon-panel" id="nb-add-pet-panel">
-        <div class="field"><label>寵物名稱</label><input type="text" id="nbnp-name" value="${esc(nb.newPetDraft.name)}"></div>
-        <div class="field"><label>寵物品種</label><input type="text" id="nbnp-breed" value="${esc(nb.newPetDraft.breed)}"></div>
-        <div class="err" id="nbnp-err" style="display:none;"></div>
-        <div class="actions" style="margin-top:6px;"><button class="btn btn-primary" id="nbNpSubmitBtn" style="flex:1;">新增這隻寵物並勾選</button></div>
-      </div>` : ''}
-      <div class="err" id="nb-pet-err" style="display:none;margin-top:10px;"></div>
-      <div class="actions" style="margin-top:14px;">
-        <button class="btn btn-ghost" id="nbChangeCustomer" style="flex:0 0 100px;">換一位客人</button>
-        <button class="btn btn-primary" id="nbPetsNextBtn" style="flex:1;">下一步：設定服務</button>
-      </div>
-    `;
-  }
-  if(nb.stage==='services'){
     const petBlocks = nb.selectedPets.map(p=>{
-      const s = ensurePetService(p.id);
+      const s = ensurePetService(p.id, p.species);
       const isFlatService = FLAT_SERVICES.includes(s.category);
+      const knownSpecies = !!p.species;
       const showDogHair = !isFlatService && s.animalType==='dog';
       return `
-        <div class="slot-title" style="margin-top:20px;">${esc(p.name)}（${esc(p.breed)}）</div>
+        <div class="slot-title" style="margin-top:20px;">${esc(p.name)}（${esc(p.breed)}）要做什麼服務？</div>
         <div class="svc-grid nb-pet-svc-grid" data-pet-id="${esc(p.id)}">
           <div class="svc-card ${s.category==='grooming'?'active':''}" data-svc="grooming"><div class="svc-name">美容</div><div class="svc-sub">貓／狗均約 2 小時</div></div>
           <div class="svc-card ${s.category==='bath'?'active':''}" data-svc="bath"><div class="svc-name">洗澡</div><div class="svc-sub">依貓／狗與毛長，時間不同</div></div>
@@ -896,13 +916,14 @@ function tplNewBooking(){
           </div>
         </div>
         ` : (s.category ? `
+        ${knownSpecies ? '' : `
         <div class="field">
           <label>寵物類別</label>
           <div class="choice-row nb-pet-animal-row" data-pet-id="${esc(p.id)}">
             <div class="choice-pill ${s.animalType==='cat'?'active':''}" data-a="cat">貓咪</div>
             <div class="choice-pill ${s.animalType==='dog'?'active':''}" data-a="dog">狗狗</div>
           </div>
-        </div>
+        </div>`}
         ${showDogHair ? `
         <div class="field">
           <label>毛長類型</label>
@@ -916,14 +937,32 @@ function tplNewBooking(){
       `;
     }).join('');
     return `
-      <h2 class="card-title">設定每隻寵物的服務</h2>
-      <p class="card-desc">分別幫下面每隻寵物選服務，等一下會照這個順序，從你選的開始時間依序往後排。</p>
+      <h2 class="card-title">選擇這次要預約的寵物與服務</h2>
+      <p class="card-desc">飼主：${esc(c.ownerName)}｜${esc(c.phone)}。可以勾選不只一隻，勾選後下面會馬上出現該寵物的服務選項；等一下只要選一個開始時間，就會照勾選順序依序往後排。</p>
+      <div class="svc-grid" id="nb-pet-select-grid">
+        ${pets.map(p=>`<div class="svc-card ${nb.selectedPets.some(sp=>sp.id===p.id)?'active':''}" data-pet-id="${esc(p.id)}"><div class="svc-name">${esc(p.name)}</div><div class="svc-sub">${esc(p.breed||'')}</div></div>`).join('')}
+        <div class="svc-card ${nb.addPetOpen?'active':''}" id="nb-pet-add-card"><div class="svc-name">＋ 新增寵物</div></div>
+      </div>
+      ${nb.addPetOpen ? `
+      <div class="addon-panel" id="nb-add-pet-panel">
+        <div class="field"><label>寵物名稱</label><input type="text" id="nbnp-name" value="${esc(nb.newPetDraft.name)}"></div>
+        <div class="field"><label>寵物品種</label><input type="text" id="nbnp-breed" value="${esc(nb.newPetDraft.breed)}"></div>
+        <div class="field">
+          <label>寵物類別 <span class="hint">(選填，設定好下次就不用再選)</span></label>
+          <div class="choice-row" id="nbnp-species-row">
+            <div class="choice-pill ${nb.newPetDraft.species==='cat'?'active':''}" data-a="cat">貓咪</div>
+            <div class="choice-pill ${nb.newPetDraft.species==='dog'?'active':''}" data-a="dog">狗狗</div>
+          </div>
+        </div>
+        <div class="err" id="nbnp-err" style="display:none;"></div>
+        <div class="actions" style="margin-top:6px;"><button class="btn btn-primary" id="nbNpSubmitBtn" style="flex:1;">新增這隻寵物並勾選</button></div>
+      </div>` : ''}
       ${petBlocks}
       ${nbAllPetsReady() ? `<div class="info-card" style="margin-top:16px;"><h4>總共需要時間</h4><div class="info-line"><span class="k">加總</span><span class="v">${nb.service.duration} 分鐘</span></div></div>` : ''}
-      <div class="err" id="nb-services-err" style="display:none;margin-top:10px;"></div>
+      <div class="err" id="nb-pet-err" style="display:none;margin-top:10px;"></div>
       <div class="actions" style="margin-top:14px;">
-        <button class="btn btn-ghost" id="nbBackToPets" style="flex:0 0 100px;">上一步</button>
-        <button class="btn btn-primary" id="nbServicesNextBtn" style="flex:1;">下一步：選時間</button>
+        <button class="btn btn-ghost" id="nbChangeCustomer" style="flex:0 0 100px;">換一位客人</button>
+        <button class="btn btn-primary" id="nbPetsNextBtn" style="flex:1;">下一步：選時間</button>
       </div>
     `;
   }
@@ -1107,6 +1146,12 @@ function bindNewBooking(){
       render();
     });
     if(nb.addPetOpen){
+      const speciesRow = document.getElementById('nbnp-species-row');
+      if(speciesRow) speciesRow.addEventListener('click', e=>{
+        const pill = e.target.closest('.choice-pill'); if(!pill) return;
+        nb.newPetDraft.species = (nb.newPetDraft.species===pill.dataset.a) ? '' : pill.dataset.a;
+        render();
+      });
       document.getElementById('nbNpSubmitBtn').addEventListener('click', async ()=>{
         const p = nb.newPetDraft;
         p.name = document.getElementById('nbnp-name').value.trim();
@@ -1120,14 +1165,14 @@ function bindNewBooking(){
         try{
           const res = await fetch(GOOGLE_SCRIPT_URL, {
             method:'POST', headers:{ 'Content-Type':'text/plain;charset=utf-8' },
-            body: JSON.stringify({ action:'addPet', customerCode: nb.customer.customerCode, petName:p.name, petBreed:p.breed })
+            body: JSON.stringify({ action:'addPet', customerCode: nb.customer.customerCode, petName:p.name, petBreed:p.breed, petSpecies:p.species||'' })
           });
           const result = await res.json();
           if(!result.success) throw new Error(result.error || '新增失敗');
           nb.customer.pets.push(result.pet);
           nb.selectedPets.push(result.pet);
           nb.addPetOpen = false;
-          nb.newPetDraft = { name:'',breed:'',age:'',weight:'',personality:'',health:'',photo:null };
+          nb.newPetDraft = { name:'',breed:'',age:'',weight:'',personality:'',health:'',species:'',photo:null };
           render();
         }catch(err){
           btn.disabled = false; btn.textContent = '新增這隻寵物並勾選';
@@ -1137,23 +1182,13 @@ function bindNewBooking(){
         }
       });
     }
-    document.getElementById('nbPetsNextBtn').addEventListener('click', ()=>{
-      const errEl = document.getElementById('nb-pet-err');
-      if(nb.selectedPets.length===0){ errEl.textContent='請至少選一隻寵物。'; errEl.style.display='block'; return; }
-      errEl.style.display='none';
-      nb.stage = 'services';
-      render();
-    });
-    return;
-  }
-  if(nb.stage==='services'){
-    document.getElementById('nbBackToPets').addEventListener('click', ()=>{ nb.stage='pets'; render(); });
     document.querySelectorAll('.nb-pet-svc-grid').forEach(grid=>{
       grid.addEventListener('click', e=>{
         const card = e.target.closest('.svc-card'); if(!card) return;
         const petId = grid.dataset.petId;
-        const s = ensurePetService(petId);
-        s.category = card.dataset.svc; s.animalType=''; s.hairLength=''; s.multiplier=1;
+        const pet = nb.customer.pets.find(pp=>pp.id===petId);
+        const s = ensurePetService(petId, pet&&pet.species);
+        s.category = card.dataset.svc; s.animalType = (pet&&pet.species) || ''; s.hairLength=''; s.multiplier=1;
         updatePetServiceDuration(petId);
         render();
       });
@@ -1188,8 +1223,9 @@ function bindNewBooking(){
         render();
       });
     });
-    document.getElementById('nbServicesNextBtn').addEventListener('click', ()=>{
-      const errEl = document.getElementById('nb-services-err');
+    document.getElementById('nbPetsNextBtn').addEventListener('click', ()=>{
+      const errEl = document.getElementById('nb-pet-err');
+      if(nb.selectedPets.length===0){ errEl.textContent='請至少選一隻寵物。'; errEl.style.display='block'; return; }
       if(!nbAllPetsReady()){ errEl.textContent='請幫每隻寵物都選好服務類型（跟寵物類別）。'; errEl.style.display='block'; return; }
       errEl.style.display='none';
       nb.date=null; nb.time=null; nb.customTime=false; nb.hideAreaHint=false;
@@ -1200,7 +1236,7 @@ function bindNewBooking(){
     return;
   }
   // stage === 'time'
-  document.getElementById('nbBackToServices').addEventListener('click', ()=>{ nb.stage='services'; render(); });
+  document.getElementById('nbBackToServices').addEventListener('click', ()=>{ nb.stage='pets'; render(); });
   const calPrev = document.getElementById('nb-cal-prev');
   if(calPrev) calPrev.addEventListener('click', ()=>{
     nb.monthView.month--; if(nb.monthView.month<0){nb.monthView.month=11; nb.monthView.year--;}
