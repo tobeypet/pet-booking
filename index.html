@@ -585,7 +585,7 @@ async function loadAvailability(){
 /* ================= service durations ================= */
 const SERVICE_DEF = {
   grooming: { name:'美容', rules:{ cat:{duration:120,label:'貓咪美容'}, dogLong:{duration:120,label:'長毛狗美容'}, dogShort:{duration:120,label:'短毛狗美容'} } },
-  bath: { name:'洗澡', rules:{ cat:{duration:120,label:'貓咪洗澡'}, dogLong:{duration:90,label:'長毛狗洗澡'}, dogShort:{duration:60,label:'短毛狗洗澡'} } },
+  bath: { name:'洗澡', rules:{ cat:{duration:60,label:'貓咪洗澡'}, dogLong:{duration:90,label:'長毛狗洗澡'}, dogShort:{duration:60,label:'短毛狗洗澡'} } },
   nail: { name:'剪指甲', rules:{ cat:{duration:30,label:'貓咪剪指甲'}, dogLong:{duration:30,label:'狗狗剪指甲'}, dogShort:{duration:30,label:'狗狗剪指甲'} } }
 };
 // 算單一寵物的服務時長（s = {category, animalType, hairLength}）
