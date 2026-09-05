@@ -305,8 +305,12 @@ const state = {
   landingDate: null,
   owner:{
     name:'', phone:'', lineId:'', address:'',
-    petName:'', petBreed:'', petAge:'', petWeight:'', petPersonality:'', petHealth:'', petPhoto:null
+    petName:'', petBreed:'', petAge:'', petWeight:'', petPersonality:'', petHealth:'', petPhoto:null,
+    pets: [] // 這位客人名下所有寵物；預約時要從裡面選一隻
   },
+  selectedPet: null, // 這次預約要服務的寵物 {id,name,breed,age,weight,personality,health,photoUrl}
+  addPetOpen: false,
+  newPetDraft: { name:'',breed:'',age:'',weight:'',personality:'',health:'',photo:null },
   service:{ category:'', animalType:'', hairLength:'', duration:0, label:'', addons:{brushTeeth:false, other:''}, addonsOpen:false },
   booking:{ date:null, time:null },
   identifyMode:'new', // 'new' | 'returning'
@@ -318,13 +322,15 @@ const state = {
 };
 
 const registerState = {
-  data:{ name:'',phone:'',lineId:'',address:'',petName:'',petBreed:'',petAge:'',petWeight:'',petPersonality:'',petHealth:'',petPhoto:null },
-  error:'', resultCode:null
+  data:{ name:'',phone:'',lineId:'',address:'' },
+  pets: [ { name:'',breed:'',age:'',weight:'',personality:'',health:'',photo:null } ],
+  error:'', resultCode:null, resultPets:null
 };
 
 const multiDayState = {
-  step: 'code', // 'code' | 'service' | 'dates' | 'review' | 'done'
+  step: 'code', // 'code' | 'pet' | 'service' | 'dates' | 'review' | 'done'
   lookupCode: '', lookupResult: null, error: '',
+  selectedPet: null, addPetOpen: false, newPetDraft: { name:'',breed:'',age:'',weight:'',personality:'',health:'',photo:null },
   service: { category:'', animalType:'', hairLength:'', duration:0, label:'' },
   monthView: { year:new Date().getFullYear(), month:new Date().getMonth() },
   selectedDates: [], timesByDate: {}, travelByDate: {},
@@ -333,6 +339,8 @@ const multiDayState = {
 function resetMultiDayState(){
   multiDayState.step = 'code';
   multiDayState.lookupCode = ''; multiDayState.lookupResult = null; multiDayState.error = '';
+  multiDayState.selectedPet = null; multiDayState.addPetOpen = false;
+  multiDayState.newPetDraft = { name:'',breed:'',age:'',weight:'',personality:'',health:'',photo:null };
   multiDayState.service = { category:'', animalType:'', hairLength:'', duration:0, label:'' };
   multiDayState.selectedDates = []; multiDayState.timesByDate = {}; multiDayState.travelByDate = {};
   multiDayState.results = [];
@@ -533,6 +541,11 @@ function svgCatIcon(){
   </svg>`;
 }
 function maskName(name){ if(!name) return '—'; const chars = Array.from(name); return chars[0] + '○'.repeat(Math.max(chars.length-1,1)); }
+function petsSummary(pets){
+  if(!pets || pets.length===0) return '—';
+  if(pets.length===1) return pets[0].name || '—';
+  return pets.map(p=>p.name).join('、') + `（共 ${pets.length} 隻）`;
+}
 function extractCityDistrict(address){
   if(!address) return '—';
   const m = address.match(/^(.{2,3}[市縣])(.{1,3}[區市鄉鎮])/);
@@ -631,16 +644,114 @@ function render(){
     return;
   }
   renderProgress();
-  if(state.step===1) card.innerHTML = tplStep1();
+  if(state.step===1) card.innerHTML = needsPetSelect() ? tplPetSelectScreen() : tplStep1();
   else if(state.step===2) card.innerHTML = tplStep2();
   else if(state.step===3) card.innerHTML = tplStep3();
   else if(state.step===4) card.innerHTML = tplStep4();
   else if(state.step===5) card.innerHTML = tplSuccess();
 
-  if(state.step===1) bindStep1();
+  if(state.step===1){ if(needsPetSelect()) bindPetSelectScreen(); else bindStep1(); }
   if(state.step===2) bindStep2();
   if(state.step===3) bindStep3();
   if(state.step===4) bindStep4();
+}
+// 身分已確認、名下有寵物，但這次預約還沒選是哪一隻的話，要先讓客人選寵物
+function needsPetSelect(){
+  return state.identityConfirmed && !state.selectedPet && state.owner.pets && state.owner.pets.length > 0;
+}
+function tplPetSelectScreen(){
+  const pets = state.owner.pets || [];
+  return `
+    <h2 class="card-title">選擇這次要預約的寵物</h2>
+    <p class="card-desc">選一隻這次要預約服務的毛孩；如果是還沒建檔過的新成員，可以直接在下面新增。</p>
+    <div class="svc-grid" id="pet-select-grid">
+      ${pets.map(p=>`<div class="svc-card" data-pet-id="${esc(p.id)}"><div class="svc-name">${esc(p.name)}</div><div class="svc-sub">${esc(p.breed||'')}</div></div>`).join('')}
+      <div class="svc-card ${state.addPetOpen?'active':''}" id="pet-add-card"><div class="svc-name">＋ 新增寵物</div></div>
+    </div>
+    ${state.addPetOpen ? tplAddPetForm() : ''}
+    <div class="actions"><button class="btn btn-ghost" id="petSelectBack" style="flex:1;">返回首頁</button></div>
+  `;
+}
+function tplAddPetForm(){
+  const p = state.newPetDraft;
+  return `
+    <div class="addon-panel" id="add-pet-panel">
+      <div class="row2">
+        <div class="field"><label>寵物名稱</label><input type="text" id="np-name" value="${esc(p.name)}"></div>
+        <div class="field"><label>寵物品種</label><input type="text" id="np-breed" value="${esc(p.breed)}"></div>
+      </div>
+      <div class="row2">
+        <div class="field"><label>年齡 <span class="hint">(選填)</span></label><input type="number" min="0" step="0.5" id="np-age" value="${esc(p.age)}"></div>
+        <div class="field"><label>體重 <span class="hint">(選填)</span></label><input type="number" min="0" step="0.1" id="np-weight" value="${esc(p.weight)}"></div>
+      </div>
+      <div class="field"><label>寵物個性 <span class="hint">(選填)</span></label><textarea id="np-personality">${esc(p.personality)}</textarea></div>
+      <div class="field"><label>健康狀況 <span class="hint">(選填)</span></label><textarea id="np-health">${esc(p.health)}</textarea></div>
+      <div class="field">
+        <label>上傳寵物照片 <span class="hint">(選填)</span></label>
+        <div class="photo-upload">
+          <div class="photo-preview" id="np-photo-preview">${p.photo ? `<img src="${p.photo}">` : svgPaw()}</div>
+          <label class="upload-btn" for="np-photo">選擇照片</label>
+          <input type="file" id="np-photo" accept="image/*">
+        </div>
+      </div>
+      <div class="err" id="np-err" style="display:none;"></div>
+      <div class="actions" style="margin-top:6px;"><button class="btn btn-primary" id="npSubmitBtn" style="flex:1;">新增這隻寵物並選擇</button></div>
+    </div>
+  `;
+}
+function bindPetSelectScreen(){
+  document.getElementById('petSelectBack').addEventListener('click', ()=>{ state.mode='landing'; render(); });
+  document.getElementById('pet-select-grid').addEventListener('click', e=>{
+    const addCard = e.target.closest('#pet-add-card');
+    if(addCard){ state.addPetOpen = !state.addPetOpen; render(); return; }
+    const card = e.target.closest('[data-pet-id]'); if(!card) return;
+    const pet = state.owner.pets.find(p=>p.id===card.dataset.petId);
+    if(pet){ state.selectedPet = pet; render(); }
+  });
+  if(!state.addPetOpen) return;
+  document.getElementById('np-photo').addEventListener('change', e=>{
+    const file = e.target.files[0]; if(!file) return;
+    const reader = new FileReader();
+    reader.onload = async ()=>{
+      const compressed = await compressImage(reader.result);
+      state.newPetDraft.photo = compressed;
+      document.getElementById('np-photo-preview').innerHTML = `<img src="${compressed}">`;
+    };
+    reader.readAsDataURL(file);
+  });
+  document.getElementById('npSubmitBtn').addEventListener('click', async ()=>{
+    const p = state.newPetDraft;
+    p.name = document.getElementById('np-name').value.trim();
+    p.breed = document.getElementById('np-breed').value.trim();
+    p.age = document.getElementById('np-age').value.trim();
+    p.weight = document.getElementById('np-weight').value.trim();
+    p.personality = document.getElementById('np-personality').value.trim();
+    p.health = document.getElementById('np-health').value.trim();
+    const errEl = document.getElementById('np-err');
+    if(!p.name || !p.breed){ errEl.textContent='請填寫寵物名稱與品種。'; errEl.style.display='block'; return; }
+    if(!GOOGLE_SCRIPT_URL){ errEl.textContent='目前尚未連結試算表，無法新增。'; errEl.style.display='block'; return; }
+    errEl.style.display='none';
+    const btn = document.getElementById('npSubmitBtn');
+    btn.disabled = true; btn.textContent = '新增中...';
+    try{
+      const res = await fetch(GOOGLE_SCRIPT_URL, {
+        method:'POST', headers:{ 'Content-Type':'text/plain;charset=utf-8' },
+        body: JSON.stringify({ action:'addPet', customerCode: state.owner.customerCode, petName:p.name, petBreed:p.breed, petAge:p.age, petWeight:p.weight, petPersonality:p.personality, petHealth:p.health, petPhoto:p.photo||'' })
+      });
+      const result = await res.json();
+      if(!result.success) throw new Error(result.error || '新增失敗');
+      state.owner.pets.push(result.pet);
+      state.selectedPet = result.pet;
+      state.addPetOpen = false;
+      state.newPetDraft = { name:'',breed:'',age:'',weight:'',personality:'',health:'',photo:null };
+      render();
+    }catch(err){
+      btn.disabled = false; btn.textContent = '新增這隻寵物並選擇';
+      errEl.textContent = '新增失敗，請確認網路連線後再試一次。';
+      errEl.style.display = 'block';
+      console.error('新增寵物失敗：', err);
+    }
+  });
 }
 function renderProgress(){
   const el = document.getElementById('progress');
@@ -788,32 +899,36 @@ function tplRegister(){
       </div>
     `;
   }
+  const petBlocks = registerState.pets.map((p,i)=>`
+    <div class="section-divider">${registerState.pets.length>1 ? `毛孩資訊 #${i+1}` : '毛孩資訊'}${registerState.pets.length>1?` <button type="button" class="link-btn" data-remove-pet="${i}" style="float:right;padding:0;">移除這隻</button>`:''}</div>
+    <div class="row2">
+      <div class="field"><label>寵物名稱</label><input type="text" class="reg-petname" data-i="${i}" value="${esc(p.name)}"></div>
+      <div class="field"><label>寵物品種</label><input type="text" class="reg-petbreed" data-i="${i}" value="${esc(p.breed)}"></div>
+    </div>
+    <div class="row2">
+      <div class="field"><label>年齡 <span class="hint">(選填)</span></label><input type="number" min="0" step="0.5" class="reg-petage" data-i="${i}" value="${esc(p.age)}"></div>
+      <div class="field"><label>體重 <span class="hint">(選填)</span></label><input type="number" min="0" step="0.1" class="reg-petweight" data-i="${i}" value="${esc(p.weight)}"></div>
+    </div>
+    <div class="field"><label>寵物個性 <span class="hint">(選填)</span></label><textarea class="reg-personality" data-i="${i}">${esc(p.personality)}</textarea></div>
+    <div class="field"><label>健康狀況 <span class="hint">(選填)</span></label><textarea class="reg-health" data-i="${i}">${esc(p.health)}</textarea></div>
+    <div class="field">
+      <label>上傳寵物照片 <span class="hint">(選填)</span></label>
+      <div class="photo-upload">
+        <div class="photo-preview reg-photo-preview" data-i="${i}">${p.photo ? `<img src="${p.photo}">` : svgPaw()}</div>
+        <label class="upload-btn" for="reg-photo-${i}">選擇照片</label>
+        <input type="file" id="reg-photo-${i}" class="reg-photo-input" data-i="${i}" accept="image/*">
+      </div>
+    </div>
+  `).join('');
   return `
     <h2 class="card-title">建立個人資料</h2>
-    <p class="card-desc">先留下您與毛孩的基本資料，我們會給您一組專屬代碼，之後預約時輸入代碼就能快速帶入資料。</p>
+    <p class="card-desc">先留下您與毛孩的基本資料，我們會給您一組專屬代碼，之後預約時輸入代碼就能快速帶入資料。家裡不只一隻毛孩的話，可以一次新增好幾隻。</p>
     <div class="field"><label>飼主姓名</label><input type="text" id="reg-name" value="${esc(d.name)}"></div>
     <div class="field"><label>電話</label><input type="tel" id="reg-phone" value="${esc(d.phone)}"></div>
     <div class="field"><label>LINE ID <span class="hint">(選填)</span></label><input type="text" id="reg-lineid" value="${esc(d.lineId)}"></div>
     <div class="field"><label>地址</label><input type="text" id="reg-address" value="${esc(d.address)}"></div>
-    <div class="section-divider">毛孩資訊</div>
-    <div class="row2">
-      <div class="field"><label>寵物名稱</label><input type="text" id="reg-petname" value="${esc(d.petName)}"></div>
-      <div class="field"><label>寵物品種</label><input type="text" id="reg-petbreed" value="${esc(d.petBreed)}"></div>
-    </div>
-    <div class="row2">
-      <div class="field"><label>年齡 <span class="hint">(選填)</span></label><input type="number" min="0" step="0.5" id="reg-petage" value="${esc(d.petAge)}"></div>
-      <div class="field"><label>體重 <span class="hint">(選填)</span></label><input type="number" min="0" step="0.1" id="reg-petweight" value="${esc(d.petWeight)}"></div>
-    </div>
-    <div class="field"><label>寵物個性 <span class="hint">(選填)</span></label><textarea id="reg-personality">${esc(d.petPersonality)}</textarea></div>
-    <div class="field"><label>健康狀況 <span class="hint">(選填)</span></label><textarea id="reg-health">${esc(d.petHealth)}</textarea></div>
-    <div class="field">
-      <label>上傳寵物照片 <span class="hint">(選填)</span></label>
-      <div class="photo-upload">
-        <div class="photo-preview" id="reg-photo-preview">${d.petPhoto ? `<img src="${d.petPhoto}">` : svgPaw()}</div>
-        <label class="upload-btn" for="reg-photo">選擇照片</label>
-        <input type="file" id="reg-photo" accept="image/*">
-      </div>
-    </div>
+    ${petBlocks}
+    <button type="button" class="btn btn-ghost" id="regAddPet" style="margin-bottom:18px;">＋ 新增另一隻寵物</button>
     <div class="err" id="reg-err" style="display:${registerState.error?'block':'none'};">${registerState.error||''}</div>
     <div class="actions">
       <button class="btn btn-ghost" id="regBack" style="flex:0 0 100px;">返回</button>
@@ -825,34 +940,51 @@ function bindRegister(){
   if(registerState.resultCode){
     document.getElementById('regBackLanding').addEventListener('click', ()=>{
       registerState.resultCode = null;
-      registerState.data = { name:'',phone:'',lineId:'',address:'',petName:'',petBreed:'',petAge:'',petWeight:'',petPersonality:'',petHealth:'',petPhoto:null };
+      registerState.data = { name:'',phone:'',lineId:'',address:'' };
+      registerState.pets = [{ name:'',breed:'',age:'',weight:'',personality:'',health:'',photo:null }];
       state.mode = 'landing'; render();
     });
     document.getElementById('regGoBooking').addEventListener('click', ()=>{
       const rd = registerState.data;
+      const pets = registerState.resultPets || [];
       state.owner = {
         name: rd.name, phone: rd.phone, lineId: rd.lineId, address: rd.address,
-        petName: rd.petName, petBreed: rd.petBreed, petAge: rd.petAge, petWeight: rd.petWeight,
-        petPersonality: rd.petPersonality, petHealth: rd.petHealth, petPhoto: rd.petPhoto,
-        customerCode: registerState.resultCode
+        petName: pets[0]?pets[0].name:'', petBreed: pets[0]?pets[0].breed:'', petAge: pets[0]?pets[0].age:'',
+        petWeight: pets[0]?pets[0].weight:'', petPersonality: pets[0]?pets[0].personality:'', petHealth: pets[0]?pets[0].health:'',
+        petPhoto: null, customerCode: registerState.resultCode, pets: pets
       };
       state.identityConfirmed = true;
+      state.selectedPet = pets.length===1 ? pets[0] : null;
       registerState.resultCode = null;
-      registerState.data = { name:'',phone:'',lineId:'',address:'',petName:'',petBreed:'',petAge:'',petWeight:'',petPersonality:'',petHealth:'',petPhoto:null };
+      registerState.data = { name:'',phone:'',lineId:'',address:'' };
+      registerState.pets = [{ name:'',breed:'',age:'',weight:'',personality:'',health:'',photo:null }];
       state.mode = 'booking'; state.step = 1;
       render();
     });
     return;
   }
-  document.getElementById('reg-photo').addEventListener('change', e=>{
-    const file = e.target.files[0]; if(!file) return;
-    const reader = new FileReader();
-    reader.onload = async ()=>{
-      const compressed = await compressImage(reader.result);
-      registerState.data.petPhoto = compressed;
-      document.getElementById('reg-photo-preview').innerHTML = `<img src="${compressed}">`;
-    };
-    reader.readAsDataURL(file);
+  document.querySelectorAll('.reg-photo-input').forEach(input=>{
+    input.addEventListener('change', e=>{
+      const i = Number(input.dataset.i);
+      const file = e.target.files[0]; if(!file) return;
+      const reader = new FileReader();
+      reader.onload = async ()=>{
+        const compressed = await compressImage(reader.result);
+        registerState.pets[i].photo = compressed;
+        document.querySelector(`.reg-photo-preview[data-i="${i}"]`).innerHTML = `<img src="${compressed}">`;
+      };
+      reader.readAsDataURL(file);
+    });
+  });
+  document.querySelectorAll('[data-remove-pet]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      registerState.pets.splice(Number(btn.dataset.removePet), 1);
+      render();
+    });
+  });
+  document.getElementById('regAddPet').addEventListener('click', ()=>{
+    registerState.pets.push({ name:'',breed:'',age:'',weight:'',personality:'',health:'',photo:null });
+    render();
   });
   document.getElementById('regBack').addEventListener('click', ()=>{ state.mode = 'landing'; render(); });
   document.getElementById('regSubmit').addEventListener('click', async ()=>{
@@ -861,16 +993,19 @@ function bindRegister(){
     d.phone = document.getElementById('reg-phone').value.trim();
     d.lineId = document.getElementById('reg-lineid').value.trim();
     d.address = document.getElementById('reg-address').value.trim();
-    d.petName = document.getElementById('reg-petname').value.trim();
-    d.petBreed = document.getElementById('reg-petbreed').value.trim();
-    d.petAge = document.getElementById('reg-petage').value.trim();
-    d.petWeight = document.getElementById('reg-petweight').value.trim();
-    d.petPersonality = document.getElementById('reg-personality').value.trim();
-    d.petHealth = document.getElementById('reg-health').value.trim();
+    registerState.pets.forEach((p,i)=>{
+      p.name = document.querySelector(`.reg-petname[data-i="${i}"]`).value.trim();
+      p.breed = document.querySelector(`.reg-petbreed[data-i="${i}"]`).value.trim();
+      p.age = document.querySelector(`.reg-petage[data-i="${i}"]`).value.trim();
+      p.weight = document.querySelector(`.reg-petweight[data-i="${i}"]`).value.trim();
+      p.personality = document.querySelector(`.reg-personality[data-i="${i}"]`).value.trim();
+      p.health = document.querySelector(`.reg-health[data-i="${i}"]`).value.trim();
+    });
 
     const errEl = document.getElementById('reg-err');
-    if(!d.name || !d.phone || !d.address || !d.petName || !d.petBreed){
-      errEl.textContent = '請完整填寫姓名、電話、地址、寵物名稱與品種。';
+    const missingPet = registerState.pets.some(p=>!p.name || !p.breed);
+    if(!d.name || !d.phone || !d.address || missingPet){
+      errEl.textContent = '請完整填寫姓名、電話、地址，以及每一隻寵物的名稱與品種。';
       errEl.style.display = 'block';
       return;
     }
@@ -883,13 +1018,16 @@ function bindRegister(){
         method:'POST', headers:{ 'Content-Type':'text/plain;charset=utf-8' },
         body: JSON.stringify({
           action:'addCustomer', ownerName:d.name, phone:d.phone, lineId:d.lineId, address:d.address,
-          petName:d.petName, petBreed:d.petBreed, petAge:d.petAge, petWeight:d.petWeight,
-          petPersonality:d.petPersonality, petHealth:d.petHealth, petPhoto:d.petPhoto || ''
+          pets: registerState.pets.map(p=>({
+            petName:p.name, petBreed:p.breed, petAge:p.age, petWeight:p.weight,
+            petPersonality:p.personality, petHealth:p.health, petPhoto:p.photo||''
+          }))
         })
       });
       const result = await res.json();
       if(!result.success) throw new Error(result.error || '建立失敗');
       registerState.resultCode = result.customerCode;
+      registerState.resultPets = result.pets || [];
       render();
     }catch(err){
       btn.disabled = false; btn.textContent = '建立資料';
@@ -903,6 +1041,7 @@ function bindRegister(){
 /* ================= 用專屬代碼一次約多天 ================= */
 function tplMultiDay(){
   if(multiDayState.step==='code') return tplMultiDayCode();
+  if(multiDayState.step==='pet') return tplMultiDayPet();
   if(multiDayState.step==='service') return tplMultiDayService();
   if(multiDayState.step==='dates') return tplMultiDayDates();
   if(multiDayState.step==='review') return tplMultiDayReview();
@@ -911,6 +1050,7 @@ function tplMultiDay(){
 }
 function bindMultiDay(){
   if(multiDayState.step==='code') bindMultiDayCode();
+  else if(multiDayState.step==='pet') bindMultiDayPet();
   else if(multiDayState.step==='service') bindMultiDayService();
   else if(multiDayState.step==='dates') bindMultiDayDates();
   else if(multiDayState.step==='review') bindMultiDayReview();
@@ -929,7 +1069,7 @@ function tplMultiDayCode(){
       <div class="masked-card">
         <h4>請確認是您本人</h4>
         <div class="review-line"><span class="k">姓名</span><span class="v">${maskName(r.ownerName)}</span></div>
-        <div class="review-line"><span class="k">寵物</span><span class="v">${esc(r.petName)}</span></div>
+        <div class="review-line"><span class="k">寵物</span><span class="v">${esc(petsSummary(r.pets))}</span></div>
         <div class="review-line"><span class="k">地區</span><span class="v">${esc(extractCityDistrict(r.address))}</span></div>
       </div>
       <div class="actions">
@@ -967,7 +1107,107 @@ function bindMultiDayCode(){
   const notMeBtn = document.getElementById('mdNotMe');
   if(notMeBtn) notMeBtn.addEventListener('click', ()=>{ multiDayState.lookupResult=null; multiDayState.lookupCode=''; render(); });
   const confirmBtn = document.getElementById('mdConfirmMe');
-  if(confirmBtn) confirmBtn.addEventListener('click', ()=>{ multiDayState.step='service'; render(); });
+  if(confirmBtn) confirmBtn.addEventListener('click', ()=>{
+    const pets = multiDayState.lookupResult.pets || [];
+    if(pets.length===1){ multiDayState.selectedPet = pets[0]; multiDayState.step='service'; }
+    else { multiDayState.step='pet'; }
+    render();
+  });
+}
+function tplMultiDayPet(){
+  const pets = (multiDayState.lookupResult && multiDayState.lookupResult.pets) || [];
+  return `
+    <h2 class="card-title">選擇這次要預約的寵物</h2>
+    <p class="card-desc">選一隻這次要預約服務的毛孩；如果是還沒建檔過的新成員，可以直接在下面新增。</p>
+    <div class="svc-grid" id="md-pet-select-grid">
+      ${pets.map(p=>`<div class="svc-card" data-pet-id="${esc(p.id)}"><div class="svc-name">${esc(p.name)}</div><div class="svc-sub">${esc(p.breed||'')}</div></div>`).join('')}
+      <div class="svc-card ${multiDayState.addPetOpen?'active':''}" id="md-pet-add-card"><div class="svc-name">＋ 新增寵物</div></div>
+    </div>
+    ${multiDayState.addPetOpen ? tplMultiDayAddPetForm() : ''}
+    <div class="actions"><button class="btn btn-ghost" id="mdPetBack" style="flex:1;">返回首頁</button></div>
+  `;
+}
+function tplMultiDayAddPetForm(){
+  const p = multiDayState.newPetDraft;
+  return `
+    <div class="addon-panel" id="md-add-pet-panel">
+      <div class="row2">
+        <div class="field"><label>寵物名稱</label><input type="text" id="mdnp-name" value="${esc(p.name)}"></div>
+        <div class="field"><label>寵物品種</label><input type="text" id="mdnp-breed" value="${esc(p.breed)}"></div>
+      </div>
+      <div class="row2">
+        <div class="field"><label>年齡 <span class="hint">(選填)</span></label><input type="number" min="0" step="0.5" id="mdnp-age" value="${esc(p.age)}"></div>
+        <div class="field"><label>體重 <span class="hint">(選填)</span></label><input type="number" min="0" step="0.1" id="mdnp-weight" value="${esc(p.weight)}"></div>
+      </div>
+      <div class="field"><label>寵物個性 <span class="hint">(選填)</span></label><textarea id="mdnp-personality">${esc(p.personality)}</textarea></div>
+      <div class="field"><label>健康狀況 <span class="hint">(選填)</span></label><textarea id="mdnp-health">${esc(p.health)}</textarea></div>
+      <div class="field">
+        <label>上傳寵物照片 <span class="hint">(選填)</span></label>
+        <div class="photo-upload">
+          <div class="photo-preview" id="mdnp-photo-preview">${p.photo ? `<img src="${p.photo}">` : svgPaw()}</div>
+          <label class="upload-btn" for="mdnp-photo">選擇照片</label>
+          <input type="file" id="mdnp-photo" accept="image/*">
+        </div>
+      </div>
+      <div class="err" id="mdnp-err" style="display:none;"></div>
+      <div class="actions" style="margin-top:6px;"><button class="btn btn-primary" id="mdNpSubmitBtn" style="flex:1;">新增這隻寵物並選擇</button></div>
+    </div>
+  `;
+}
+function bindMultiDayPet(){
+  document.getElementById('mdPetBack').addEventListener('click', ()=>{ state.mode='landing'; render(); });
+  document.getElementById('md-pet-select-grid').addEventListener('click', e=>{
+    const addCard = e.target.closest('#md-pet-add-card');
+    if(addCard){ multiDayState.addPetOpen = !multiDayState.addPetOpen; render(); return; }
+    const card = e.target.closest('[data-pet-id]'); if(!card) return;
+    const pet = multiDayState.lookupResult.pets.find(p=>p.id===card.dataset.petId);
+    if(pet){ multiDayState.selectedPet = pet; multiDayState.step='service'; render(); }
+  });
+  if(!multiDayState.addPetOpen) return;
+  document.getElementById('mdnp-photo').addEventListener('change', e=>{
+    const file = e.target.files[0]; if(!file) return;
+    const reader = new FileReader();
+    reader.onload = async ()=>{
+      const compressed = await compressImage(reader.result);
+      multiDayState.newPetDraft.photo = compressed;
+      document.getElementById('mdnp-photo-preview').innerHTML = `<img src="${compressed}">`;
+    };
+    reader.readAsDataURL(file);
+  });
+  document.getElementById('mdNpSubmitBtn').addEventListener('click', async ()=>{
+    const p = multiDayState.newPetDraft;
+    p.name = document.getElementById('mdnp-name').value.trim();
+    p.breed = document.getElementById('mdnp-breed').value.trim();
+    p.age = document.getElementById('mdnp-age').value.trim();
+    p.weight = document.getElementById('mdnp-weight').value.trim();
+    p.personality = document.getElementById('mdnp-personality').value.trim();
+    p.health = document.getElementById('mdnp-health').value.trim();
+    const errEl = document.getElementById('mdnp-err');
+    if(!p.name || !p.breed){ errEl.textContent='請填寫寵物名稱與品種。'; errEl.style.display='block'; return; }
+    if(!GOOGLE_SCRIPT_URL){ errEl.textContent='目前尚未連結試算表，無法新增。'; errEl.style.display='block'; return; }
+    errEl.style.display='none';
+    const btn = document.getElementById('mdNpSubmitBtn');
+    btn.disabled = true; btn.textContent = '新增中...';
+    try{
+      const res = await fetch(GOOGLE_SCRIPT_URL, {
+        method:'POST', headers:{ 'Content-Type':'text/plain;charset=utf-8' },
+        body: JSON.stringify({ action:'addPet', customerCode: multiDayState.lookupResult.customerCode, petName:p.name, petBreed:p.breed, petAge:p.age, petWeight:p.weight, petPersonality:p.personality, petHealth:p.health, petPhoto:p.photo||'' })
+      });
+      const result = await res.json();
+      if(!result.success) throw new Error(result.error || '新增失敗');
+      multiDayState.lookupResult.pets.push(result.pet);
+      multiDayState.selectedPet = result.pet;
+      multiDayState.addPetOpen = false;
+      multiDayState.newPetDraft = { name:'',breed:'',age:'',weight:'',personality:'',health:'',photo:null };
+      multiDayState.step = 'service';
+      render();
+    }catch(err){
+      btn.disabled = false; btn.textContent = '新增這隻寵物並選擇';
+      errEl.textContent = '新增失敗，請確認網路連線後再試一次。';
+      errEl.style.display = 'block';
+      console.error('新增寵物失敗：', err);
+    }
+  });
 }
 
 function tplMultiDayService(){
@@ -1189,14 +1429,14 @@ function bindMultiDayDates(){
 }
 
 function tplMultiDayReview(){
-  const md = multiDayState, r = md.lookupResult;
+  const md = multiDayState, r = md.lookupResult, p = md.selectedPet || {};
   return `
     <h2 class="card-title">確認多天預約</h2>
     <p class="card-desc">請確認以下內容無誤後送出，系統會依序建立每一天的預約。</p>
     <div class="review-block">
       <h4>客人資訊</h4>
       <div class="review-line"><span class="k">姓名</span><span class="v">${esc(r.ownerName)}</span></div>
-      <div class="review-line"><span class="k">寵物</span><span class="v">${esc(r.petName)}（${esc(r.petBreed)}）</span></div>
+      <div class="review-line"><span class="k">寵物</span><span class="v">${esc(p.name)}（${esc(p.breed)}）</span></div>
     </div>
     <div class="review-block">
       <h4>服務內容</h4>
@@ -1218,7 +1458,7 @@ function bindMultiDayReview(){
   document.getElementById('mdSubmitAll').addEventListener('click', submitMultiDayBookings);
 }
 async function submitMultiDayBookings(){
-  const md = multiDayState, r = md.lookupResult;
+  const md = multiDayState, r = md.lookupResult, p = md.selectedPet || {};
   const btn = document.getElementById('mdSubmitAll');
   const errEl = document.getElementById('md-err3');
   errEl.style.display = 'none';
@@ -1231,8 +1471,8 @@ async function submitMultiDayBookings(){
     const payload = {
       action:'booking', customerCode: r.customerCode,
       confirmCode: code, ownerName:r.ownerName, phone:r.phone, lineId:r.lineId, address:r.address,
-      petName:r.petName, petBreed:r.petBreed, petAge:r.petAge, petWeight:r.petWeight,
-      petPersonality:r.petPersonality, petHealth:r.petHealth,
+      petName:p.name, petBreed:p.breed, petAge:p.age, petWeight:p.weight,
+      petPersonality:p.personality, petHealth:p.health,
       serviceLabel: md.service.label, durationMinutes: md.service.duration,
       date: date, time: time, endTime: fmtTime(toMin(time)+md.service.duration),
       taichung: availability.taichungDates.has(date)
@@ -1578,7 +1818,7 @@ function tplCodeEntry(){
       <div class="masked-card">
         <h4>請確認是您本人</h4>
         <div class="review-line"><span class="k">姓名</span><span class="v">${maskName(r.ownerName)}</span></div>
-        <div class="review-line"><span class="k">寵物</span><span class="v">${esc(r.petName)}</span></div>
+        <div class="review-line"><span class="k">寵物</span><span class="v">${esc(petsSummary(r.pets))}</span></div>
         <div class="review-line"><span class="k">地區</span><span class="v">${esc(extractCityDistrict(r.address))}</span></div>
       </div>
       <div class="actions">
@@ -1623,9 +1863,11 @@ function bindCodeEntry(){
     state.owner = {
       name:r.ownerName||'', phone:r.phone||'', lineId:r.lineId||'', address:r.address||'',
       petName:r.petName||'', petBreed:r.petBreed||'', petAge:r.petAge||'', petWeight:r.petWeight||'',
-      petPersonality:r.petPersonality||'', petHealth:r.petHealth||'', petPhoto:null, customerCode:r.customerCode||null
+      petPersonality:r.petPersonality||'', petHealth:r.petHealth||'', petPhoto:null, customerCode:r.customerCode||null,
+      pets: r.pets || []
     };
     state.identityConfirmed = true;
+    state.selectedPet = (r.pets && r.pets.length===1) ? r.pets[0] : null;
     resetCodeEntryState();
     state.mode = 'booking'; state.step = 1;
     render();
@@ -1661,6 +1903,7 @@ function tplStep1(){
   return `
     <button type="button" id="backToLanding" style="background:none;border:none;color:var(--ink-soft);font-size:12px;text-decoration:underline;cursor:pointer;padding:0;margin-bottom:14px;">‹ 返回首頁日曆</button>
     <h2 class="card-title">選擇服務與時段</h2>
+    ${(state.selectedPet && state.owner.pets && state.owner.pets.length>1) ? `<div class="empty-note" style="text-align:left;margin-bottom:10px;">這次要預約的寵物：<b style="color:var(--pine);">${esc(state.selectedPet.name)}</b> <button type="button" id="changePetBtn" class="link-btn" style="padding:0;">更換寵物</button></div>` : ''}
     <p class="card-desc">選好服務類型後，下方會立即顯示可預約的日期與時段，一目了然。<b style="color:var(--apricot-dark);">此為快速預覽時段，實際可預約時間可能因地點而有所變動。</b></p>
     <div class="svc-grid" id="svc-grid">
       <div class="svc-card ${s.category==='grooming'?'active':''}" data-svc="grooming"><span class="svc-icon">${svgScissorsIcon()}</span><div class="svc-name">美容</div><div class="svc-sub">貓／狗（長毛・短毛）均約 2 小時</div></div>
@@ -1757,6 +2000,8 @@ function renderSlotSection(){
 }
 function bindStep1(){
   document.getElementById('backToLanding').addEventListener('click', ()=>{ state.mode='landing'; render(); });
+  const changePetBtn = document.getElementById('changePetBtn');
+  if(changePetBtn) changePetBtn.addEventListener('click', ()=>{ state.selectedPet = null; render(); });
   document.getElementById('svc-grid').addEventListener('click', e=>{
     const c = e.target.closest('.svc-card'); if(!c) return;
     state.service.category = c.dataset.svc;
@@ -1885,7 +2130,7 @@ function tplReturning(){
     <div class="masked-card">
       <h4>請確認是您本人</h4>
       <div class="review-line"><span class="k">姓名</span><span class="v">${maskName(r.ownerName)}</span></div>
-      <div class="review-line"><span class="k">寵物</span><span class="v">${esc(r.petName)}</span></div>
+      <div class="review-line"><span class="k">寵物</span><span class="v">${esc(petsSummary(r.pets))}</span></div>
       <div class="review-line"><span class="k">地區</span><span class="v">${esc(extractCityDistrict(r.address))}</span></div>
     </div>
     <div class="actions">
@@ -1999,6 +2244,12 @@ function bindStep2(){
     const errEl = document.getElementById('step2-err');
     if(required.some(v=>!v)){ errEl.textContent = '請完整填寫姓名、電話、地址、寵物名稱與品種。'; errEl.style.display='block'; return; }
     errEl.style.display='none';
+    const singlePet = {
+      id:'temp-'+Date.now(), name:state.owner.petName, breed:state.owner.petBreed, age:state.owner.petAge,
+      weight:state.owner.petWeight, personality:state.owner.petPersonality, health:state.owner.petHealth, photoUrl:state.owner.petPhoto||null
+    };
+    state.owner.pets = [singlePet];
+    state.selectedPet = singlePet;
     state.identityConfirmed = true;
     state.step = 3; render();
   });
@@ -2097,11 +2348,12 @@ function bindStep3(){
 /* ================= STEP 4：確認預約 ================= */
 function tplStep4(){
   const o = state.owner, s = state.service, b = state.booking;
+  const p = petForBooking();
   const hrs = s.duration/60;
   return `
     <h2 class="card-title">確認預約資訊</h2>
     <p class="card-desc">請確認以下資訊無誤後送出預約。</p>
-    ${o.petPhoto ? `<div class="review-photo"><img src="${o.petPhoto}"><div><div style="font-weight:700;color:var(--pine);">${esc(o.petName)}</div><div style="font-size:12px;color:var(--ink-soft);">${esc(o.petBreed)}</div></div></div>` : ''}
+    ${p.photo ? `<div class="review-photo"><img src="${p.photo}"><div><div style="font-weight:700;color:var(--pine);">${esc(p.name)}</div><div style="font-size:12px;color:var(--ink-soft);">${esc(p.breed)}</div></div></div>` : ''}
     <div class="review-block">
       <h4>飼主資訊</h4>
       <div class="review-line"><span class="k">姓名</span><span class="v">${esc(o.name)}</span></div>
@@ -2111,12 +2363,12 @@ function tplStep4(){
     </div>
     <div class="review-block">
       <h4>毛孩資訊</h4>
-      <div class="review-line"><span class="k">名稱</span><span class="v">${esc(o.petName)}</span></div>
-      <div class="review-line"><span class="k">品種</span><span class="v">${esc(o.petBreed)}</span></div>
-      <div class="review-line"><span class="k">年齡</span><span class="v">${esc(o.petAge)||'—'} 歲</span></div>
-      <div class="review-line"><span class="k">體重</span><span class="v">${esc(o.petWeight)||'—'} kg</span></div>
-      <div class="review-line"><span class="k">個性</span><span class="v multi">${esc(o.petPersonality)||'—'}</span></div>
-      <div class="review-line"><span class="k">健康狀況</span><span class="v multi">${esc(o.petHealth)||'—'}</span></div>
+      <div class="review-line"><span class="k">名稱</span><span class="v">${esc(p.name)}</span></div>
+      <div class="review-line"><span class="k">品種</span><span class="v">${esc(p.breed)}</span></div>
+      <div class="review-line"><span class="k">年齡</span><span class="v">${esc(p.age)||'—'} 歲</span></div>
+      <div class="review-line"><span class="k">體重</span><span class="v">${esc(p.weight)||'—'} kg</span></div>
+      <div class="review-line"><span class="k">個性</span><span class="v multi">${esc(p.personality)||'—'}</span></div>
+      <div class="review-line"><span class="k">健康狀況</span><span class="v multi">${esc(p.health)||'—'}</span></div>
     </div>
     <div class="review-block">
       <h4>服務內容</h4>
@@ -2130,6 +2382,12 @@ function tplStep4(){
     <div class="actions"><button class="btn btn-ghost" id="back4">上一步</button><button class="btn btn-primary" id="submit4">送出預約</button></div>
   `;
 }
+// 統一從 state.selectedPet（本次要服務的寵物）取出欄位；找不到的話（理論上不會發生）退回舊的單寵物欄位，避免畫面壞掉
+function petForBooking(){
+  const sp = state.selectedPet, o = state.owner;
+  if(sp) return { name:sp.name, breed:sp.breed, age:sp.age, weight:sp.weight, personality:sp.personality, health:sp.health, photo:sp.photoUrl||null };
+  return { name:o.petName, breed:o.petBreed, age:o.petAge, weight:o.petWeight, personality:o.petPersonality, health:o.petHealth, photo:o.petPhoto };
+}
 function bindStep4(){
   document.getElementById('back4').addEventListener('click', ()=>{ state.step = state.identityConfirmed ? 1 : 3; render(); });
   document.getElementById('submit4').addEventListener('click', async ()=>{
@@ -2138,11 +2396,12 @@ function bindStep4(){
     errEl.style.display = 'none';
     const code = genCode();
     const o = state.owner, s = state.service, b = state.booking;
+    const p = petForBooking();
     const payload = {
       action:'booking', customerCode: o.customerCode || undefined,
       confirmCode: code, ownerName: o.name, phone: o.phone, lineId: o.lineId, address: o.address,
-      petName: o.petName, petBreed: o.petBreed, petAge: o.petAge, petWeight: o.petWeight,
-      petPersonality: o.petPersonality, petHealth: o.petHealth, petPhoto: o.petPhoto || '', serviceLabel: buildServiceLabelWithAddons(s), durationMinutes: s.duration,
+      petName: p.name, petBreed: p.breed, petAge: p.age, petWeight: p.weight,
+      petPersonality: p.personality, petHealth: p.health, petPhoto: (p.photo && String(p.photo).indexOf('data:')===0) ? p.photo : '', serviceLabel: buildServiceLabelWithAddons(s), durationMinutes: s.duration,
       date: b.date, time: b.time, endTime: fmtTime(toMin(b.time) + s.duration), taichung: availability.taichungDates.has(b.date)
     };
     if(!GOOGLE_SCRIPT_URL){ state.confirmCode = code; state.customerCode = null; state.step = 5; render(); return; }
@@ -2178,7 +2437,7 @@ function tplSuccess(){
       <div class="paw">${svgPaw()}</div>
       <h2>預約已送出</h2>
       <div class="pending-badge">⏳ 需等托比確認</div>
-      <p>已為 ${esc(o.petName)} 送出 ${b.date} ${b.time} 的${state.service.label}預約，<br>托比確認後會透過您留下的聯絡方式通知您。</p>
+      <p>已為 ${esc(petForBooking().name)} 送出 ${b.date} ${b.time} 的${state.service.label}預約，<br>托比確認後會透過您留下的聯絡方式通知您。</p>
       ${state.customerCode ? `
       <div class="code-box">
         <div class="lbl">您的專屬代碼</div>
@@ -2195,7 +2454,9 @@ document.addEventListener('click', e=>{
     state.mode = 'landing';
     state.step = 1;
     state.landingDate = null;
-    state.owner = {name:'',phone:'',lineId:'',address:'',petName:'',petBreed:'',petAge:'',petWeight:'',petPersonality:'',petHealth:'',petPhoto:null};
+    state.owner = {name:'',phone:'',lineId:'',address:'',petName:'',petBreed:'',petAge:'',petWeight:'',petPersonality:'',petHealth:'',petPhoto:null,pets:[]};
+    state.selectedPet = null; state.addPetOpen = false;
+    state.newPetDraft = { name:'',breed:'',age:'',weight:'',personality:'',health:'',photo:null };
     state.service = {category:'',animalType:'',hairLength:'',duration:0,label:'',addons:{brushTeeth:false,other:''},addonsOpen:false};
     state.booking = {date:null,time:null};
     state.identifyMode = 'new';
