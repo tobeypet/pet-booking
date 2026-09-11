@@ -710,6 +710,28 @@ function tplNewCustomer(){
     ` : ''}
   `;
 }
+// 把畫面上目前輸入的值先讀回 state，再重新渲染；不然點下面這些按鈕（聯繫方式偏好、寵物類別、新增/移除寵物）
+// 觸發的 render() 會直接用舊的 state 蓋掉整個表單，把還沒送出的欄位內容清空
+function syncNewCustomerFormFromDOM(){
+  const d = newCustomerState.data;
+  const nameEl = document.getElementById('nc-name');
+  if(!nameEl) return; // 表單還沒渲染出來就不用同步
+  d.ownerName = nameEl.value;
+  d.phone = document.getElementById('nc-phone').value;
+  d.lineId = document.getElementById('nc-line').value;
+  d.address = document.getElementById('nc-address').value;
+  d.remarks = document.getElementById('nc-remarks').value;
+  newCustomerState.pets.forEach((p,i)=>{
+    const nameField = document.querySelector(`.nc-petname[data-i="${i}"]`);
+    if(!nameField) return;
+    p.name = nameField.value;
+    p.breed = document.querySelector(`.nc-petbreed[data-i="${i}"]`).value;
+    p.age = document.querySelector(`.nc-petage[data-i="${i}"]`).value;
+    p.weight = document.querySelector(`.nc-petweight[data-i="${i}"]`).value;
+    p.personality = document.querySelector(`.nc-personality[data-i="${i}"]`).value;
+    p.health = document.querySelector(`.nc-health[data-i="${i}"]`).value;
+  });
+}
 function bindNewCustomer(){
   const goBookingBtn = document.getElementById('ncGoBooking');
   if(goBookingBtn){
@@ -732,16 +754,19 @@ function bindNewCustomer(){
   document.getElementById('nc-contact-pref').addEventListener('click', e=>{
     const p = e.target.closest('.choice-pill'); if(!p) return;
     const val = p.dataset.c;
+    syncNewCustomerFormFromDOM();
     newCustomerState.data.contactPref = (newCustomerState.data.contactPref===val) ? '' : val;
     render();
   });
   document.querySelectorAll('[data-remove-nc-pet]').forEach(btn=>{
     btn.addEventListener('click', ()=>{
+      syncNewCustomerFormFromDOM();
       newCustomerState.pets.splice(Number(btn.dataset.removeNcPet), 1);
       render();
     });
   });
   document.getElementById('ncAddPet').addEventListener('click', ()=>{
+    syncNewCustomerFormFromDOM();
     newCustomerState.pets.push({ name:'',breed:'',age:'',weight:'',personality:'',health:'',species:'' });
     render();
   });
@@ -749,6 +774,7 @@ function bindNewCustomer(){
     row.addEventListener('click', e=>{
       const pill = e.target.closest('.choice-pill'); if(!pill) return;
       const i = Number(row.dataset.i);
+      syncNewCustomerFormFromDOM();
       newCustomerState.pets[i].species = (newCustomerState.pets[i].species===pill.dataset.a) ? '' : pill.dataset.a;
       render();
     });

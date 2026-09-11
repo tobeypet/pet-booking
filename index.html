@@ -1109,6 +1109,25 @@ function tplRegister(){
     </div>
   `;
 }
+function syncRegisterFormFromDOM(){
+  const d = registerState.data;
+  const nameEl = document.getElementById('reg-name');
+  if(!nameEl) return;
+  d.name = nameEl.value;
+  d.phone = document.getElementById('reg-phone').value;
+  d.lineId = document.getElementById('reg-lineid').value;
+  d.address = document.getElementById('reg-address').value;
+  registerState.pets.forEach((p,i)=>{
+    const nameField = document.querySelector(`.reg-petname[data-i="${i}"]`);
+    if(!nameField) return;
+    p.name = nameField.value;
+    p.breed = document.querySelector(`.reg-petbreed[data-i="${i}"]`).value;
+    p.age = document.querySelector(`.reg-petage[data-i="${i}"]`).value;
+    p.weight = document.querySelector(`.reg-petweight[data-i="${i}"]`).value;
+    p.personality = document.querySelector(`.reg-personality[data-i="${i}"]`).value;
+    p.health = document.querySelector(`.reg-health[data-i="${i}"]`).value;
+  });
+}
 function bindRegister(){
   if(registerState.resultCode){
     document.getElementById('regBackLanding').addEventListener('click', ()=>{
@@ -1152,11 +1171,13 @@ function bindRegister(){
   });
   document.querySelectorAll('[data-remove-pet]').forEach(btn=>{
     btn.addEventListener('click', ()=>{
+      syncRegisterFormFromDOM();
       registerState.pets.splice(Number(btn.dataset.removePet), 1);
       render();
     });
   });
   document.getElementById('regAddPet').addEventListener('click', ()=>{
+    syncRegisterFormFromDOM();
     registerState.pets.push({ name:'',breed:'',age:'',weight:'',personality:'',health:'',species:'',photo:null });
     render();
   });
@@ -1164,6 +1185,7 @@ function bindRegister(){
     row.addEventListener('click', e=>{
       const pill = e.target.closest('.choice-pill'); if(!pill) return;
       const i = Number(row.dataset.i);
+      syncRegisterFormFromDOM();
       registerState.pets[i].species = (registerState.pets[i].species===pill.dataset.a) ? '' : pill.dataset.a;
       render();
     });
