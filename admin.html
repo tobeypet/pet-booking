@@ -235,7 +235,7 @@ const newBookingState = {
   selectedPets:[], petServices:{}, // petId -> {category,animalType,hairLength,multiplier,duration,label}
   addPetOpen:false, newPetDraft:{ name:'',breed:'',age:'',weight:'',personality:'',health:'',species:'',photo:null },
   service:{ category:'', duration:0, label:'' }, // 這是「所有選定寵物加總」的彙總結果，供日曆/時段邏輯共用
-  selectedDates:[], timesByDate:{}, travelByDate:{}, hideAreaHint:false,
+  selectedDates:[], timesByDate:{}, travelByDate:{}, customTimeByDate:{}, hideAreaHint:false,
   monthView:{ year:new Date().getFullYear(), month:new Date().getMonth() }
 };
 
@@ -741,7 +741,7 @@ function bindNewCustomer(){
       newBookingState.addPetOpen = false;
       newBookingState.stage = 'pets';
       newBookingState.service = { category:'', duration:0, label:'' };
-      newBookingState.selectedDates = []; newBookingState.timesByDate = {}; newBookingState.travelByDate = {}; newBookingState.hideAreaHint = false;
+      newBookingState.selectedDates = []; newBookingState.timesByDate = {}; newBookingState.travelByDate = {}; newBookingState.customTimeByDate = {}; newBookingState.hideAreaHint = false;
       newCustomerState.resultCode = null; newCustomerState.lastCreated = null;
       pageState.view = 'newBooking';
       render();
@@ -1087,9 +1087,27 @@ function renderNBDateList(){
   return nb.selectedDates.map(date=>{
     const info = nb.travelByDate[date];
     const time = nb.timesByDate[date];
-    let slotHtml;
+    const isCustom = !!nb.customTimeByDate[date];
+    let bodyHtml;
     if(!info || !info.loaded){
-      slotHtml = `<div class="empty-note">檢查行程時間中...</div>`;
+      bodyHtml = `<div class="empty-note">檢查行程時間中...</div>`;
+    } else if(isCustom){
+      let warning = '';
+      if(time){
+        const startMin = toMin(time);
+        const conflict = isSlotBlockedForBooking(date, startMin, duration) || isSlotBlockedByTravelForNBDate(date, startMin, duration);
+        if(conflict){
+          warning = `<div class="empty-note" style="margin-top:10px;color:var(--danger);background:var(--danger-light);">⚠️ 這個時間跟公休／已有的預約／行程時間有衝突，仍可送出，但請確認托比排得過來。</div>`;
+        }
+      }
+      bodyHtml = `
+        ${info.error ? `<div class="empty-note" style="margin-bottom:8px;">${info.error}</div>` : ''}
+        <div class="field" style="margin-bottom:0;">
+          <input type="time" class="nb-manual-time" data-date="${date}" value="${time||''}">
+        </div>
+        ${time ? `<div class="info-line" style="padding-top:10px;"><span class="k">結束時間</span><span class="v">${fmtTime(toMin(time)+duration)}</span></div>` : ''}
+        ${warning}
+      `;
     } else {
       const end = getBusinessEnd(date);
       const slots = [];
@@ -1097,7 +1115,7 @@ function renderNBDateList(){
         const taken = isSlotBlockedForBooking(date, start, duration) || isSlotBlockedByTravelForNBDate(date, start, duration);
         slots.push({ start, taken });
       }
-      slotHtml = slots.length===0 ? `<div class="empty-note">此服務所需時間較長，當日時段不足，請移除此日期。</div>` : `
+      bodyHtml = slots.length===0 ? `<div class="empty-note">此服務所需時間較長，當日時段不足，請移除此日期，或改用自訂時間。</div>` : `
         ${info.error ? `<div class="empty-note" style="margin-bottom:8px;">${info.error}</div>` : ''}
         <div class="admin-slot-grid">
           ${slots.map(s=>{
@@ -1116,7 +1134,17 @@ function renderNBDateList(){
           <span>${date}${time?`　已選 ${time}`:''}</span>
           <button data-remove-nb-date="${date}" style="color:var(--danger);background:none;border:none;font-weight:700;cursor:pointer;font-size:12px;">移除</button>
         </h4>
-        ${slotHtml}
+        <div class="toggle-row" style="margin-bottom:10px;">
+          <div>
+            <div class="label">自訂時間</div>
+            <div class="sub">不使用下方時段按鈕，直接手動輸入開始時間</div>
+          </div>
+          <label class="switch">
+            <input type="checkbox" class="nb-custom-time-toggle" data-date="${date}" ${isCustom?'checked':''}>
+            <span class="track"></span>
+          </label>
+        </div>
+        ${bodyHtml}
       </div>
     `;
   }).join('');
@@ -1136,7 +1164,7 @@ function bindNewBooking(){
     document.getElementById('nbChangeCustomer').addEventListener('click', ()=>{
       nb.customer = null; nb.results = []; nb.value = '';
       nb.selectedPets = []; nb.petServices = {}; nb.addPetOpen = false; nb.stage = 'pets';
-      nb.selectedDates = []; nb.timesByDate = {}; nb.travelByDate = {};
+      nb.selectedDates = []; nb.timesByDate = {}; nb.travelByDate = {}; nb.customTimeByDate = {};
       render();
     });
     document.getElementById('nb-pet-select-grid').addEventListener('click', e=>{
@@ -1231,7 +1259,7 @@ function bindNewBooking(){
       if(nb.selectedPets.length===0){ errEl.textContent='請至少選一隻寵物。'; errEl.style.display='block'; return; }
       if(!nbAllPetsReady()){ errEl.textContent='請幫每隻寵物都選好服務類型（跟寵物類別）。'; errEl.style.display='block'; return; }
       errEl.style.display='none';
-      nb.selectedDates=[]; nb.timesByDate={}; nb.travelByDate={}; nb.hideAreaHint=false;
+      nb.selectedDates=[]; nb.timesByDate={}; nb.travelByDate={}; nb.customTimeByDate={}; nb.hideAreaHint=false;
       nb.stage = 'time';
       render();
     });
@@ -1269,12 +1297,29 @@ function bindNewBooking(){
         nb.selectedDates = nb.selectedDates.filter(d=>d!==date);
         delete nb.timesByDate[date];
         delete nb.travelByDate[date];
+        delete nb.customTimeByDate[date];
         render();
         return;
       }
       const slot = e.target.closest('.admin-slot');
       if(slot && !slot.classList.contains('blocked') && slot.dataset.time){
         nb.timesByDate[slot.dataset.date] = slot.dataset.time;
+        render();
+      }
+    });
+    dateList.addEventListener('change', e=>{
+      const toggle = e.target.closest('.nb-custom-time-toggle');
+      if(toggle){
+        const date = toggle.dataset.date;
+        nb.customTimeByDate[date] = toggle.checked;
+        delete nb.timesByDate[date];
+        render();
+        return;
+      }
+      const manualInput = e.target.closest('.nb-manual-time');
+      if(manualInput){
+        nb.timesByDate[manualInput.dataset.date] = manualInput.value || undefined;
+        if(!manualInput.value) delete nb.timesByDate[manualInput.dataset.date];
         render();
       }
     });
@@ -1371,7 +1416,7 @@ async function submitNBBooking(){
     newBookingState.selectedPets = []; newBookingState.petServices = {}; newBookingState.addPetOpen = false;
     newBookingState.stage = 'pets';
     newBookingState.service = { category:'', duration:0, label:'' };
-    newBookingState.selectedDates = []; newBookingState.timesByDate = {}; newBookingState.travelByDate = {}; newBookingState.hideAreaHint = false;
+    newBookingState.selectedDates = []; newBookingState.timesByDate = {}; newBookingState.travelByDate = {}; newBookingState.customTimeByDate = {}; newBookingState.hideAreaHint = false;
     render();
   } else {
     btn.disabled = false; btn.textContent = '新增全部 ' + total + ' 筆預約';
