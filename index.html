@@ -13,6 +13,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Noto+Sans+TC:wght@400;500;600;700;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tabler-icons/3.46.0/tabler-icons.min.css">
 <style>
   :root{
     --cream:#EAF0FA; --cream-2:#DCE6F5; --pine:#3D6FA8; --pine-2:#2A5480;
@@ -179,6 +180,15 @@
   .btn-ghost{background:var(--cream);color:var(--pine);border:1.5px solid var(--line);flex:0 0 100px;}
   .btn-ghost:hover{background:var(--sage-light);}
   .err{color:var(--danger);font-size:12px;margin-top:5px;}
+
+  .icon-nav{background:var(--cream);border:1.5px solid var(--line);border-radius:999px;padding:6px;display:flex;justify-content:space-between;align-items:center;margin-top:18px;}
+  .icon-nav-btn{background:none;border:none;color:var(--pine);display:flex;align-items:center;gap:6px;padding:11px;border-radius:999px;cursor:pointer;flex:0 0 auto;transition:background .15s ease,padding .15s ease;}
+  .icon-nav-btn i{font-size:20px;flex-shrink:0;}
+  .icon-nav-btn .lbl{max-width:0;overflow:hidden;white-space:nowrap;opacity:0;font-size:12px;font-weight:700;transition:max-width .18s ease,opacity .18s ease,margin-left .18s ease;}
+  .icon-nav-btn:hover,.icon-nav-btn.expanded,.icon-nav-btn:focus-visible{background:var(--sage-light);padding:11px 14px;}
+  .icon-nav-btn:hover .lbl,.icon-nav-btn.expanded .lbl,.icon-nav-btn:focus-visible .lbl{max-width:110px;opacity:1;margin-left:2px;}
+  .icon-nav-btn.primary{background:var(--pine);color:#fff;}
+  .icon-nav-btn.primary:hover,.icon-nav-btn.primary.expanded,.icon-nav-btn.primary:focus-visible{background:var(--pine-2);}
 
   .success{text-align:center;padding:10px 6px 4px;}
   .success .paw{width:64px;height:64px;border-radius:50%;background:var(--sage-light);display:flex;align-items:center;justify-content:center;margin:0 auto 16px;overflow:hidden;}
@@ -936,10 +946,6 @@ function renderProgress(){
 function tplLanding(){
   const infoBlock = state.landingDate ? renderLandingDateInfo() : '';
   return `
-    <div style="display:flex;gap:8px;margin-bottom:16px;">
-      <button type="button" id="toMultiDay" class="btn btn-ghost" style="flex:1;padding:8px 10px;font-size:12.5px;">用專屬代碼一次約多天</button>
-      <button type="button" id="toLookupBookings" class="btn btn-ghost" style="flex:1;padding:8px 10px;font-size:12.5px;">查詢預約記錄</button>
-    </div>
     <h2 class="card-title">快速瀏覽</h2>
     <p class="card-desc">下方是簡易日曆，可以先看看哪天開放預約；選好日期後會顯示更精確的可預約時段。<br><span style="color:var(--ink-soft);font-size:12px;">（備註：小型犬貓洗澡約需 1 小時、大美容約需 2 小時，實際時間依現場評估為準）</span></p>
     <div class="cal-head">
@@ -955,9 +961,11 @@ function tplLanding(){
       <span><span class="taichung-dot"></span>台中服務日</span>
     </div>
     ${infoBlock}
-    <div class="actions">
-      <button class="btn btn-ghost" id="toRegister" style="flex:1;">先建立個人資料</button>
-      <button class="btn btn-primary" id="toBooking" style="flex:1;">專屬代碼預約</button>
+    <div class="icon-nav">
+      <button type="button" id="toLookupBookings" class="icon-nav-btn" aria-label="查詢預約記錄"><i class="ti ti-search" aria-hidden="true"></i><span class="lbl">查詢預約記錄</span></button>
+      <button type="button" id="toRegister" class="icon-nav-btn" aria-label="先建立個人資料"><i class="ti ti-user-plus" aria-hidden="true"></i><span class="lbl">先建立個人資料</span></button>
+      <button type="button" id="toMultiDay" class="icon-nav-btn" aria-label="用專屬代碼一次約多天"><i class="ti ti-calendar-plus" aria-hidden="true"></i><span class="lbl">一次約多天</span></button>
+      <button type="button" id="toBooking" class="icon-nav-btn primary" aria-label="專屬代碼預約"><i class="ti ti-key" aria-hidden="true"></i><span class="lbl">專屬代碼預約</span></button>
     </div>
   `;
 }
@@ -1022,23 +1030,18 @@ function bindLanding(){
     state.landingDate = c.dataset.date;
     render();
   });
-  document.getElementById('toBooking').addEventListener('click', ()=>{
-    state.mode = 'codeEntry';
-    resetCodeEntryState();
-    render();
-  });
-  document.getElementById('toRegister').addEventListener('click', ()=>{
-    state.mode = 'register';
-    render();
-  });
-  document.getElementById('toMultiDay').addEventListener('click', ()=>{
-    state.mode = 'multiDay';
-    multiDayState.step = 'code';
-    render();
-  });
-  document.getElementById('toLookupBookings').addEventListener('click', ()=>{
-    state.mode = 'lookupBookings';
-    render();
+  document.querySelectorAll('.icon-nav-btn').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      if(btn.classList.contains('expanded')) return;
+      btn.classList.add('expanded');
+      setTimeout(()=>{
+        if(btn.id==='toBooking'){ state.mode='codeEntry'; resetCodeEntryState(); }
+        else if(btn.id==='toRegister'){ state.mode='register'; }
+        else if(btn.id==='toMultiDay'){ state.mode='multiDay'; multiDayState.step='code'; }
+        else if(btn.id==='toLookupBookings'){ state.mode='lookupBookings'; }
+        render();
+      }, 380);
+    });
   });
 }
 
