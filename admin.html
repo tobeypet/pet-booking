@@ -449,8 +449,8 @@ function tplDiary(){
         <div class="field">
           <label>毛長類型</label>
           <div class="choice-row" id="dep-hair-row">
-            <div class="choice-pill ${diaryState.editPetDraft.hairLength==='long'?'active':''}" data-h="long">長毛</div>
-            <div class="choice-pill ${diaryState.editPetDraft.hairLength==='short'?'active':''}" data-h="short">短毛</div>
+            <div class="choice-pill ${diaryState.editPetDraft.hairLength==='long'?'active':''}" data-h="long">毛量濃密</div>
+            <div class="choice-pill ${diaryState.editPetDraft.hairLength==='short'?'active':''}" data-h="short">毛量正常</div>
           </div>
         </div>` : ''}
         <div class="field"><label>年齡</label><input type="text" id="dep-age" value="${esc(diaryState.editPetDraft.age)}"></div>
@@ -475,8 +475,8 @@ function tplDiary(){
         <div class="field">
           <label>毛長類型 <span class="hint">(選填，設定好下次預約就不用再選)</span></label>
           <div class="choice-row" id="dnp-hair-row">
-            <div class="choice-pill ${diaryState.newPetDraft.hairLength==='long'?'active':''}" data-h="long">長毛</div>
-            <div class="choice-pill ${diaryState.newPetDraft.hairLength==='short'?'active':''}" data-h="short">短毛</div>
+            <div class="choice-pill ${diaryState.newPetDraft.hairLength==='long'?'active':''}" data-h="long">毛量濃密</div>
+            <div class="choice-pill ${diaryState.newPetDraft.hairLength==='short'?'active':''}" data-h="short">毛量正常</div>
           </div>
         </div>` : ''}
         <div class="field"><label>年齡</label><input type="text" id="dnp-age" value="${esc(diaryState.newPetDraft.age)}"></div>
@@ -707,8 +707,8 @@ function tplNewCustomer(){
     <div class="field">
       <label>毛長類型 <span class="hint">(選填，設定好之後預約就不用再選)</span></label>
       <div class="choice-row nc-hair-row" data-i="${i}">
-        <div class="choice-pill ${p.hairLength==='long'?'active':''}" data-h="long">長毛</div>
-        <div class="choice-pill ${p.hairLength==='short'?'active':''}" data-h="short">短毛</div>
+        <div class="choice-pill ${p.hairLength==='long'?'active':''}" data-h="long">毛量濃密</div>
+        <div class="choice-pill ${p.hairLength==='short'?'active':''}" data-h="short">毛量正常</div>
       </div>
     </div>` : ''}
     <div class="field"><label>年齡</label><input type="text" class="nc-petage" data-i="${i}" value="${esc(p.age)}"></div>
@@ -999,8 +999,8 @@ function tplNewBooking(){
         <div class="field">
           <label>毛長類型</label>
           <div class="choice-row nb-pet-hair-row" data-pet-id="${esc(p.id)}">
-            <div class="choice-pill ${s.hairLength==='long'?'active':''}" data-h="long">長毛</div>
-            <div class="choice-pill ${s.hairLength==='short'?'active':''}" data-h="short">短毛</div>
+            <div class="choice-pill ${s.hairLength==='long'?'active':''}" data-h="long">毛量濃密</div>
+            <div class="choice-pill ${s.hairLength==='short'?'active':''}" data-h="short">毛量正常</div>
           </div>
         </div>` : ''}
         ` : '')}
@@ -1029,8 +1029,8 @@ function tplNewBooking(){
         <div class="field">
           <label>毛長類型 <span class="hint">(選填，設定好下次就不用再選)</span></label>
           <div class="choice-row" id="nbnp-hair-row">
-            <div class="choice-pill ${nb.newPetDraft.hairLength==='long'?'active':''}" data-h="long">長毛</div>
-            <div class="choice-pill ${nb.newPetDraft.hairLength==='short'?'active':''}" data-h="short">短毛</div>
+            <div class="choice-pill ${nb.newPetDraft.hairLength==='long'?'active':''}" data-h="long">毛量濃密</div>
+            <div class="choice-pill ${nb.newPetDraft.hairLength==='short'?'active':''}" data-h="short">毛量正常</div>
           </div>
         </div>` : ''}
         <div class="err" id="nbnp-err" style="display:none;"></div>

@@ -739,8 +739,8 @@ function tplPetSelectScreen(){
       <div class="field">
         <label>毛長類型</label>
         <div class="choice-row pet-hair-row" data-pet-id="${esc(p.id)}">
-          <div class="choice-pill ${s.hairLength==='long'?'active':''}" data-h="long">長毛</div>
-          <div class="choice-pill ${s.hairLength==='short'?'active':''}" data-h="short">短毛</div>
+          <div class="choice-pill ${s.hairLength==='long'?'active':''}" data-h="long">毛量濃密</div>
+          <div class="choice-pill ${s.hairLength==='short'?'active':''}" data-h="short">毛量正常</div>
         </div>
       </div>` : ''}
       ${s.duration ? `<div class="duration-box"><span>${esc(p.name)} 預估時間</span><b>${s.duration<60 ? s.duration+' 分鐘' : (s.duration/60 % 1===0? s.duration/60 : (s.duration/60).toFixed(1)) + ' 小時'}</b></div>` : ''}
@@ -782,8 +782,8 @@ function tplAddPetForm(){
       <div class="field">
         <label>毛長類型 <span class="hint">(選填，設定好下次預約就不用再選)</span></label>
         <div class="choice-row" id="np-hair-row">
-          <div class="choice-pill ${p.hairLength==='long'?'active':''}" data-h="long">長毛</div>
-          <div class="choice-pill ${p.hairLength==='short'?'active':''}" data-h="short">短毛</div>
+          <div class="choice-pill ${p.hairLength==='long'?'active':''}" data-h="long">毛量濃密</div>
+          <div class="choice-pill ${p.hairLength==='short'?'active':''}" data-h="short">毛量正常</div>
         </div>
       </div>` : ''}
       <div class="row2">
@@ -1103,8 +1103,8 @@ function tplRegister(){
     <div class="field">
       <label>毛長類型 <span class="hint">(選填，設定好下次預約就不用再選)</span></label>
       <div class="choice-row reg-hair-row" data-i="${i}">
-        <div class="choice-pill ${p.hairLength==='long'?'active':''}" data-h="long">長毛</div>
-        <div class="choice-pill ${p.hairLength==='short'?'active':''}" data-h="short">短毛</div>
+        <div class="choice-pill ${p.hairLength==='long'?'active':''}" data-h="long">毛量濃密</div>
+        <div class="choice-pill ${p.hairLength==='short'?'active':''}" data-h="short">毛量正常</div>
       </div>
     </div>` : ''}
     <div class="field"><label>寵物個性 <span class="hint">(選填)</span></label><textarea class="reg-personality" data-i="${i}">${esc(p.personality)}</textarea></div>
@@ -1374,8 +1374,8 @@ function tplMultiDayAddPetForm(){
       <div class="field">
         <label>毛長類型 <span class="hint">(選填，設定好下次預約就不用再選)</span></label>
         <div class="choice-row" id="mdnp-hair-row">
-          <div class="choice-pill ${p.hairLength==='long'?'active':''}" data-h="long">長毛</div>
-          <div class="choice-pill ${p.hairLength==='short'?'active':''}" data-h="short">短毛</div>
+          <div class="choice-pill ${p.hairLength==='long'?'active':''}" data-h="long">毛量濃密</div>
+          <div class="choice-pill ${p.hairLength==='short'?'active':''}" data-h="short">毛量正常</div>
         </div>
       </div>` : ''}
       <div class="row2">
@@ -1482,8 +1482,8 @@ function tplMultiDayService(){
     <div class="field">
       <label>毛長類型</label>
       <div class="choice-row" id="md-hair-row">
-        <div class="choice-pill ${s.hairLength==='long'?'active':''}" data-h="long">長毛</div>
-        <div class="choice-pill ${s.hairLength==='short'?'active':''}" data-h="short">短毛</div>
+        <div class="choice-pill ${s.hairLength==='long'?'active':''}" data-h="long">毛量濃密</div>
+        <div class="choice-pill ${s.hairLength==='short'?'active':''}" data-h="short">毛量正常</div>
       </div>
     </div>` : ''}
     ${s.duration ? `<div class="duration-box"><span>預估所需時間</span><b>${s.duration/60 % 1===0? s.duration/60 : (s.duration/60).toFixed(1)} 小時</b></div>` : ''}
@@ -2236,8 +2236,8 @@ function tplStep1NewCustomer(){
     <div class="field">
       <label>毛長類型</label>
       <div class="choice-row" id="hair-row">
-        <div class="choice-pill ${s.hairLength==='long'?'active':''}" data-h="long">長毛</div>
-        <div class="choice-pill ${s.hairLength==='short'?'active':''}" data-h="short">短毛</div>
+        <div class="choice-pill ${s.hairLength==='long'?'active':''}" data-h="long">毛量濃密</div>
+        <div class="choice-pill ${s.hairLength==='short'?'active':''}" data-h="short">毛量正常</div>
       </div>
     </div>` : ''}
     ${ready ? `<div class="duration-box"><span>預估所需時間</span><b>${s.duration<60 ? s.duration+' 分鐘' : (s.duration/60 % 1===0? s.duration/60 : (s.duration/60).toFixed(1)) + ' 小時'}</b></div>` : ''}
