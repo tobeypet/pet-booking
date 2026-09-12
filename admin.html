@@ -196,7 +196,7 @@ const BUSINESS_START = 9*60, DEFAULT_BUSINESS_END = 13*60, EXTENDED_BUSINESS_END
 
 const pageState = { view:'calendar' }; // 'calendar' | 'diary' | 'newCustomer' | 'newBooking'
 const adminAuth = { password: sessionStorage.getItem('adminAuthPassword') || '', verified:false, error:'' };
-const diaryState = { field:'name', value:'', results:[], customer:null, entries:[], error:'', addPetOpen:false, newPetDraft:{ name:'',breed:'',age:'',weight:'',personality:'',health:'',species:'',hairLength:'' }, editingPetId:null, editPetDraft:{ name:'',breed:'',age:'',weight:'',personality:'',health:'',species:'',hairLength:'' } };
+const diaryState = { field:'name', value:'', results:[], customer:null, selectedPetId:null, entries:[], error:'', addPetOpen:false, newPetDraft:{ name:'',breed:'',age:'',weight:'',personality:'',health:'',species:'',hairLength:'' }, editingPetId:null, editPetDraft:{ name:'',breed:'',age:'',weight:'',personality:'',health:'',species:'',hairLength:'' } };
 const DIARY_FIELDS = { name:'飼主姓名', phone:'電話', line:'LINE ID', pet:'寵物名稱' };
 function esc(str){ return String(str==null?'':str).replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
 
@@ -390,6 +390,7 @@ function render(){
 function tplDiary(){
   const c = diaryState.customer;
   const fieldLabel = DIARY_FIELDS[diaryState.field];
+  const selectedPetName = c ? (((c.pets||[]).find(p=>p.id===diaryState.selectedPetId)||{}).name || '') : '';
   return `
     <h2 class="card-title">寵物日記</h2>
     <p class="card-desc">可用飼主姓名、電話、LINE ID 或寵物名稱任一項查詢客戶，找到後即可針對每次服務新增紀錄，方便下次服務前回顧。客人本人看不到這些內容。</p>
@@ -486,9 +487,15 @@ function tplDiary(){
         <div class="err" id="dnp-err" style="display:none;"></div>
         <div class="actions" style="margin-top:6px;"><button class="btn btn-primary" id="dnpSubmitBtn" style="flex:1;">新增這隻寵物</button></div>
       </div>` : ''}
-      <div class="field" style="margin-top:18px;"><label>新增日記</label><textarea id="diary-note" placeholder="這次服務的紀錄，例如：這次剪得比較短、皮膚有點泛紅要注意"></textarea></div>
-      <div class="actions"><button class="btn btn-primary" id="diaryAddBtn" style="flex:1;">新增日記</button></div>
-      <div class="slot-title" style="margin-top:22px;">過往日記（新到舊）</div>
+      ${(c.pets||[]).length>1 ? `
+      <div class="slot-title" style="margin-top:22px;">日記對象</div>
+      <div class="choice-row" id="diary-pet-target-row">
+        ${(c.pets||[]).map(p=>`<div class="choice-pill ${diaryState.selectedPetId===p.id?'active':''}" data-pet-id="${esc(p.id)}">${esc(p.name)}</div>`).join('')}
+      </div>
+      ` : ''}
+      <div class="field" style="margin-top:18px;"><label>新增日記${selectedPetName?`（${esc(selectedPetName)}）`:''}</label><textarea id="diary-note" placeholder="這次服務的紀錄，例如：這次剪得比較短、皮膚有點泛紅要注意"></textarea></div>
+      <div class="actions"><button class="btn btn-primary" id="diaryAddBtn" style="flex:1;" ${diaryState.selectedPetId?'':'disabled'}>新增日記</button></div>
+      <div class="slot-title" style="margin-top:22px;">${selectedPetName?esc(selectedPetName)+' ':''}過往日記（新到舊）</div>
       ${diaryState.entries.length===0
         ? `<div class="empty-note">目前還沒有日記紀錄。</div>`
         : diaryState.entries.map(en=>`<div class="diary-entry"><div class="date">${esc(en.date)}</div><div class="note">${esc(en.note)}</div></div>`).join('')}
@@ -534,29 +541,41 @@ async function selectDiaryCustomer(customer){
   diaryState.newPetDraft = { name:'',breed:'',age:'',weight:'',personality:'',health:'',species:'',hairLength:'' };
   diaryState.editingPetId = null;
   diaryState.editPetDraft = { name:'',breed:'',age:'',weight:'',personality:'',health:'',species:'',hairLength:'' };
+  const pets = customer.pets || [];
+  diaryState.selectedPetId = pets.length ? pets[0].id : null;
+  await loadDiaryEntries();
+  render();
+}
+// 依「目前選定的寵物」讀取日記；有寵物ID優先用ID比對，舊資料沒有ID的話後端會退回比對寵物名稱
+async function loadDiaryEntries(){
+  const c = diaryState.customer;
+  if(!c || !diaryState.selectedPetId){ diaryState.entries = []; return; }
+  const pet = (c.pets||[]).find(p=>p.id===diaryState.selectedPetId);
   try{
-    const diaryRes = await fetch(GOOGLE_SCRIPT_URL + '?action=getDiary&phone=' + encodeURIComponent(customer.phone) + '&adminPassword=' + encodeURIComponent(adminAuth.password));
+    const diaryRes = await fetch(GOOGLE_SCRIPT_URL + '?action=getDiary&phone=' + encodeURIComponent(c.phone) + '&petId=' + encodeURIComponent(diaryState.selectedPetId) + '&petName=' + encodeURIComponent(pet?pet.name:'') + '&adminPassword=' + encodeURIComponent(adminAuth.password));
     const diaryData = await diaryRes.json();
     diaryState.entries = (diaryData.success && diaryData.entries) ? diaryData.entries : [];
   }catch(err){
     diaryState.entries = [];
     console.error('讀取日記失敗：', err);
   }
-  render();
 }
 async function addDiaryEntry(){
   const note = document.getElementById('diary-note').value.trim();
   if(!note) return;
+  const pet = (diaryState.customer.pets||[]).find(p=>p.id===diaryState.selectedPetId);
+  if(!pet) return;
   const btn = document.getElementById('diaryAddBtn');
   btn.disabled = true; btn.textContent = '新增中...';
   try{
     const res = await fetch(GOOGLE_SCRIPT_URL, {
       method:'POST', headers:{ 'Content-Type':'text/plain;charset=utf-8' },
-      body: JSON.stringify({ action:'addDiaryEntry', adminPassword: adminAuth.password, phone: diaryState.customer.phone, petName: diaryState.customer.petName, note })
+      body: JSON.stringify({ action:'addDiaryEntry', adminPassword: adminAuth.password, phone: diaryState.customer.phone, petId: pet.id, petName: pet.name, note })
     });
     const result = await res.json();
     if(!result.success) throw new Error(result.error || '新增失敗');
-    await selectDiaryCustomer(diaryState.customer);
+    await loadDiaryEntries();
+    render();
   }catch(err){
     btn.disabled = false; btn.textContent = '新增日記';
     console.error('新增日記失敗：', err);
@@ -575,6 +594,16 @@ function bindDiary(){
   });
   const addBtn = document.getElementById('diaryAddBtn');
   if(addBtn) addBtn.addEventListener('click', addDiaryEntry);
+  const targetRow = document.getElementById('diary-pet-target-row');
+  if(targetRow){
+    targetRow.addEventListener('click', async e=>{
+      const pill = e.target.closest('.choice-pill'); if(!pill) return;
+      if(diaryState.selectedPetId === pill.dataset.petId) return;
+      diaryState.selectedPetId = pill.dataset.petId;
+      await loadDiaryEntries();
+      render();
+    });
+  }
   const petGrid = document.getElementById('diary-pet-grid');
   if(petGrid){
     petGrid.addEventListener('click', e=>{
