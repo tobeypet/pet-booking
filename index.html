@@ -320,7 +320,7 @@ const state = {
   petStage: 'select', // 'select'（選寵物與服務）| 'time'（選時間）
   newCustomerService: { category:'', animalType:'', hairLength:'', duration:0, label:'', addons:{brushTeeth:false, other:''}, addonsOpen:false }, // 給還沒有代碼的新客人：先選時段時內嵌的單一寵物服務設定
   addPetOpen: false,
-  newPetDraft: { name:'',breed:'',age:'',weight:'',personality:'',health:'',species:'',photo:null },
+  newPetDraft: { name:'',breed:'',age:'',weight:'',personality:'',health:'',species:'',hairLength:'',photo:null },
   service:{ category:'', duration:0, label:'' }, // 所有選定寵物的服務時間加總，日曆/時段邏輯共用這個
   booking:{ date:null, time:null },
   identifyMode:'new', // 'new' | 'returning'
@@ -333,14 +333,14 @@ const state = {
 
 const registerState = {
   data:{ name:'',phone:'',lineId:'',address:'' },
-  pets: [ { name:'',breed:'',age:'',weight:'',personality:'',health:'',species:'',photo:null } ],
+  pets: [ { name:'',breed:'',age:'',weight:'',personality:'',health:'',species:'',hairLength:'',photo:null } ],
   error:'', resultCode:null, resultPets:null
 };
 
 const multiDayState = {
   step: 'code', // 'code' | 'pet' | 'service' | 'dates' | 'review' | 'done'
   lookupCode: '', lookupResult: null, error: '',
-  selectedPet: null, addPetOpen: false, newPetDraft: { name:'',breed:'',age:'',weight:'',personality:'',health:'',species:'',photo:null },
+  selectedPet: null, addPetOpen: false, newPetDraft: { name:'',breed:'',age:'',weight:'',personality:'',health:'',species:'',hairLength:'',photo:null },
   service: { category:'', animalType:'', hairLength:'', duration:0, label:'' },
   monthView: { year:new Date().getFullYear(), month:new Date().getMonth() },
   selectedDates: [], timesByDate: {}, travelByDate: {},
@@ -350,7 +350,7 @@ function resetMultiDayState(){
   multiDayState.step = 'code';
   multiDayState.lookupCode = ''; multiDayState.lookupResult = null; multiDayState.error = '';
   multiDayState.selectedPet = null; multiDayState.addPetOpen = false;
-  multiDayState.newPetDraft = { name:'',breed:'',age:'',weight:'',personality:'',health:'',species:'',photo:null };
+  multiDayState.newPetDraft = { name:'',breed:'',age:'',weight:'',personality:'',health:'',species:'',hairLength:'',photo:null };
   multiDayState.service = { category:'', animalType:'', hairLength:'', duration:0, label:'' };
   multiDayState.selectedDates = []; multiDayState.timesByDate = {}; multiDayState.travelByDate = {};
   multiDayState.results = [];
@@ -611,8 +611,8 @@ function computeDuration(){
   const s = state.service;
   return s.duration ? { duration: s.duration, label: s.label } : null;
 }
-function ensurePetSvc(petId, defaultSpecies){
-  if(!state.petServices[petId]) state.petServices[petId] = { category:'', animalType:defaultSpecies||'', hairLength:'', duration:0, label:'', addons:{brushTeeth:false,other:''}, addonsOpen:false };
+function ensurePetSvc(petId, defaultSpecies, defaultHairLength){
+  if(!state.petServices[petId]) state.petServices[petId] = { category:'', animalType:defaultSpecies||'', hairLength:defaultHairLength||'', duration:0, label:'', addons:{brushTeeth:false,other:''}, addonsOpen:false };
   return state.petServices[petId];
 }
 function updatePetSvc(petId){
@@ -708,9 +708,10 @@ function needsPetSelect(){
 function tplPetSelectScreen(){
   const pets = state.owner.pets || [];
   const petBlocks = state.selectedPets.map(p=>{
-    const s = ensurePetSvc(p.id, p.species);
+    const s = ensurePetSvc(p.id, p.species, p.hairLength);
     const knownSpecies = !!p.species;
-    const showDogHair = s.animalType==='dog' && s.category!=='nail';
+    const knownHairLength = !!p.hairLength;
+    const showDogHair = s.animalType==='dog' && s.category!=='nail' && !knownHairLength;
     return `
       <div class="slot-title" style="margin-top:20px;">${esc(p.name)}（${esc(p.breed)}）要做什麼服務？</div>
       <div class="svc-grid pet-svc-grid" data-pet-id="${esc(p.id)}">
@@ -777,6 +778,14 @@ function tplAddPetForm(){
           <div class="choice-pill ${p.species==='dog'?'active':''}" data-a="dog">狗狗</div>
         </div>
       </div>
+      ${p.species==='dog' ? `
+      <div class="field">
+        <label>毛長類型 <span class="hint">(選填，設定好下次預約就不用再選)</span></label>
+        <div class="choice-row" id="np-hair-row">
+          <div class="choice-pill ${p.hairLength==='long'?'active':''}" data-h="long">長毛</div>
+          <div class="choice-pill ${p.hairLength==='short'?'active':''}" data-h="short">短毛</div>
+        </div>
+      </div>` : ''}
       <div class="row2">
         <div class="field"><label>年齡 <span class="hint">(選填)</span></label><input type="number" min="0" step="0.5" id="np-age" value="${esc(p.age)}"></div>
         <div class="field"><label>體重 <span class="hint">(選填)</span></label><input type="number" min="0" step="0.1" id="np-weight" value="${esc(p.weight)}"></div>
@@ -813,6 +822,13 @@ function bindPetSelectScreen(){
     if(npSpeciesRow) npSpeciesRow.addEventListener('click', e=>{
       const pill = e.target.closest('.choice-pill'); if(!pill) return;
       state.newPetDraft.species = (state.newPetDraft.species===pill.dataset.a) ? '' : pill.dataset.a;
+      if(state.newPetDraft.species!=='dog') state.newPetDraft.hairLength = '';
+      render();
+    });
+    const npHairRow = document.getElementById('np-hair-row');
+    if(npHairRow) npHairRow.addEventListener('click', e=>{
+      const pill = e.target.closest('.choice-pill'); if(!pill) return;
+      state.newPetDraft.hairLength = (state.newPetDraft.hairLength===pill.dataset.h) ? '' : pill.dataset.h;
       render();
     });
     document.getElementById('np-photo').addEventListener('change', e=>{
@@ -842,7 +858,7 @@ function bindPetSelectScreen(){
       try{
         const res = await fetch(GOOGLE_SCRIPT_URL, {
           method:'POST', headers:{ 'Content-Type':'text/plain;charset=utf-8' },
-          body: JSON.stringify({ action:'addPet', customerCode: state.owner.customerCode, petName:p.name, petBreed:p.breed, petSpecies:p.species||'', petAge:p.age, petWeight:p.weight, petPersonality:p.personality, petHealth:p.health, petPhoto:p.photo||'' })
+          body: JSON.stringify({ action:'addPet', customerCode: state.owner.customerCode, petName:p.name, petBreed:p.breed, petSpecies:p.species||'', petHairLength:p.hairLength||'', petAge:p.age, petWeight:p.weight, petPersonality:p.personality, petHealth:p.health, petPhoto:p.photo||'' })
         });
         const result = await res.json();
         if(!result.success) throw new Error(result.error || '新增失敗');
@@ -851,7 +867,7 @@ function bindPetSelectScreen(){
         ensurePetSvc(result.pet.id, result.pet.species);
         updateAggregateService();
         state.addPetOpen = false;
-        state.newPetDraft = { name:'',breed:'',age:'',weight:'',personality:'',health:'',species:'',photo:null };
+        state.newPetDraft = { name:'',breed:'',age:'',weight:'',personality:'',health:'',species:'',hairLength:'',photo:null };
         render();
       }catch(err){
         btn.disabled = false; btn.textContent = '新增這隻寵物並勾選';
@@ -866,8 +882,8 @@ function bindPetSelectScreen(){
       const card = e.target.closest('.svc-card'); if(!card) return;
       const petId = grid.dataset.petId;
       const pet = state.owner.pets.find(pp=>pp.id===petId);
-      const s = ensurePetSvc(petId, pet&&pet.species);
-      s.category = card.dataset.svc; s.animalType = (pet&&pet.species)||''; s.hairLength='';
+      const s = ensurePetSvc(petId, pet&&pet.species, pet&&pet.hairLength);
+      s.category = card.dataset.svc; s.animalType = (pet&&pet.species)||''; s.hairLength = (pet&&pet.hairLength)||'';
       updatePetSvc(petId);
       render();
     });
@@ -879,7 +895,7 @@ function bindPetSelectScreen(){
       const s = ensurePetSvc(petId);
       if(card.dataset.addonToggle){ s.addonsOpen = !s.addonsOpen; render(); return; }
       const pet = state.owner.pets.find(pp=>pp.id===petId);
-      s.category = card.dataset.svc; s.animalType = (pet&&pet.species)||''; s.hairLength='';
+      s.category = card.dataset.svc; s.animalType = (pet&&pet.species)||''; s.hairLength = (pet&&pet.hairLength)||'';
       updatePetSvc(petId);
       render();
     });
@@ -947,7 +963,7 @@ function tplLanding(){
   const infoBlock = state.landingDate ? renderLandingDateInfo() : '';
   return `
     <h2 class="card-title">快速瀏覽</h2>
-    <p class="card-desc">下方是簡易日曆，可以先看看哪天開放預約；選好日期後會顯示更精確的可預約時段。<br><span style="color:var(--ink-soft);font-size:12px;">（備註：小型犬貓洗澡約需 1 小時、大美容約需 2 小時，實際時間依現場評估為準）</span></p>
+    <p class="card-desc">下方是簡易日曆，可以先看看哪天開放預約。（實際預約依帶入資料後為準）<br><span style="color:var(--ink-soft);font-size:12px;">（備註：小型犬貓洗澡約需 1 小時、大美容約需 2 小時）</span></p>
     <div class="cal-head">
       <button class="cal-nav" id="cal-prev">‹ 上個月</button>
       <div class="mo">${custView.year} 年 ${custView.month+1} 月</div>
@@ -1082,6 +1098,14 @@ function tplRegister(){
         <div class="choice-pill ${p.species==='dog'?'active':''}" data-a="dog">狗狗</div>
       </div>
     </div>
+    ${p.species==='dog' ? `
+    <div class="field">
+      <label>毛長類型 <span class="hint">(選填，設定好下次預約就不用再選)</span></label>
+      <div class="choice-row reg-hair-row" data-i="${i}">
+        <div class="choice-pill ${p.hairLength==='long'?'active':''}" data-h="long">長毛</div>
+        <div class="choice-pill ${p.hairLength==='short'?'active':''}" data-h="short">短毛</div>
+      </div>
+    </div>` : ''}
     <div class="field"><label>寵物個性 <span class="hint">(選填)</span></label><textarea class="reg-personality" data-i="${i}">${esc(p.personality)}</textarea></div>
     <div class="field"><label>健康狀況 <span class="hint">(選填)</span></label><textarea class="reg-health" data-i="${i}">${esc(p.health)}</textarea></div>
     <div class="field">
@@ -1133,7 +1157,7 @@ function bindRegister(){
     document.getElementById('regBackLanding').addEventListener('click', ()=>{
       registerState.resultCode = null;
       registerState.data = { name:'',phone:'',lineId:'',address:'' };
-      registerState.pets = [{ name:'',breed:'',age:'',weight:'',personality:'',health:'',species:'',photo:null }];
+      registerState.pets = [{ name:'',breed:'',age:'',weight:'',personality:'',health:'',species:'',hairLength:'',photo:null }];
       state.mode = 'landing'; render();
     });
     document.getElementById('regGoBooking').addEventListener('click', ()=>{
@@ -1150,7 +1174,7 @@ function bindRegister(){
       state.petStage = 'select';
       registerState.resultCode = null;
       registerState.data = { name:'',phone:'',lineId:'',address:'' };
-      registerState.pets = [{ name:'',breed:'',age:'',weight:'',personality:'',health:'',species:'',photo:null }];
+      registerState.pets = [{ name:'',breed:'',age:'',weight:'',personality:'',health:'',species:'',hairLength:'',photo:null }];
       state.mode = 'booking'; state.step = 1;
       render();
     });
@@ -1178,7 +1202,7 @@ function bindRegister(){
   });
   document.getElementById('regAddPet').addEventListener('click', ()=>{
     syncRegisterFormFromDOM();
-    registerState.pets.push({ name:'',breed:'',age:'',weight:'',personality:'',health:'',species:'',photo:null });
+    registerState.pets.push({ name:'',breed:'',age:'',weight:'',personality:'',health:'',species:'',hairLength:'',photo:null });
     render();
   });
   document.querySelectorAll('.reg-species-row').forEach(row=>{
@@ -1187,6 +1211,16 @@ function bindRegister(){
       const i = Number(row.dataset.i);
       syncRegisterFormFromDOM();
       registerState.pets[i].species = (registerState.pets[i].species===pill.dataset.a) ? '' : pill.dataset.a;
+      if(registerState.pets[i].species!=='dog') registerState.pets[i].hairLength = '';
+      render();
+    });
+  });
+  document.querySelectorAll('.reg-hair-row').forEach(row=>{
+    row.addEventListener('click', e=>{
+      const pill = e.target.closest('.choice-pill'); if(!pill) return;
+      const i = Number(row.dataset.i);
+      syncRegisterFormFromDOM();
+      registerState.pets[i].hairLength = (registerState.pets[i].hairLength===pill.dataset.h) ? '' : pill.dataset.h;
       render();
     });
   });
@@ -1223,7 +1257,7 @@ function bindRegister(){
         body: JSON.stringify({
           action:'addCustomer', ownerName:d.name, phone:d.phone, lineId:d.lineId, address:d.address,
           pets: registerState.pets.map(p=>({
-            petName:p.name, petBreed:p.breed, petSpecies:p.species||'', petAge:p.age, petWeight:p.weight,
+            petName:p.name, petBreed:p.breed, petSpecies:p.species||'', petHairLength:p.hairLength||'', petAge:p.age, petWeight:p.weight,
             petPersonality:p.personality, petHealth:p.health, petPhoto:p.photo||''
           }))
         })
@@ -1335,6 +1369,14 @@ function tplMultiDayAddPetForm(){
           <div class="choice-pill ${p.species==='dog'?'active':''}" data-a="dog">狗狗</div>
         </div>
       </div>
+      ${p.species==='dog' ? `
+      <div class="field">
+        <label>毛長類型 <span class="hint">(選填，設定好下次預約就不用再選)</span></label>
+        <div class="choice-row" id="mdnp-hair-row">
+          <div class="choice-pill ${p.hairLength==='long'?'active':''}" data-h="long">長毛</div>
+          <div class="choice-pill ${p.hairLength==='short'?'active':''}" data-h="short">短毛</div>
+        </div>
+      </div>` : ''}
       <div class="row2">
         <div class="field"><label>年齡 <span class="hint">(選填)</span></label><input type="number" min="0" step="0.5" id="mdnp-age" value="${esc(p.age)}"></div>
         <div class="field"><label>體重 <span class="hint">(選填)</span></label><input type="number" min="0" step="0.1" id="mdnp-weight" value="${esc(p.weight)}"></div>
@@ -1359,6 +1401,13 @@ function bindMultiDayAddPetForm(){
   if(speciesRow) speciesRow.addEventListener('click', e=>{
     const pill = e.target.closest('.choice-pill'); if(!pill) return;
     multiDayState.newPetDraft.species = (multiDayState.newPetDraft.species===pill.dataset.a) ? '' : pill.dataset.a;
+    if(multiDayState.newPetDraft.species!=='dog') multiDayState.newPetDraft.hairLength = '';
+    render();
+  });
+  const hairRow = document.getElementById('mdnp-hair-row');
+  if(hairRow) hairRow.addEventListener('click', e=>{
+    const pill = e.target.closest('.choice-pill'); if(!pill) return;
+    multiDayState.newPetDraft.hairLength = (multiDayState.newPetDraft.hairLength===pill.dataset.h) ? '' : pill.dataset.h;
     render();
   });
   document.getElementById('mdnp-photo').addEventListener('change', e=>{
@@ -1388,7 +1437,7 @@ function bindMultiDayAddPetForm(){
     try{
       const res = await fetch(GOOGLE_SCRIPT_URL, {
         method:'POST', headers:{ 'Content-Type':'text/plain;charset=utf-8' },
-        body: JSON.stringify({ action:'addPet', customerCode: multiDayState.lookupResult.customerCode, petName:p.name, petBreed:p.breed, petSpecies:p.species||'', petAge:p.age, petWeight:p.weight, petPersonality:p.personality, petHealth:p.health, petPhoto:p.photo||'' })
+        body: JSON.stringify({ action:'addPet', customerCode: multiDayState.lookupResult.customerCode, petName:p.name, petBreed:p.breed, petSpecies:p.species||'', petHairLength:p.hairLength||'', petAge:p.age, petWeight:p.weight, petPersonality:p.personality, petHealth:p.health, petPhoto:p.photo||'' })
       });
       const result = await res.json();
       if(!result.success) throw new Error(result.error || '新增失敗');
@@ -1396,7 +1445,7 @@ function bindMultiDayAddPetForm(){
       multiDayState.selectedPet = result.pet;
       applyPetSpeciesToMultiDayService(result.pet);
       multiDayState.addPetOpen = false;
-      multiDayState.newPetDraft = { name:'',breed:'',age:'',weight:'',personality:'',health:'',species:'',photo:null };
+      multiDayState.newPetDraft = { name:'',breed:'',age:'',weight:'',personality:'',health:'',species:'',hairLength:'',photo:null };
       multiDayState.step = 'service';
       render();
     }catch(err){
@@ -1411,7 +1460,8 @@ function bindMultiDayAddPetForm(){
 function tplMultiDayService(){
   const s = multiDayState.service;
   const knownSpecies = !!(multiDayState.selectedPet && multiDayState.selectedPet.species);
-  const showDogHair = s.animalType==='dog';
+  const knownHairLength = !!(multiDayState.selectedPet && multiDayState.selectedPet.hairLength);
+  const showDogHair = s.animalType==='dog' && !knownHairLength;
   return `
     <h2 class="card-title">選擇服務類型</h2>
     <p class="card-desc">這幾天預約的服務類型會相同，選好後即可挑選多個日期。</p>
@@ -1453,7 +1503,7 @@ function updateMultiDayDuration(){
 function applyPetSpeciesToMultiDayService(pet){
   if(pet && pet.species){
     multiDayState.service.animalType = pet.species;
-    if(pet.species==='cat') multiDayState.service.hairLength='';
+    multiDayState.service.hairLength = pet.species==='dog' ? (pet.hairLength||'') : '';
     updateMultiDayDuration();
   }
 }
@@ -2735,7 +2785,7 @@ document.addEventListener('click', e=>{
     state.landingDate = null;
     state.owner = {name:'',phone:'',lineId:'',address:'',petName:'',petBreed:'',petAge:'',petWeight:'',petPersonality:'',petHealth:'',petPhoto:null,pets:[]};
     state.selectedPets = []; state.petServices = {}; state.petStage = 'select'; state.addPetOpen = false;
-    state.newPetDraft = { name:'',breed:'',age:'',weight:'',personality:'',health:'',species:'',photo:null };
+    state.newPetDraft = { name:'',breed:'',age:'',weight:'',personality:'',health:'',species:'',hairLength:'',photo:null };
     state.service = {category:'',duration:0,label:''};
     state.newCustomerService = { category:'', animalType:'', hairLength:'', duration:0, label:'', addons:{brushTeeth:false, other:''}, addonsOpen:false };
     state.booking = {date:null,time:null};
