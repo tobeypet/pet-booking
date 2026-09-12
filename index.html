@@ -1048,15 +1048,16 @@ function bindLanding(){
   });
   document.querySelectorAll('.icon-nav-btn').forEach(btn=>{
     btn.addEventListener('click', ()=>{
-      if(btn.classList.contains('expanded')) return;
-      btn.classList.add('expanded');
-      setTimeout(()=>{
+      if(btn.classList.contains('expanded')){
         if(btn.id==='toBooking'){ state.mode='codeEntry'; resetCodeEntryState(); }
         else if(btn.id==='toRegister'){ state.mode='register'; }
         else if(btn.id==='toMultiDay'){ state.mode='multiDay'; multiDayState.step='code'; }
         else if(btn.id==='toLookupBookings'){ state.mode='lookupBookings'; }
         render();
-      }, 380);
+        return;
+      }
+      document.querySelectorAll('.icon-nav-btn.expanded').forEach(b=>b.classList.remove('expanded'));
+      btn.classList.add('expanded');
     });
   });
 }
@@ -2779,6 +2780,9 @@ function tplSuccess(){
   `;
 }
 document.addEventListener('click', e=>{
+  if(!e.target.closest('.icon-nav')){
+    document.querySelectorAll('.icon-nav-btn.expanded').forEach(b=>b.classList.remove('expanded'));
+  }
   if(e.target && e.target.id==='newBooking'){
     state.mode = 'landing';
     state.step = 1;
