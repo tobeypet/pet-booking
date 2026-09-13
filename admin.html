@@ -1478,9 +1478,11 @@ async function submitNBBooking(){
   const results = [];
   for(const date of nb.selectedDates){
     let cursor = toMin(nb.timesByDate[date]);
+    const batchConfirmCodes = nb.selectedPets.map(()=>genBookingCode());
+    let idx = 0;
     for(const p of nb.selectedPets){
       const s = nb.petServices[p.id];
-      const code = genBookingCode();
+      const code = batchConfirmCodes[idx++];
       const startTime = fmtTime(cursor);
       const payload = {
         action:'booking', createdByAdmin:true, adminPassword: adminAuth.password, customerCode: c.customerCode, hideAreaHint: nb.hideAreaHint,
@@ -1489,7 +1491,8 @@ async function submitNBBooking(){
         petPersonality:p.personality, petHealth:p.health,
         serviceLabel:s.label, durationMinutes:s.duration,
         date: date, time: startTime, endTime: fmtTime(cursor + s.duration),
-        taichung: adminConfig.taichungDates.has(date)
+        taichung: adminConfig.taichungDates.has(date),
+        batchConfirmCodes: batchConfirmCodes
       };
       try{
         const res = await fetch(GOOGLE_SCRIPT_URL, {

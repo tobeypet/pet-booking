@@ -2712,8 +2712,9 @@ function bindStep4(){
     let cursor = toMin(b.time);
     const results = [];
     let lastConfirmCode = null, lastCustomerCode = null;
-    for(const {pet, service} of items){
-      const code = genCode();
+    const batchConfirmCodes = items.map(()=>genCode());
+    items.forEach((it,i)=>{ it.code = batchConfirmCodes[i]; });
+    for(const {pet, service, code} of items){
       const start = fmtTime(cursor);
       const payload = {
         action:'booking', customerCode: o.customerCode || undefined,
@@ -2722,7 +2723,8 @@ function bindStep4(){
         petPersonality: pet.personality, petHealth: pet.health,
         petPhoto: (pet.photoUrl && String(pet.photoUrl).indexOf('data:')===0) ? pet.photoUrl : '',
         serviceLabel: petSvcLabelWithAddons(service), durationMinutes: service.duration,
-        date: b.date, time: start, endTime: fmtTime(cursor + service.duration), taichung: availability.taichungDates.has(b.date)
+        date: b.date, time: start, endTime: fmtTime(cursor + service.duration), taichung: availability.taichungDates.has(b.date),
+        batchConfirmCodes: batchConfirmCodes
       };
       try{
         const res = await fetch(GOOGLE_SCRIPT_URL, {
