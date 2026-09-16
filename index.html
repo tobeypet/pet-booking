@@ -41,7 +41,11 @@
   .modal-close:hover{background:var(--sage-light);}
   .modal-title{font-family:"Baloo 2","Noto Sans TC",sans-serif;font-weight:800;font-size:19px;color:var(--pine);margin:0 0 14px;}
   .howto-section{margin-bottom:16px;}
-  .howto-section h4{margin:0 0 6px;font-size:14px;color:var(--apricot-dark);display:flex;align-items:center;gap:6px;}
+  .howto-section h4{margin:0 0 6px;font-size:14px;color:var(--apricot-dark);display:flex;align-items:center;gap:8px;}
+  .howto-badge{display:inline-flex;align-items:center;justify-content:center;height:22px;border-radius:7px;color:#fff;font-weight:800;flex-shrink:0;}
+  .howto-badge.new{background:#F0885A;padding:0 8px;font-size:11px;letter-spacing:0.5px;font-family:"Baloo 2","Noto Sans TC",sans-serif;}
+  .howto-badge.returning{background:var(--pine);width:22px;padding:0;}
+  .howto-badge.returning i{font-size:13px;}
   .howto-section p{margin:0;font-size:13px;color:var(--ink);line-height:1.7;}
   .howto-icon-chip{display:inline-flex;align-items:center;gap:4px;background:var(--sage-light);border-radius:999px;padding:2px 9px 2px 7px;font-weight:700;color:var(--pine);font-size:12.5px;}
   .howto-icon-chip i{font-size:13px;}
@@ -248,11 +252,11 @@
       <button type="button" class="modal-close" id="howtoCloseBtn" aria-label="關閉">✕</button>
       <h3 class="modal-title">如何預約</h3>
       <div class="howto-section">
-        <h4>🆕 新客人</h4>
+        <h4><span class="howto-badge new">NEW</span> 新客人</h4>
         <p>下方點選 <span class="howto-icon-chip"><i class="ti ti-user-plus" aria-hidden="true"></i>先建立個人資料</span>，再依序輸入資料並上傳寵物照片，方便托比快速了解寵物狀況。建立資料後請記下您的「專屬代碼」（下次預約會用到），接著點「前往預約」，選好服務後即可選擇時間。</p>
       </div>
       <div class="howto-section">
-        <h4>🔁 舊客人</h4>
+        <h4><span class="howto-badge returning"><i class="ti ti-refresh" aria-hidden="true"></i></span> 舊客人</h4>
         <p>下方點選 <span class="howto-icon-chip"><i class="ti ti-key" aria-hidden="true"></i>專屬代碼預約</span>，輸入代碼即可直接選擇服務與時間。如果忘記代碼，可以直接找托比拿唷！</p>
       </div>
     </div>
