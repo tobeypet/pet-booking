@@ -1035,7 +1035,10 @@ function renderLandingDateInfo(){
         return `<div class="slot${taken?' taken':''}" style="cursor:default;">${t}</div>`;
       }).join('')}
     </div>
-    <p class="card-desc" style="margin-bottom:16px;">以上為當天時段大致狀況（灰色為已被占用）；實際可預約時間仍需依選擇的服務內容為準。</p>
+    <p class="card-desc" style="margin-bottom:10px;">以上為當天時段大致狀況（灰色為已被占用）；實際可預約時間仍需依選擇的服務內容為準。</p>
+    <div style="background:var(--sage-light);border:1.5px solid var(--sage);border-radius:12px;padding:10px 14px;margin-bottom:16px;font-size:12.5px;color:var(--pine);font-weight:700;text-align:center;">
+      ⬇️ 這裡只是預覽，請點下方按鈕開始正式預約
+    </div>
   `;
 }
 function bindLanding(){
