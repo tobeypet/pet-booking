@@ -1847,6 +1847,7 @@ function tplLookupBookings(){
           return `
           <div class="review-block">
             <div class="review-line"><span class="k">日期時段</span><span class="v">${esc(b.date)} ${esc(b.time)}–${esc(b.endTime)}</span></div>
+            ${b.sessionNumber ? `<div class="review-line"><span class="k">包月次數</span><span class="v">第 ${b.sessionNumber} 次</span></div>` : ''}
             <div class="review-line"><span class="k">服務項目</span><span class="v">${esc(b.serviceLabel)}</span></div>
             <div class="review-line"><span class="k">狀態</span><span class="v" style="color:${b.status==='已確認'?'var(--pine)':'var(--apricot-dark)'};">${esc(b.status)||'—'}</span></div>
             ${isFuture ? `<div class="actions no-export" style="margin-top:10px;"><button class="btn btn-ghost" style="flex:1;padding:8px;font-size:12.5px;" data-reschedule="${esc(b.confirmCode)}" data-duration="${dur}" data-old-date="${esc(b.date)}" data-old-time="${esc(b.time)}">修改時段</button></div>` : ''}
