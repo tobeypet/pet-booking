@@ -196,7 +196,7 @@ const BUSINESS_START = 9*60, DEFAULT_BUSINESS_END = 13*60, EXTENDED_BUSINESS_END
 
 const pageState = { view:'calendar' }; // 'calendar' | 'diary' | 'newCustomer' | 'newBooking'
 const adminAuth = { password: sessionStorage.getItem('adminAuthPassword') || '', verified:false, error:'' };
-const diaryState = { field:'name', value:'', results:[], customer:null, selectedPetId:null, entries:[], error:'', addPetOpen:false, newPetDraft:{ name:'',breed:'',age:'',weight:'',personality:'',health:'',species:'',hairLength:'' }, editingPetId:null, editPetDraft:{ name:'',breed:'',age:'',weight:'',personality:'',health:'',species:'',hairLength:'' }, packageOpen:false, packageDraft:{ totalCount:'',serviceContent:'',amount:'' } };
+const diaryState = { field:'name', value:'', results:[], customer:null, selectedPetId:null, entries:[], error:'', addPetOpen:false, newPetDraft:{ name:'',breed:'',age:'',weight:'',personality:'',health:'',species:'',hairLength:'' }, editingPetId:null, editPetDraft:{ name:'',breed:'',age:'',weight:'',personality:'',health:'',species:'',hairLength:'' }, packageOpen:false, packageDraft:{ totalCount:'',usedCount:'',serviceContent:'',amount:'' } };
 const DIARY_FIELDS = { name:'飼主姓名', phone:'電話', line:'LINE ID', pet:'寵物名稱' };
 function esc(str){ return String(str==null?'':str).replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
 
@@ -482,6 +482,7 @@ function tplDiary(){
         ${diaryState.packageOpen ? `
         <div class="addon-panel" style="margin-top:10px;">
           <div class="field"><label>總次數</label><input type="number" min="1" id="dep-pkg-count" value="${esc(diaryState.packageDraft.totalCount)}" placeholder="例如：10"></div>
+          <div class="field"><label>已使用次數 <span class="hint">(選填，例如客人之前已經用過幾次)</span></label><input type="number" min="0" id="dep-pkg-used" value="${esc(diaryState.packageDraft.usedCount)}" placeholder="沒有就留空，預設 0"></div>
           <div class="field"><label>服務內容</label><input type="text" id="dep-pkg-content" placeholder="例如：洗澡" value="${esc(diaryState.packageDraft.serviceContent)}"></div>
           <div class="field"><label>金額 <span class="hint">(選填)</span></label><input type="number" min="0" id="dep-pkg-amount" placeholder="選填" value="${esc(diaryState.packageDraft.amount)}"></div>
           <div class="empty-note">啟用後，這隻寵物之後每完成一次預約會自動扣一次，扣完前台會顯示剩餘次數。</div>
@@ -646,7 +647,7 @@ function bindDiary(){
         diaryState.editPetDraft = { name:pet.name||'', breed:pet.breed||'', age:pet.age||'', weight:pet.weight||'', personality:pet.personality||'', health:pet.health||'', species:pet.species||'', hairLength:pet.hairLength||'' };
         diaryState.addPetOpen = false;
         diaryState.packageOpen = false;
-        diaryState.packageDraft = { totalCount:'', serviceContent:'', amount:'' };
+        diaryState.packageDraft = { totalCount:'', usedCount:'', serviceContent:'', amount:'' };
       }
       render();
     });
@@ -702,7 +703,18 @@ function bindDiary(){
   const depPkgOpenBtn = document.getElementById('depPackageOpenBtn');
   if(depPkgOpenBtn) depPkgOpenBtn.addEventListener('click', ()=>{
     diaryState.packageOpen = true;
-    diaryState.packageDraft = { totalCount:'', serviceContent:'', amount:'' };
+    const curPet = (diaryState.customer.pets||[]).find(p=>p.id===diaryState.editingPetId);
+    const pkg = curPet ? curPet.package : null;
+    if(pkg){
+      diaryState.packageDraft = {
+        totalCount: String(pkg.totalCount||''),
+        usedCount: String(pkg.totalCount!=null && pkg.remainingCount!=null ? (pkg.totalCount - pkg.remainingCount) : ''),
+        serviceContent: pkg.serviceContent||'',
+        amount: pkg.amount!=null ? String(pkg.amount) : ''
+      };
+    } else {
+      diaryState.packageDraft = { totalCount:'', usedCount:'', serviceContent:'', amount:'' };
+    }
     render();
   });
   const depPkgCancelBtn = document.getElementById('depPackageCancelBtn');
@@ -730,17 +742,19 @@ function bindDiary(){
     depPkgSaveBtn.addEventListener('click', async ()=>{
       const d = diaryState.packageDraft;
       d.totalCount = document.getElementById('dep-pkg-count').value.trim();
+      d.usedCount = document.getElementById('dep-pkg-used').value.trim();
       d.serviceContent = document.getElementById('dep-pkg-content').value.trim();
       d.amount = document.getElementById('dep-pkg-amount').value.trim();
       const errEl = document.getElementById('dep-pkg-err');
       if(!d.totalCount || Number(d.totalCount) < 1){ errEl.textContent='請填寫總次數（至少 1 次）。'; errEl.style.display='block'; return; }
+      if(d.usedCount && Number(d.usedCount) > Number(d.totalCount)){ errEl.textContent='已使用次數不能超過總次數。'; errEl.style.display='block'; return; }
       if(!GOOGLE_SCRIPT_URL){ errEl.textContent='尚未連結試算表，無法設定。'; errEl.style.display='block'; return; }
       errEl.style.display='none';
       depPkgSaveBtn.disabled = true; depPkgSaveBtn.textContent = '儲存中...';
       try{
         const res = await fetch(GOOGLE_SCRIPT_URL, {
           method:'POST', headers:{ 'Content-Type':'text/plain;charset=utf-8' },
-          body: JSON.stringify({ action:'setPetPackage', adminPassword: adminAuth.password, customerCode: diaryState.customer.customerCode, petId: diaryState.editingPetId, totalCount: d.totalCount, serviceContent: d.serviceContent, amount: d.amount })
+          body: JSON.stringify({ action:'setPetPackage', adminPassword: adminAuth.password, customerCode: diaryState.customer.customerCode, petId: diaryState.editingPetId, totalCount: d.totalCount, usedCount: d.usedCount, serviceContent: d.serviceContent, amount: d.amount })
         });
         const result = await res.json();
         if(!result.success) throw new Error(result.error || '設定失敗');
