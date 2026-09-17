@@ -196,7 +196,7 @@ const BUSINESS_START = 9*60, DEFAULT_BUSINESS_END = 13*60, EXTENDED_BUSINESS_END
 
 const pageState = { view:'calendar' }; // 'calendar' | 'diary' | 'newCustomer' | 'newBooking'
 const adminAuth = { password: sessionStorage.getItem('adminAuthPassword') || '', verified:false, error:'' };
-const diaryState = { field:'name', value:'', results:[], customer:null, selectedPetId:null, entries:[], error:'', addPetOpen:false, newPetDraft:{ name:'',breed:'',age:'',weight:'',personality:'',health:'',species:'',hairLength:'' }, editingPetId:null, editPetDraft:{ name:'',breed:'',age:'',weight:'',personality:'',health:'',species:'',hairLength:'' }, packageOpen:false, packageDraft:{ totalCount:'',usedCount:'',serviceContent:'',amount:'' } };
+const diaryState = { field:'name', value:'', results:[], customer:null, selectedPetId:null, entries:[], error:'', addPetOpen:false, newPetDraft:{ name:'',breed:'',age:'',weight:'',personality:'',health:'',species:'',hairLength:'' }, editingPetId:null, editPetDraft:{ name:'',breed:'',age:'',weight:'',personality:'',health:'',species:'',hairLength:'' }, packageOpen:false, packageDraft:{ totalCount:'',usedCount:'',serviceContent:'',amount:'' }, bookings:[], bookingsOpen:false, editingBookingCode:null, bookingEditDraft:{ date:'',time:'',serviceLabel:'',durationMinutes:'',petId:'' } };
 const DIARY_FIELDS = { name:'飼主姓名', phone:'電話', line:'LINE ID', pet:'寵物名稱' };
 function esc(str){ return String(str==null?'':str).replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
 
@@ -528,6 +528,34 @@ function tplDiary(){
       ${diaryState.entries.length===0
         ? `<div class="empty-note">目前還沒有日記紀錄。</div>`
         : diaryState.entries.map(en=>`<div class="diary-entry"><div class="date">${esc(en.date)}</div><div class="note">${esc(en.note)}</div></div>`).join('')}
+
+      <button type="button" class="btn btn-ghost" id="diaryBookingsToggleBtn" style="width:100%;margin-top:22px;">${diaryState.bookingsOpen?'隱藏':'查看／編輯'}完整預約記錄（共 ${diaryState.bookings.length} 筆）</button>
+      ${diaryState.bookingsOpen ? (diaryState.bookings.length===0 ? `<div class="empty-note">目前還沒有任何預約記錄。</div>` : diaryState.bookings.map(b=>{
+        const isEditing = diaryState.editingBookingCode === b.confirmCode;
+        if(isEditing){
+          const d = diaryState.bookingEditDraft;
+          return `
+          <div class="review-block" data-booking-code="${esc(b.confirmCode)}">
+            <div class="field"><label>寵物</label>
+              <select class="bk-edit-pet">
+                ${(c.pets||[]).map(p=>`<option value="${esc(p.id)}" ${d.petId===p.id?'selected':''}>${esc(p.name)}</option>`).join('')}
+              </select>
+            </div>
+            <div class="field"><label>日期</label><input type="date" class="bk-edit-date" value="${esc(d.date)}"></div>
+            <div class="field"><label>開始時間</label><input type="time" class="bk-edit-time" value="${esc(d.time)}"></div>
+            <div class="field"><label>所需分鐘</label><input type="number" min="1" class="bk-edit-duration" value="${esc(d.durationMinutes)}"></div>
+            <div class="field"><label>服務項目</label><input type="text" class="bk-edit-service" value="${esc(d.serviceLabel)}"></div>
+            <div class="err bk-edit-err" style="display:none;"></div>
+            <div class="actions" style="margin-top:6px;"><button type="button" class="btn btn-ghost bk-edit-cancel">取消</button><button type="button" class="btn btn-primary bk-edit-save" style="flex:1;">儲存修改</button></div>
+          </div>`;
+        }
+        return `
+        <div class="review-block">
+          <div class="info-line"><span class="k">${esc(b.date)} ${esc(b.time)}–${esc(b.endTime)}</span><span class="v">${esc(b.status)||'—'}</span></div>
+          <div class="info-line"><span class="k">${esc(b.petName)}</span><span class="v">${esc(b.serviceLabel)}${b.sessionNumber?`（第 ${b.sessionNumber} 次）`:''}</span></div>
+          <div class="actions" style="margin-top:8px;"><button type="button" class="btn btn-ghost bk-edit-open" data-booking-code="${esc(b.confirmCode)}" style="width:100%;">編輯這筆預約</button></div>
+        </div>`;
+      }).join('')) : ''}
     ` : ''}
   `;
 }
@@ -570,10 +598,27 @@ async function selectDiaryCustomer(customer){
   diaryState.newPetDraft = { name:'',breed:'',age:'',weight:'',personality:'',health:'',species:'',hairLength:'' };
   diaryState.editingPetId = null;
   diaryState.editPetDraft = { name:'',breed:'',age:'',weight:'',personality:'',health:'',species:'',hairLength:'' };
+  diaryState.bookingsOpen = false;
+  diaryState.editingBookingCode = null;
   const pets = customer.pets || [];
   diaryState.selectedPetId = pets.length ? pets[0].id : null;
   await loadDiaryEntries();
+  await loadCustomerBookings();
   render();
+}
+// 讀取這位客人完整的預約記錄（含過去的），供後台查看/手動編輯用
+async function loadCustomerBookings(){
+  const c = diaryState.customer;
+  if(!c){ diaryState.bookings = []; return; }
+  try{
+    const res = await fetch(GOOGLE_SCRIPT_URL + '?action=getCustomerBookings&customerCode=' + encodeURIComponent(c.customerCode) + '&adminPassword=' + encodeURIComponent(adminAuth.password));
+    const data = await res.json();
+    diaryState.bookings = (data.success && data.bookings) ? data.bookings : [];
+    if(data.success && data.pets) diaryState.customer.pets = data.pets;
+  }catch(err){
+    diaryState.bookings = [];
+    console.error('讀取預約記錄失敗：', err);
+  }
 }
 // 依「目前選定的寵物」讀取日記；有寵物ID優先用ID比對，舊資料沒有ID的話後端會退回比對寵物名稱
 async function loadDiaryEntries(){
@@ -816,6 +861,70 @@ function bindDiary(){
       }
     });
   }
+  const bkToggleBtn = document.getElementById('diaryBookingsToggleBtn');
+  if(bkToggleBtn) bkToggleBtn.addEventListener('click', ()=>{
+    diaryState.bookingsOpen = !diaryState.bookingsOpen;
+    diaryState.editingBookingCode = null;
+    render();
+  });
+  document.querySelectorAll('.bk-edit-open').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const code = btn.dataset.bookingCode;
+      const b = diaryState.bookings.find(x=>String(x.confirmCode)===code);
+      if(!b) return;
+      diaryState.editingBookingCode = code;
+      diaryState.bookingEditDraft = {
+        date: b.date, time: b.time, serviceLabel: b.serviceLabel,
+        durationMinutes: String(b.durationMinutes||''), petId: b.petId || (diaryState.customer.pets[0] ? diaryState.customer.pets[0].id : '')
+      };
+      render();
+    });
+  });
+  document.querySelectorAll('.bk-edit-cancel').forEach(btn=>{
+    btn.addEventListener('click', ()=>{ diaryState.editingBookingCode = null; render(); });
+  });
+  document.querySelectorAll('.bk-edit-save').forEach(btn=>{
+    btn.addEventListener('click', async ()=>{
+      const block = btn.closest('[data-booking-code]');
+      const code = block.dataset.bookingCode;
+      const d = diaryState.bookingEditDraft;
+      d.petId = block.querySelector('.bk-edit-pet').value;
+      d.date = block.querySelector('.bk-edit-date').value;
+      d.time = block.querySelector('.bk-edit-time').value;
+      d.durationMinutes = block.querySelector('.bk-edit-duration').value.trim();
+      d.serviceLabel = block.querySelector('.bk-edit-service').value.trim();
+      const errEl = block.querySelector('.bk-edit-err');
+      if(!d.date || !d.time || !d.durationMinutes || Number(d.durationMinutes) < 1 || !d.serviceLabel){
+        errEl.textContent = '請完整填寫日期、開始時間、所需分鐘與服務項目。'; errEl.style.display = 'block'; return;
+      }
+      if(!GOOGLE_SCRIPT_URL){ errEl.textContent='尚未連結試算表，無法修改。'; errEl.style.display='block'; return; }
+      errEl.style.display = 'none';
+      const saveBtn = block.querySelector('.bk-edit-save');
+      saveBtn.disabled = true; saveBtn.textContent = '儲存中...';
+      const pet = diaryState.customer.pets.find(p=>p.id===d.petId);
+      try{
+        const res = await fetch(GOOGLE_SCRIPT_URL, {
+          method:'POST', headers:{ 'Content-Type':'text/plain;charset=utf-8' },
+          body: JSON.stringify({
+            action:'updateBookingAdmin', adminPassword: adminAuth.password,
+            customerCode: diaryState.customer.customerCode, confirmCode: code,
+            date: d.date, time: d.time, durationMinutes: d.durationMinutes,
+            serviceLabel: d.serviceLabel, petId: d.petId, petName: pet ? pet.name : undefined
+          })
+        });
+        const result = await res.json();
+        if(!result.success) throw new Error(result.error || '修改失敗');
+        diaryState.editingBookingCode = null;
+        await loadCustomerBookings();
+        render();
+      }catch(err){
+        saveBtn.disabled = false; saveBtn.textContent = '儲存修改';
+        errEl.textContent = err.message || '修改失敗，請確認網路連線後再試一次。';
+        errEl.style.display = 'block';
+        console.error('修改預約失敗：', err);
+      }
+    });
+  });
 }
 
 /* ================= 新增客人 ================= */
