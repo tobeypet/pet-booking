@@ -196,7 +196,7 @@ const BUSINESS_START = 9*60, DEFAULT_BUSINESS_END = 13*60, EXTENDED_BUSINESS_END
 
 const pageState = { view:'calendar' }; // 'calendar' | 'diary' | 'newCustomer' | 'newBooking'
 const adminAuth = { password: sessionStorage.getItem('adminAuthPassword') || '', verified:false, error:'' };
-const diaryState = { field:'name', value:'', results:[], customer:null, selectedPetId:null, entries:[], error:'', addPetOpen:false, newPetDraft:{ name:'',breed:'',age:'',weight:'',personality:'',health:'',species:'',hairLength:'' }, editingPetId:null, editPetDraft:{ name:'',breed:'',age:'',weight:'',personality:'',health:'',species:'',hairLength:'' }, packageOpen:false, packageDraft:{ totalCount:'',usedCount:'',serviceContent:'',amount:'' }, bookings:[], bookingsOpen:false, editingBookingCode:null, bookingEditDraft:{ date:'',time:'',serviceLabel:'',durationMinutes:'',petId:'' } };
+const diaryState = { field:'name', value:'', results:[], customer:null, selectedPetId:null, entries:[], error:'', addPetOpen:false, newPetDraft:{ name:'',breed:'',age:'',weight:'',personality:'',health:'',species:'',hairLength:'' }, editingPetId:null, editPetDraft:{ name:'',breed:'',age:'',weight:'',personality:'',health:'',species:'',hairLength:'' }, packageOpen:false, packageDraft:{ totalCount:'',usedCount:'',serviceContent:'',amount:'' }, bookings:[], bookingsOpen:false, editingBookingCode:null, bookingEditDraft:{ date:'',time:'',serviceLabel:'',durationMinutes:'',petId:'',sessionNumber:'' } };
 const DIARY_FIELDS = { name:'飼主姓名', phone:'電話', line:'LINE ID', pet:'寵物名稱' };
 function esc(str){ return String(str==null?'':str).replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
 
@@ -545,6 +545,7 @@ function tplDiary(){
             <div class="field"><label>開始時間</label><input type="time" class="bk-edit-time" value="${esc(d.time)}"></div>
             <div class="field"><label>所需分鐘</label><input type="number" min="1" class="bk-edit-duration" value="${esc(d.durationMinutes)}"></div>
             <div class="field"><label>服務項目</label><input type="text" class="bk-edit-service" value="${esc(d.serviceLabel)}"></div>
+            <div class="field"><label>包月次數 <span class="hint">(留空＝系統自動算${d.autoSessionNumber?`，目前自動算出來是第 ${d.autoSessionNumber} 次`:''})</span></label><input type="number" min="1" class="bk-edit-session" placeholder="留空使用自動計算" value="${esc(d.sessionNumber)}"></div>
             <div class="err bk-edit-err" style="display:none;"></div>
             <div class="actions" style="margin-top:6px;"><button type="button" class="btn btn-ghost bk-edit-cancel">取消</button><button type="button" class="btn btn-primary bk-edit-save" style="flex:1;">儲存修改</button></div>
           </div>`;
@@ -552,7 +553,7 @@ function tplDiary(){
         return `
         <div class="review-block">
           <div class="info-line"><span class="k">${esc(b.date)} ${esc(b.time)}–${esc(b.endTime)}</span><span class="v">${esc(b.status)||'—'}</span></div>
-          <div class="info-line"><span class="k">${esc(b.petName)}</span><span class="v">${esc(b.serviceLabel)}${b.sessionNumber?`（第 ${b.sessionNumber} 次）`:''}</span></div>
+          <div class="info-line"><span class="k">${esc(b.petName)}</span><span class="v">${esc(b.serviceLabel)}${b.sessionNumber?`（第 ${b.sessionNumber} 次${b.manualSessionNumber?'・手動':''}）`:''}</span></div>
           <div class="actions" style="margin-top:8px;"><button type="button" class="btn btn-ghost bk-edit-open" data-booking-code="${esc(b.confirmCode)}" style="width:100%;">編輯這筆預約</button></div>
         </div>`;
       }).join('')) : ''}
@@ -875,7 +876,8 @@ function bindDiary(){
       diaryState.editingBookingCode = code;
       diaryState.bookingEditDraft = {
         date: b.date, time: b.time, serviceLabel: b.serviceLabel,
-        durationMinutes: String(b.durationMinutes||''), petId: b.petId || (diaryState.customer.pets[0] ? diaryState.customer.pets[0].id : '')
+        durationMinutes: String(b.durationMinutes||''), petId: b.petId || (diaryState.customer.pets[0] ? diaryState.customer.pets[0].id : ''),
+        sessionNumber: b.manualSessionNumber ? String(b.manualSessionNumber) : '', autoSessionNumber: b.autoSessionNumber || null
       };
       render();
     });
@@ -893,6 +895,7 @@ function bindDiary(){
       d.time = block.querySelector('.bk-edit-time').value;
       d.durationMinutes = block.querySelector('.bk-edit-duration').value.trim();
       d.serviceLabel = block.querySelector('.bk-edit-service').value.trim();
+      d.sessionNumber = block.querySelector('.bk-edit-session').value.trim();
       const errEl = block.querySelector('.bk-edit-err');
       if(!d.date || !d.time || !d.durationMinutes || Number(d.durationMinutes) < 1 || !d.serviceLabel){
         errEl.textContent = '請完整填寫日期、開始時間、所需分鐘與服務項目。'; errEl.style.display = 'block'; return;
@@ -909,7 +912,8 @@ function bindDiary(){
             action:'updateBookingAdmin', adminPassword: adminAuth.password,
             customerCode: diaryState.customer.customerCode, confirmCode: code,
             date: d.date, time: d.time, durationMinutes: d.durationMinutes,
-            serviceLabel: d.serviceLabel, petId: d.petId, petName: pet ? pet.name : undefined
+            serviceLabel: d.serviceLabel, petId: d.petId, petName: pet ? pet.name : undefined,
+            sessionNumber: d.sessionNumber
           })
         });
         const result = await res.json();
