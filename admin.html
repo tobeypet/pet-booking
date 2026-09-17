@@ -196,7 +196,7 @@ const BUSINESS_START = 9*60, DEFAULT_BUSINESS_END = 13*60, EXTENDED_BUSINESS_END
 
 const pageState = { view:'calendar' }; // 'calendar' | 'diary' | 'newCustomer' | 'newBooking'
 const adminAuth = { password: sessionStorage.getItem('adminAuthPassword') || '', verified:false, error:'' };
-const diaryState = { field:'name', value:'', results:[], customer:null, selectedPetId:null, entries:[], error:'', addPetOpen:false, newPetDraft:{ name:'',breed:'',age:'',weight:'',personality:'',health:'',species:'',hairLength:'' }, editingPetId:null, editPetDraft:{ name:'',breed:'',age:'',weight:'',personality:'',health:'',species:'',hairLength:'' } };
+const diaryState = { field:'name', value:'', results:[], customer:null, selectedPetId:null, entries:[], error:'', addPetOpen:false, newPetDraft:{ name:'',breed:'',age:'',weight:'',personality:'',health:'',species:'',hairLength:'' }, editingPetId:null, editPetDraft:{ name:'',breed:'',age:'',weight:'',personality:'',health:'',species:'',hairLength:'' }, packageOpen:false, packageDraft:{ totalCount:'',serviceContent:'',amount:'' } };
 const DIARY_FIELDS = { name:'飼主姓名', phone:'電話', line:'LINE ID', pet:'寵物名稱' };
 function esc(str){ return String(str==null?'':str).replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
 
@@ -460,6 +460,34 @@ function tplDiary(){
         <div class="field"><label>健康狀況</label><textarea id="dep-health">${esc(diaryState.editPetDraft.health)}</textarea></div>
         <div class="err" id="dep-err" style="display:none;"></div>
         <div class="actions" style="margin-top:6px;"><button class="btn btn-ghost" id="depCancelBtn">取消</button><button class="btn btn-primary" id="depSubmitBtn" style="flex:1;">儲存修改</button></div>
+        <div class="slot-title" style="margin-top:18px;">包月服務</div>
+        ${(function(){
+          const editPet = (c.pets||[]).find(p=>p.id===diaryState.editingPetId);
+          const pkg = editPet ? editPet.package : null;
+          if(pkg && pkg.active){
+            return `
+            <div class="info-card">
+              <div class="info-line"><span class="k">剩餘次數</span><span class="v" style="font-weight:700;color:var(--pine);">${pkg.remainingCount} / ${pkg.totalCount}</span></div>
+              <div class="info-line"><span class="k">服務內容</span><span class="v">${esc(pkg.serviceContent)||'—'}</span></div>
+              <div class="info-line"><span class="k">金額</span><span class="v">${pkg.amount?('$'+esc(String(pkg.amount))):'—'}</span></div>
+              <div class="info-line"><span class="k">建立日期</span><span class="v">${esc(pkg.createdDate)||'—'}</span></div>
+            </div>
+            <div class="actions" style="margin-top:8px;">
+              <button type="button" class="btn btn-ghost" id="depPackageDisableBtn" style="flex:1;">停用包月</button>
+              <button type="button" class="btn btn-ghost" id="depPackageOpenBtn" style="flex:1;">重新設定次數</button>
+            </div>`;
+          }
+          return `<button type="button" class="btn btn-ghost" id="depPackageOpenBtn" style="width:100%;">${pkg ? '＋ 重新啟用包月服務' : '＋ 開啟包月服務'}</button>`;
+        })()}
+        ${diaryState.packageOpen ? `
+        <div class="addon-panel" style="margin-top:10px;">
+          <div class="field"><label>總次數</label><input type="number" min="1" id="dep-pkg-count" value="${esc(diaryState.packageDraft.totalCount)}" placeholder="例如：10"></div>
+          <div class="field"><label>服務內容</label><input type="text" id="dep-pkg-content" placeholder="例如：洗澡" value="${esc(diaryState.packageDraft.serviceContent)}"></div>
+          <div class="field"><label>金額 <span class="hint">(選填)</span></label><input type="number" min="0" id="dep-pkg-amount" placeholder="選填" value="${esc(diaryState.packageDraft.amount)}"></div>
+          <div class="empty-note">啟用後，這隻寵物之後每完成一次預約會自動扣一次，扣完前台會顯示剩餘次數。</div>
+          <div class="err" id="dep-pkg-err" style="display:none;"></div>
+          <div class="actions" style="margin-top:6px;"><button type="button" class="btn btn-ghost" id="depPackageCancelBtn">取消</button><button type="button" class="btn btn-primary" id="depPackageSaveBtn" style="flex:1;">儲存包月設定</button></div>
+        </div>` : ''}
       </div>` : ''}
       ${diaryState.addPetOpen ? `
       <div class="addon-panel" id="diary-add-pet-panel">
@@ -617,6 +645,8 @@ function bindDiary(){
         diaryState.editingPetId = pet.id;
         diaryState.editPetDraft = { name:pet.name||'', breed:pet.breed||'', age:pet.age||'', weight:pet.weight||'', personality:pet.personality||'', health:pet.health||'', species:pet.species||'', hairLength:pet.hairLength||'' };
         diaryState.addPetOpen = false;
+        diaryState.packageOpen = false;
+        diaryState.packageDraft = { totalCount:'', serviceContent:'', amount:'' };
       }
       render();
     });
@@ -666,6 +696,62 @@ function bindDiary(){
         errEl.textContent = '修改失敗，請確認網路連線後再試一次。';
         errEl.style.display = 'block';
         console.error('修改寵物失敗：', err);
+      }
+    });
+  }
+  const depPkgOpenBtn = document.getElementById('depPackageOpenBtn');
+  if(depPkgOpenBtn) depPkgOpenBtn.addEventListener('click', ()=>{
+    diaryState.packageOpen = true;
+    diaryState.packageDraft = { totalCount:'', serviceContent:'', amount:'' };
+    render();
+  });
+  const depPkgCancelBtn = document.getElementById('depPackageCancelBtn');
+  if(depPkgCancelBtn) depPkgCancelBtn.addEventListener('click', ()=>{ diaryState.packageOpen = false; render(); });
+  const depPkgDisableBtn = document.getElementById('depPackageDisableBtn');
+  if(depPkgDisableBtn) depPkgDisableBtn.addEventListener('click', async ()=>{
+    if(!GOOGLE_SCRIPT_URL) return;
+    depPkgDisableBtn.disabled = true; depPkgDisableBtn.textContent = '停用中...';
+    try{
+      const res = await fetch(GOOGLE_SCRIPT_URL, {
+        method:'POST', headers:{ 'Content-Type':'text/plain;charset=utf-8' },
+        body: JSON.stringify({ action:'disablePetPackage', adminPassword: adminAuth.password, customerCode: diaryState.customer.customerCode, petId: diaryState.editingPetId })
+      });
+      const result = await res.json();
+      if(!result.success) throw new Error(result.error || '停用失敗');
+      diaryState.customer.pets = result.pets;
+      render();
+    }catch(err){
+      depPkgDisableBtn.disabled = false; depPkgDisableBtn.textContent = '停用包月';
+      console.error('停用包月失敗：', err);
+    }
+  });
+  const depPkgSaveBtn = document.getElementById('depPackageSaveBtn');
+  if(depPkgSaveBtn){
+    depPkgSaveBtn.addEventListener('click', async ()=>{
+      const d = diaryState.packageDraft;
+      d.totalCount = document.getElementById('dep-pkg-count').value.trim();
+      d.serviceContent = document.getElementById('dep-pkg-content').value.trim();
+      d.amount = document.getElementById('dep-pkg-amount').value.trim();
+      const errEl = document.getElementById('dep-pkg-err');
+      if(!d.totalCount || Number(d.totalCount) < 1){ errEl.textContent='請填寫總次數（至少 1 次）。'; errEl.style.display='block'; return; }
+      if(!GOOGLE_SCRIPT_URL){ errEl.textContent='尚未連結試算表，無法設定。'; errEl.style.display='block'; return; }
+      errEl.style.display='none';
+      depPkgSaveBtn.disabled = true; depPkgSaveBtn.textContent = '儲存中...';
+      try{
+        const res = await fetch(GOOGLE_SCRIPT_URL, {
+          method:'POST', headers:{ 'Content-Type':'text/plain;charset=utf-8' },
+          body: JSON.stringify({ action:'setPetPackage', adminPassword: adminAuth.password, customerCode: diaryState.customer.customerCode, petId: diaryState.editingPetId, totalCount: d.totalCount, serviceContent: d.serviceContent, amount: d.amount })
+        });
+        const result = await res.json();
+        if(!result.success) throw new Error(result.error || '設定失敗');
+        diaryState.customer.pets = result.pets;
+        diaryState.packageOpen = false;
+        render();
+      }catch(err){
+        depPkgSaveBtn.disabled = false; depPkgSaveBtn.textContent = '儲存包月設定';
+        errEl.textContent = '設定失敗，請確認網路連線後再試一次。';
+        errEl.style.display = 'block';
+        console.error('設定包月失敗：', err);
       }
     });
   }
@@ -1487,7 +1573,7 @@ async function submitNBBooking(){
       const payload = {
         action:'booking', createdByAdmin:true, adminPassword: adminAuth.password, customerCode: c.customerCode, hideAreaHint: nb.hideAreaHint,
         confirmCode: code, ownerName:c.ownerName, phone:c.phone, lineId:c.lineId, address:c.address,
-        petName:p.name, petBreed:p.breed, petAge:p.age, petWeight:p.weight,
+        petId:p.id, petName:p.name, petBreed:p.breed, petAge:p.age, petWeight:p.weight,
         petPersonality:p.personality, petHealth:p.health,
         serviceLabel:s.label, durationMinutes:s.duration,
         date: date, time: startTime, endTime: fmtTime(cursor + s.duration),
