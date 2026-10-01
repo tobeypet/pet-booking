@@ -196,7 +196,7 @@ const BUSINESS_START = 9*60, DEFAULT_BUSINESS_END = 13*60, EXTENDED_BUSINESS_END
 
 const pageState = { view:'calendar' }; // 'calendar' | 'diary' | 'newCustomer' | 'newBooking'
 const adminAuth = { password: sessionStorage.getItem('adminAuthPassword') || '', verified:false, error:'' };
-const diaryState = { field:'name', value:'', results:[], customer:null, selectedPetId:null, entries:[], error:'', addPetOpen:false, newPetDraft:{ name:'',breed:'',age:'',weight:'',personality:'',health:'',species:'',hairLength:'' }, editingPetId:null, editPetDraft:{ name:'',breed:'',age:'',weight:'',personality:'',health:'',species:'',hairLength:'' }, packageOpen:false, packageDraft:{ totalCount:'',usedCount:'',serviceContent:'',amount:'' }, bookings:[], bookingsOpen:false, editingBookingCode:null, bookingEditDraft:{ date:'',time:'',serviceLabel:'',durationMinutes:'',petId:'',sessionNumber:'' } };
+const diaryState = { field:'name', value:'', results:[], customer:null, selectedPetId:null, entries:[], error:'', addPetOpen:false, newPetDraft:{ name:'',breed:'',age:'',weight:'',personality:'',health:'',species:'',hairLength:'' }, editingPetId:null, editPetDraft:{ name:'',breed:'',age:'',weight:'',personality:'',health:'',species:'',hairLength:'' }, packageOpen:false, packageDraft:{ totalCount:'',usedCount:'',serviceContent:'',amount:'',paid:false }, bookings:[], bookingsOpen:false, editingBookingCode:null, bookingEditDraft:{ date:'',time:'',serviceLabel:'',durationMinutes:'',petId:'',sessionNumber:'' } };
 const DIARY_FIELDS = { name:'飼主姓名', phone:'電話', line:'LINE ID', pet:'寵物名稱' };
 function esc(str){ return String(str==null?'':str).replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
 
@@ -470,11 +470,15 @@ function tplDiary(){
               <div class="info-line"><span class="k">剩餘次數</span><span class="v" style="font-weight:700;color:var(--pine);">${pkg.remainingCount} / ${pkg.totalCount}</span></div>
               <div class="info-line"><span class="k">服務內容</span><span class="v">${esc(pkg.serviceContent)||'—'}</span></div>
               <div class="info-line"><span class="k">金額</span><span class="v">${pkg.amount?('$'+esc(String(pkg.amount))):'—'}</span></div>
+              <div class="info-line"><span class="k">付款狀態</span><span class="v" style="font-weight:700;color:${pkg.paid?'var(--pine)':'var(--danger)'};">${pkg.paid?'已付款':'未付款'}</span></div>
               <div class="info-line"><span class="k">建立日期</span><span class="v">${esc(pkg.createdDate)||'—'}</span></div>
             </div>
             <div class="actions" style="margin-top:8px;">
+              <button type="button" class="btn btn-ghost" id="depPackageTogglePaidBtn" style="flex:1;">標記為${pkg.paid?'未付款':'已付款'}</button>
               <button type="button" class="btn btn-ghost" id="depPackageDisableBtn" style="flex:1;">停用包月</button>
-              <button type="button" class="btn btn-ghost" id="depPackageOpenBtn" style="flex:1;">重新設定次數</button>
+            </div>
+            <div class="actions" style="margin-top:8px;">
+              <button type="button" class="btn btn-ghost" id="depPackageOpenBtn" style="width:100%;">重新設定次數</button>
             </div>`;
           }
           return `<button type="button" class="btn btn-ghost" id="depPackageOpenBtn" style="width:100%;">${pkg ? '＋ 重新啟用包月服務' : '＋ 開啟包月服務'}</button>`;
@@ -485,6 +489,7 @@ function tplDiary(){
           <div class="field"><label>已使用次數 <span class="hint">(選填，例如客人之前已經用過幾次)</span></label><input type="number" min="0" id="dep-pkg-used" value="${esc(diaryState.packageDraft.usedCount)}" placeholder="沒有就留空，預設 0"></div>
           <div class="field"><label>服務內容</label><input type="text" id="dep-pkg-content" placeholder="例如：洗澡" value="${esc(diaryState.packageDraft.serviceContent)}"></div>
           <div class="field"><label>金額 <span class="hint">(選填)</span></label><input type="number" min="0" id="dep-pkg-amount" placeholder="選填" value="${esc(diaryState.packageDraft.amount)}"></div>
+          <label class="addon-check"><input type="checkbox" id="dep-pkg-paid" ${diaryState.packageDraft.paid?'checked':''}> 這筆已經付款了</label>
           <div class="empty-note">啟用後，這隻寵物之後每完成一次預約會自動扣一次，扣完前台會顯示剩餘次數。</div>
           <div class="err" id="dep-pkg-err" style="display:none;"></div>
           <div class="actions" style="margin-top:6px;"><button type="button" class="btn btn-ghost" id="depPackageCancelBtn">取消</button><button type="button" class="btn btn-primary" id="depPackageSaveBtn" style="flex:1;">儲存包月設定</button></div>
@@ -756,10 +761,11 @@ function bindDiary(){
         totalCount: String(pkg.totalCount||''),
         usedCount: String(pkg.totalCount!=null && pkg.remainingCount!=null ? (pkg.totalCount - pkg.remainingCount) : ''),
         serviceContent: pkg.serviceContent||'',
-        amount: pkg.amount!=null ? String(pkg.amount) : ''
+        amount: pkg.amount!=null ? String(pkg.amount) : '',
+        paid: !!pkg.paid
       };
     } else {
-      diaryState.packageDraft = { totalCount:'', usedCount:'', serviceContent:'', amount:'' };
+      diaryState.packageDraft = { totalCount:'', usedCount:'', serviceContent:'', amount:'', paid:false };
     }
     render();
   });
@@ -783,6 +789,28 @@ function bindDiary(){
       console.error('停用包月失敗：', err);
     }
   });
+  const depPkgTogglePaidBtn = document.getElementById('depPackageTogglePaidBtn');
+  if(depPkgTogglePaidBtn) depPkgTogglePaidBtn.addEventListener('click', async ()=>{
+    if(!GOOGLE_SCRIPT_URL) return;
+    const curPet2 = (diaryState.customer.pets||[]).find(p=>p.id===diaryState.editingPetId);
+    const curPkg2 = curPet2 ? curPet2.package : null;
+    if(!curPkg2) return;
+    const nextPaid = !curPkg2.paid;
+    depPkgTogglePaidBtn.disabled = true; depPkgTogglePaidBtn.textContent = '更新中...';
+    try{
+      const res = await fetch(GOOGLE_SCRIPT_URL, {
+        method:'POST', headers:{ 'Content-Type':'text/plain;charset=utf-8' },
+        body: JSON.stringify({ action:'togglePetPackagePaid', adminPassword: adminAuth.password, customerCode: diaryState.customer.customerCode, petId: diaryState.editingPetId, paid: nextPaid })
+      });
+      const result = await res.json();
+      if(!result.success) throw new Error(result.error || '更新失敗');
+      diaryState.customer.pets = result.pets;
+      render();
+    }catch(err){
+      depPkgTogglePaidBtn.disabled = false; depPkgTogglePaidBtn.textContent = '標記為' + (curPkg2.paid?'未付款':'已付款');
+      console.error('更新付款狀態失敗：', err);
+    }
+  });
   const depPkgSaveBtn = document.getElementById('depPackageSaveBtn');
   if(depPkgSaveBtn){
     depPkgSaveBtn.addEventListener('click', async ()=>{
@@ -791,6 +819,7 @@ function bindDiary(){
       d.usedCount = document.getElementById('dep-pkg-used').value.trim();
       d.serviceContent = document.getElementById('dep-pkg-content').value.trim();
       d.amount = document.getElementById('dep-pkg-amount').value.trim();
+      d.paid = document.getElementById('dep-pkg-paid').checked;
       const errEl = document.getElementById('dep-pkg-err');
       if(!d.totalCount || Number(d.totalCount) < 1){ errEl.textContent='請填寫總次數（至少 1 次）。'; errEl.style.display='block'; return; }
       if(d.usedCount && Number(d.usedCount) > Number(d.totalCount)){ errEl.textContent='已使用次數不能超過總次數。'; errEl.style.display='block'; return; }
@@ -800,7 +829,7 @@ function bindDiary(){
       try{
         const res = await fetch(GOOGLE_SCRIPT_URL, {
           method:'POST', headers:{ 'Content-Type':'text/plain;charset=utf-8' },
-          body: JSON.stringify({ action:'setPetPackage', adminPassword: adminAuth.password, customerCode: diaryState.customer.customerCode, petId: diaryState.editingPetId, totalCount: d.totalCount, usedCount: d.usedCount, serviceContent: d.serviceContent, amount: d.amount })
+          body: JSON.stringify({ action:'setPetPackage', adminPassword: adminAuth.password, customerCode: diaryState.customer.customerCode, petId: diaryState.editingPetId, totalCount: d.totalCount, usedCount: d.usedCount, serviceContent: d.serviceContent, amount: d.amount, paid: d.paid })
         });
         const result = await res.json();
         if(!result.success) throw new Error(result.error || '設定失敗');
