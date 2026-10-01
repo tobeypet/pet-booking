@@ -552,6 +552,7 @@ function tplDiary(){
             <div class="field"><label>服務項目</label><input type="text" class="bk-edit-service" value="${esc(d.serviceLabel)}"></div>
             <div class="field"><label>包月次數 <span class="hint">(留空＝系統自動算${d.autoSessionNumber?`，目前自動算出來是第 ${d.autoSessionNumber} 次`:''})</span></label><input type="number" min="1" class="bk-edit-session" placeholder="留空使用自動計算" value="${esc(d.sessionNumber)}"></div>
             <label class="addon-check"><input type="checkbox" class="bk-edit-paid" ${d.packagePaid?'checked':''}> 這筆包月費用已經付款</label>
+            <div class="hint" style="margin-top:2px;">同一輪包月（例如第1~4次）只要勾其中一筆，整輪都會顯示已付款</div>
             <div class="err bk-edit-err" style="display:none;"></div>
             <div class="actions" style="margin-top:6px;"><button type="button" class="btn btn-ghost bk-edit-cancel">取消</button><button type="button" class="btn btn-primary bk-edit-save" style="flex:1;">儲存修改</button></div>
           </div>`;
@@ -908,7 +909,7 @@ function bindDiary(){
         date: b.date, time: b.time, serviceLabel: b.serviceLabel,
         durationMinutes: String(b.durationMinutes||''), petId: b.petId || (diaryState.customer.pets[0] ? diaryState.customer.pets[0].id : ''),
         sessionNumber: b.manualSessionNumber ? String(b.manualSessionNumber) : '', autoSessionNumber: b.autoSessionNumber || null,
-        packagePaid: !!b.packagePaid
+        packagePaid: !!b.ownPaid
       };
       render();
     });
