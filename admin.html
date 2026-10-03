@@ -635,7 +635,7 @@ async function loadDiaryEntries(){
   if(!c || !diaryState.selectedPetId){ diaryState.entries = []; return; }
   const pet = (c.pets||[]).find(p=>p.id===diaryState.selectedPetId);
   try{
-    const diaryRes = await fetch(GOOGLE_SCRIPT_URL + '?action=getDiary&phone=' + encodeURIComponent(c.phone) + '&petId=' + encodeURIComponent(diaryState.selectedPetId) + '&petName=' + encodeURIComponent(pet?pet.name:'') + '&adminPassword=' + encodeURIComponent(adminAuth.password));
+    const diaryRes = await fetch(GOOGLE_SCRIPT_URL + '?action=getDiary&customerCode=' + encodeURIComponent(c.customerCode||'') + '&phone=' + encodeURIComponent(c.phone) + '&petId=' + encodeURIComponent(diaryState.selectedPetId) + '&petName=' + encodeURIComponent(pet?pet.name:'') + '&adminPassword=' + encodeURIComponent(adminAuth.password));
     const diaryData = await diaryRes.json();
     diaryState.entries = (diaryData.success && diaryData.entries) ? diaryData.entries : [];
   }catch(err){
@@ -653,7 +653,7 @@ async function addDiaryEntry(){
   try{
     const res = await fetch(GOOGLE_SCRIPT_URL, {
       method:'POST', headers:{ 'Content-Type':'text/plain;charset=utf-8' },
-      body: JSON.stringify({ action:'addDiaryEntry', adminPassword: adminAuth.password, phone: diaryState.customer.phone, petId: pet.id, petName: pet.name, note })
+      body: JSON.stringify({ action:'addDiaryEntry', adminPassword: adminAuth.password, customerCode: diaryState.customer.customerCode, phone: diaryState.customer.phone, petId: pet.id, petName: pet.name, note })
     });
     const result = await res.json();
     if(!result.success) throw new Error(result.error || '新增失敗');
