@@ -561,6 +561,7 @@ function tplDiary(){
         <div class="review-block">
           <div class="info-line"><span class="k">${esc(b.date)} ${esc(b.time)}–${esc(b.endTime)}</span><span class="v">${esc(b.status)||'—'}</span></div>
           <div class="info-line"><span class="k">${esc(b.petName)}</span><span class="v">${esc(b.serviceLabel)}${b.sessionNumber?`（包月${b.packagePaid?'已付':'未付'}・第 ${b.sessionNumber} 次${b.manualSessionNumber?'・手動':''}）`:''}</span></div>
+          ${b.sessionNumber ? `<div class="info-line" style="font-size:11px;color:var(--ink-soft);"><span class="k">除錯資訊</span><span class="v">這筆自己：${b.ownPaid?'已勾':'未勾'}／整輪顯示：${b.packagePaid?'已付':'未付'}</span></div>` : ''}
           <div class="actions" style="margin-top:8px;"><button type="button" class="btn btn-ghost bk-edit-open" data-booking-code="${esc(b.confirmCode)}" style="width:100%;">編輯這筆預約</button></div>
         </div>`;
       }).join('')) : ''}
