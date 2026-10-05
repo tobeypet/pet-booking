@@ -208,6 +208,17 @@
   .icon-nav-btn.primary{background:var(--pine);color:#fff;}
   .icon-nav-btn.primary:hover,.icon-nav-btn.primary.expanded,.icon-nav-btn.primary:focus-visible{background:var(--pine-2);}
 
+  .landing-cta-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:18px;}
+  .landing-cta-grid.secondary{margin-top:10px;}
+  .landing-cta{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;background:var(--cream);border:1.5px solid var(--line);border-radius:16px;padding:18px 10px;cursor:pointer;font-family:inherit;font-weight:700;font-size:14px;color:var(--pine);transition:transform .1s ease,background .15s ease;}
+  .landing-cta:active{transform:scale(0.97);}
+  .landing-cta i{font-size:26px;}
+  .landing-cta.primary{background:var(--pine);color:#fff;border-color:var(--pine);}
+  .landing-cta.primary:hover{background:var(--pine-2);}
+  .landing-cta:not(.primary):hover{background:var(--sage-light);}
+  .landing-cta.small{padding:13px 10px;font-size:12.5px;font-weight:600;color:var(--ink-soft);}
+  .landing-cta.small i{font-size:19px;}
+
   .success{text-align:center;padding:10px 6px 4px;}
   .success .paw{width:64px;height:64px;border-radius:50%;background:var(--sage-light);display:flex;align-items:center;justify-content:center;margin:0 auto 16px;overflow:hidden;}
   .success h2{font-family:"Baloo 2","Noto Sans TC",sans-serif;color:var(--pine);margin:0 0 6px;}
@@ -998,28 +1009,16 @@ function renderProgress(){
 /* ================= STEP 1：選服務＋看時段（合併畫面） ================= */
 /* ================= 首頁：簡易日曆（不分服務） ================= */
 function tplLanding(){
-  const infoBlock = state.landingDate ? renderLandingDateInfo() : '';
   return `
-    <h2 class="card-title">快速瀏覽</h2>
-    <p class="card-desc">下方是簡易日曆，可以先看看哪天開放預約。（實際預約依帶入資料後為準）<br><span style="color:var(--ink-soft);font-size:12px;">（備註：小型犬貓洗澡約需 1 小時、大美容約需 2 小時）</span></p>
-    <div class="cal-head">
-      <button class="cal-nav" id="cal-prev">‹ 上個月</button>
-      <div class="mo">${custView.year} 年 ${custView.month+1} 月</div>
-      <button class="cal-nav" id="cal-next">下個月 ›</button>
+    <h2 class="card-title">開始預約</h2>
+    <p class="card-desc">第一次來選「先建立個人資料」；已經有專屬代碼的直接選「專屬代碼預約」。<br><span style="color:var(--ink-soft);font-size:12px;">（備註：小型犬貓洗澡約需 1 小時、大美容約需 2 小時）</span></p>
+    <div class="landing-cta-grid">
+      <button type="button" id="toBooking" class="landing-cta primary"><i class="ti ti-key" aria-hidden="true"></i><span>專屬代碼預約</span></button>
+      <button type="button" id="toMultiDay" class="landing-cta"><i class="ti ti-calendar-plus" aria-hidden="true"></i><span>一次約多天</span></button>
     </div>
-    <div class="cal-grid" id="cal-grid">${renderLandingCalGrid()}</div>
-    <div class="cal-legend">
-      <span><i class="dot a"></i>可預約</span>
-      <span><i class="dot e"></i>延長營業至20:00</span>
-      <span><i class="dot d"></i>不開放／已無空檔</span>
-      <span><span class="taichung-dot"></span>台中服務日</span>
-    </div>
-    ${infoBlock}
-    <div class="icon-nav">
-      <button type="button" id="toLookupBookings" class="icon-nav-btn" aria-label="查詢預約記錄"><i class="ti ti-search" aria-hidden="true"></i><span class="lbl">查詢預約記錄</span></button>
-      <button type="button" id="toRegister" class="icon-nav-btn" aria-label="先建立個人資料"><i class="ti ti-user-plus" aria-hidden="true"></i><span class="lbl">先建立個人資料</span></button>
-      <button type="button" id="toMultiDay" class="icon-nav-btn" aria-label="用專屬代碼一次約多天"><i class="ti ti-calendar-plus" aria-hidden="true"></i><span class="lbl">一次約多天</span></button>
-      <button type="button" id="toBooking" class="icon-nav-btn primary" aria-label="專屬代碼預約"><i class="ti ti-key" aria-hidden="true"></i><span class="lbl">專屬代碼預約</span></button>
+    <div class="landing-cta-grid secondary">
+      <button type="button" id="toLookupBookings" class="landing-cta small"><i class="ti ti-search" aria-hidden="true"></i><span>查詢預約記錄</span></button>
+      <button type="button" id="toRegister" class="landing-cta small"><i class="ti ti-user-plus" aria-hidden="true"></i><span>先建立個人資料</span></button>
     </div>
   `;
 }
@@ -1080,25 +1079,13 @@ function renderLandingDateInfo(){
   `;
 }
 function bindLanding(){
-  document.getElementById('cal-prev').addEventListener('click', ()=>{ custView.month--; if(custView.month<0){custView.month=11; custView.year--;} state.landingDate=null; render(); });
-  document.getElementById('cal-next').addEventListener('click', ()=>{ custView.month++; if(custView.month>11){custView.month=0; custView.year++;} state.landingDate=null; render(); });
-  document.getElementById('cal-grid').addEventListener('click', e=>{
-    const c = e.target.closest('.cal-cell.avail'); if(!c) return;
-    state.landingDate = c.dataset.date;
-    render();
-  });
-  document.querySelectorAll('.icon-nav-btn').forEach(btn=>{
+  document.querySelectorAll('.landing-cta').forEach(btn=>{
     btn.addEventListener('click', ()=>{
-      if(btn.classList.contains('expanded')){
-        if(btn.id==='toBooking'){ state.mode='codeEntry'; resetCodeEntryState(); }
-        else if(btn.id==='toRegister'){ state.mode='register'; }
-        else if(btn.id==='toMultiDay'){ state.mode='multiDay'; multiDayState.step='code'; }
-        else if(btn.id==='toLookupBookings'){ state.mode='lookupBookings'; }
-        render();
-        return;
-      }
-      document.querySelectorAll('.icon-nav-btn.expanded').forEach(b=>b.classList.remove('expanded'));
-      btn.classList.add('expanded');
+      if(btn.id==='toBooking'){ state.mode='codeEntry'; resetCodeEntryState(); }
+      else if(btn.id==='toRegister'){ state.mode='register'; }
+      else if(btn.id==='toMultiDay'){ state.mode='multiDay'; multiDayState.step='code'; }
+      else if(btn.id==='toLookupBookings'){ state.mode='lookupBookings'; }
+      render();
     });
   });
 }
@@ -2827,9 +2814,6 @@ function tplSuccess(){
   `;
 }
 document.addEventListener('click', e=>{
-  if(!e.target.closest('.icon-nav')){
-    document.querySelectorAll('.icon-nav-btn.expanded').forEach(b=>b.classList.remove('expanded'));
-  }
   if(e.target && e.target.id==='newBooking'){
     state.mode = 'landing';
     state.step = 1;
