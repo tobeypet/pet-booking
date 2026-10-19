@@ -293,11 +293,23 @@ const newCustomerState = {
 };
 
 const newBookingState = {
-  field:'name', value:'', results:[], customer:null, error:'',
+  field:'name', value:'', results:[], customer:null, error:'', selectedPetId:null,
   service:{ category:'', animalType:'', hairLength:'', multiplier:1, duration:0, label:'', customLabel:'', customDuration:60 },
   date:null, time:null, customTime:false, hideAreaHint:false,
   monthView:{ year:new Date().getFullYear(), month:new Date().getMonth() }
 };
+function nbCustomerPets(c){
+  // 這個客人底下的寵物清單：優先用多寵物清單（pets），沒有的話就退回單一寵物欄位，確保舊資料也能用
+  if(c && c.pets && c.pets.length) return c.pets;
+  if(c && c.petName) return [{ id:'', name:c.petName, breed:c.petBreed, age:c.petAge, weight:c.petWeight, personality:c.petPersonality, health:c.petHealth }];
+  return [];
+}
+function nbSelectedPet(){
+  const c = newBookingState.customer;
+  if(!c) return null;
+  const pets = nbCustomerPets(c);
+  return pets.find(p=>p.id===newBookingState.selectedPetId) || pets[0] || null;
+}
 
 function setStatus(mode){
   const pill = document.getElementById('statusPill');
@@ -1175,7 +1187,7 @@ function bindNewCustomer(){
   if(goBookingBtn){
     goBookingBtn.addEventListener('click', ()=>{
       newBookingState.customer = newCustomerState.lastCreated;
-      newBookingState.results = []; newBookingState.value = ''; newBookingState.error = '';
+      newBookingState.results = []; newBookingState.value = ''; newBookingState.error = ''; newBookingState.selectedPetId = null;
       newBookingState.service = { category:'', animalType:'', hairLength:'', multiplier:1, duration:0, label:'', customLabel:'', customDuration:60 };
       newBookingState.date = null; newBookingState.time = null; newBookingState.customTime = false; newBookingState.hideAreaHint = false;
       nbTravelState.loaded = false; nbTravelState.blockedRanges = []; nbTravelState.forDate = null;
@@ -1337,13 +1349,24 @@ function tplNewBooking(){
       <div id="nb-slot-section">${nb.customTime ? renderNBCustomTimeSection() : renderNBSlotSection()}</div>
     `;
   }
+  const nbPets = nbCustomerPets(c);
+  const nbPet = nbSelectedPet();
   return `
     <h2 class="card-title">新增預約</h2>
     <div class="info-card">
       <h4>預約客人</h4>
       <div class="info-line"><span class="k">飼主</span><span class="v">${esc(c.ownerName)}</span></div>
       <div class="info-line"><span class="k">電話</span><span class="v">${esc(c.phone)}</span></div>
-      <div class="info-line"><span class="k">寵物</span><span class="v">${esc(c.petName)}（${esc(c.petBreed)}）</span></div>
+      ${nbPets.length > 1 ? `
+      <div class="field" style="margin-top:12px;margin-bottom:4px;">
+        <label>這次預約是哪隻寵物</label>
+        <div class="choice-row" id="nb-pet-row">
+          ${nbPets.map(p=>`<div class="choice-pill ${nb.selectedPetId===p.id?'active':''}" data-pet-id="${esc(p.id)}">${esc(p.name)||'（未命名）'}</div>`).join('')}
+        </div>
+      </div>
+      ` : `
+      <div class="info-line"><span class="k">寵物</span><span class="v">${esc(nbPet?nbPet.name:'')}（${esc(nbPet?nbPet.breed:'')}）</span></div>
+      `}
     </div>
     <button class="btn btn-ghost" id="nbChangeCustomer" style="width:100%;margin-bottom:18px;">換一位客人</button>
 
@@ -1522,12 +1545,20 @@ function bindNewBooking(){
     return;
   }
   document.getElementById('nbChangeCustomer').addEventListener('click', ()=>{
-    newBookingState.customer = null; newBookingState.results = []; newBookingState.value = '';
+    newBookingState.customer = null; newBookingState.results = []; newBookingState.value = ''; newBookingState.selectedPetId = null;
     newBookingState.date = null; newBookingState.time = null; newBookingState.customTime = false; newBookingState.hideAreaHint = false;
     newBookingState.service = { category:'', animalType:'', hairLength:'', multiplier:1, duration:0, label:'', customLabel:'', customDuration:60 };
     nbTravelState.loaded = false; nbTravelState.blockedRanges = []; nbTravelState.forDate = null;
     render();
   });
+  const nbPetRow = document.getElementById('nb-pet-row');
+  if(nbPetRow){
+    nbPetRow.addEventListener('click', e=>{
+      const p = e.target.closest('.choice-pill'); if(!p) return;
+      newBookingState.selectedPetId = p.dataset.petId;
+      render();
+    });
+  }
   document.getElementById('nb-svc-grid').addEventListener('click', e=>{
     const c = e.target.closest('.svc-card'); if(!c) return;
     if(c.dataset.svc === newBookingState.service.category) return;
@@ -1666,6 +1697,8 @@ function selectNBCustomer(customer){
   newBookingState.customer = customer;
   newBookingState.results = [];
   newBookingState.error = '';
+  const pets = nbCustomerPets(customer);
+  newBookingState.selectedPetId = pets[0] ? pets[0].id : null;
   render();
 }
 function genBookingCode(){
@@ -1679,12 +1712,13 @@ async function submitNBBooking(){
   errEl.style.display = 'none';
   if(!newBookingState.date || !newBookingState.time) return;
   const c = newBookingState.customer, s = newBookingState.service, nb = newBookingState;
+  const pet = nbSelectedPet() || {};
   const code = genBookingCode();
   const payload = withAuth({
     action:'booking', createdByAdmin:true, customerCode: c.customerCode, hideAreaHint: nb.hideAreaHint,
     confirmCode: code, ownerName:c.ownerName, phone:c.phone, lineId:c.lineId, address:c.address,
-    petName:c.petName, petBreed:c.petBreed, petAge:c.petAge, petWeight:c.petWeight,
-    petPersonality:c.petPersonality, petHealth:c.petHealth,
+    petId: pet.id || '', petName:pet.name||'', petBreed:pet.breed||'', petAge:pet.age||'', petWeight:pet.weight||'',
+    petPersonality:pet.personality||'', petHealth:pet.health||'',
     serviceLabel:s.label, durationMinutes:s.duration,
     date: nb.date, time: nb.time, endTime: fmtTime(toMin(nb.time) + s.duration),
     taichung: adminConfig.taichungDates.has(nb.date)
@@ -1697,7 +1731,7 @@ async function submitNBBooking(){
     });
     const result = await res.json();
     if(!result.success) throw new Error(result.error || '新增失敗');
-    newBookingState.customer = null; newBookingState.results = []; newBookingState.value = '';
+    newBookingState.customer = null; newBookingState.results = []; newBookingState.value = ''; newBookingState.selectedPetId = null;
     newBookingState.service = { category:'', animalType:'', hairLength:'', multiplier:1, duration:0, label:'', customLabel:'', customDuration:60 };
     newBookingState.date = null; newBookingState.time = null; newBookingState.customTime = false; newBookingState.hideAreaHint = false;
     render();
