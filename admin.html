@@ -173,6 +173,7 @@
       </div>
     </div>
     <span class="status-pill" id="statusPill">尚未連線</span>
+    <button type="button" id="adminLogoutBtn" class="btn btn-ghost" style="display:none;padding:6px 14px;font-size:13px;width:auto;">登出</button>
   </div>
 
   <div class="card" id="card"></div>
@@ -188,6 +189,76 @@ const adminView = { year:new Date().getFullYear(), month:new Date().getMonth(), 
 const BUSINESS_START = 9*60, DEFAULT_BUSINESS_END = 13*60, EXTENDED_BUSINESS_END = 20*60;
 
 const pageState = { view:'calendar' }; // 'calendar' | 'diary' | 'newCustomer' | 'newBooking'
+
+/* ================= 後台密碼登入 ================= */
+// 密碼實際驗證在 Code.gs（比對 Apps Script 的「指令碼屬性」ADMIN_PASSWORD），這裡只是把密碼
+// 存在這台裝置的瀏覽器裡（localStorage），之後每次查詢/送出資料都附上，讓後台的動作能通過驗證
+const authState = {
+  password: localStorage.getItem('adminPassword') || '',
+  authed: false,
+  error: ''
+};
+function authQS(){ return '&adminPassword=' + encodeURIComponent(authState.password); }
+function withAuth(obj){ return Object.assign({ adminPassword: authState.password }, obj); }
+function tplLogin(){
+  return `
+    <h2 class="card-title">後台登入</h2>
+    <p class="card-desc">請輸入店家後台密碼才能使用管理功能。</p>
+    <div class="field"><label>密碼</label><input type="password" id="login-password" value="${esc(authState.password)}" autofocus></div>
+    <div class="err" id="login-err" style="display:${authState.error?'block':'none'};">${authState.error||''}</div>
+    <div class="actions"><button class="btn btn-primary" id="loginBtn" style="flex:1;">登入</button></div>
+  `;
+}
+function bindLogin(){
+  const btn = document.getElementById('loginBtn');
+  const input = document.getElementById('login-password');
+  const doLogin = async ()=>{
+    const pw = input.value;
+    if(!pw){ authState.error = '請輸入密碼。'; render(); return; }
+    btn.disabled = true; btn.textContent = '登入中...';
+    try{
+      const res = await fetch(GOOGLE_SCRIPT_URL + '?action=checkAdminPassword&adminPassword=' + encodeURIComponent(pw));
+      const data = await res.json();
+      if(data.success){
+        authState.password = pw; authState.authed = true; authState.error = '';
+        localStorage.setItem('adminPassword', pw);
+        loadSettings();
+      } else {
+        authState.error = '密碼錯誤，請再試一次。';
+        btn.disabled = false; btn.textContent = '登入';
+        render();
+      }
+    }catch(err){
+      authState.error = '無法連線，請確認網路連線後再試一次。';
+      btn.disabled = false; btn.textContent = '登入';
+      render();
+      console.error('登入驗證失敗：', err);
+    }
+  };
+  btn.addEventListener('click', doLogin);
+  input.addEventListener('keydown', e=>{ if(e.key==='Enter') doLogin(); });
+}
+function logoutAdmin(){
+  authState.authed = false; authState.password = ''; authState.error = '';
+  localStorage.removeItem('adminPassword');
+  render();
+}
+async function initAuth(){
+  if(!GOOGLE_SCRIPT_URL){ authState.authed = true; loadSettings(); return; }
+  if(!authState.password){ render(); return; }
+  try{
+    const res = await fetch(GOOGLE_SCRIPT_URL + '?action=checkAdminPassword&adminPassword=' + encodeURIComponent(authState.password));
+    const data = await res.json();
+    if(data.success){ authState.authed = true; loadSettings(); }
+    else { authState.authed = false; localStorage.removeItem('adminPassword'); authState.password=''; render(); }
+  }catch(err){
+    // 驗證請求本身失敗（例如網路問題）時，先讓已儲存密碼的人照樣進去用；
+    // 如果密碼其實不對，之後個別查詢/送出動作會再各自顯示「密碼錯誤或未授權」
+    authState.authed = true; loadSettings();
+    console.error('驗證登入狀態失敗：', err);
+  }
+}
+
 const diaryState = { field:'name', value:'', results:[], customer:null, entries:[], error:'' };
 const DIARY_FIELDS = { name:'飼主姓名', phone:'電話', line:'LINE ID', pet:'寵物名稱' };
 function esc(str){ return String(str==null?'':str).replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
@@ -268,7 +339,7 @@ async function saveSettings(){
   try{
     const res = await fetch(GOOGLE_SCRIPT_URL, {
       method:'POST', headers:{ 'Content-Type':'text/plain;charset=utf-8' },
-      body: JSON.stringify({ action:'saveSettings', settings })
+      body: JSON.stringify(withAuth({ action:'saveSettings', settings }))
     });
     const result = await res.json();
     if(!result.success) throw new Error(result.error || '儲存失敗');
@@ -278,18 +349,27 @@ async function saveSettings(){
 
 /* ================= render ================= */
 function render(){
+  const logoutBtn = document.getElementById('adminLogoutBtn');
+  if(logoutBtn) logoutBtn.style.display = authState.authed ? 'inline-block' : 'none';
+  if(!authState.authed){
+    document.getElementById('card').innerHTML = tplLogin();
+    bindLogin();
+    return;
+  }
   const tabs = `
     <div class="view-tabs" id="view-tabs">
       <button type="button" data-v="calendar" class="${pageState.view==='calendar'?'active':''}">預約時間管理</button>
       <button type="button" data-v="diary" class="${pageState.view==='diary'?'active':''}">寵物日記</button>
       <button type="button" data-v="newCustomer" class="${pageState.view==='newCustomer'?'active':''}">新增客人</button>
       <button type="button" data-v="newBooking" class="${pageState.view==='newBooking'?'active':''}">新增預約</button>
+      <button type="button" data-v="customerMgmt" class="${pageState.view==='customerMgmt'?'active':''}">客人管理／包月</button>
     </div>
   `;
   let bodyHtml;
   if(pageState.view==='diary') bodyHtml = tplDiary();
   else if(pageState.view==='newCustomer') bodyHtml = tplNewCustomer();
   else if(pageState.view==='newBooking') bodyHtml = tplNewBooking();
+  else if(pageState.view==='customerMgmt') bodyHtml = tplCustomerMgmt();
   else bodyHtml = tplAdmin();
 
   document.getElementById('card').innerHTML = tabs + bodyHtml;
@@ -300,6 +380,7 @@ function render(){
   if(pageState.view==='diary') bindDiary();
   else if(pageState.view==='newCustomer') bindNewCustomer();
   else if(pageState.view==='newBooking') bindNewBooking();
+  else if(pageState.view==='customerMgmt') bindCustomerMgmt();
   else bindAdmin();
 }
 
@@ -367,7 +448,7 @@ async function searchDiary(){
   const btn = document.getElementById('diarySearchBtn');
   btn.disabled = true; btn.textContent = '查詢中...';
   try{
-    const res = await fetch(GOOGLE_SCRIPT_URL + '?action=searchDiaryCustomer&field=' + diaryState.field + '&value=' + encodeURIComponent(value));
+    const res = await fetch(GOOGLE_SCRIPT_URL + '?action=searchDiaryCustomer&field=' + diaryState.field + '&value=' + encodeURIComponent(value) + authQS());
     const data = await res.json();
     if(!data.success) throw new Error(data.error || '查詢失敗');
     const results = data.results || [];
@@ -380,7 +461,7 @@ async function searchDiary(){
       diaryState.results = results;
     }
   }catch(err){
-    diaryState.error = '查詢失敗，請確認網路連線後再試一次。';
+    diaryState.error = (err && err.message) ? err.message : '查詢失敗，請確認網路連線後再試一次。';
     console.error('查詢客人失敗：', err);
   }
   btn.disabled = false; btn.textContent = '查詢';
@@ -391,7 +472,8 @@ async function selectDiaryCustomer(customer){
   diaryState.results = [];
   diaryState.error = '';
   try{
-    const diaryRes = await fetch(GOOGLE_SCRIPT_URL + '?action=getDiary&phone=' + encodeURIComponent(customer.phone));
+    const diaryPetId = (customer.pets && customer.pets[0] && customer.pets[0].id) || '';
+    const diaryRes = await fetch(GOOGLE_SCRIPT_URL + '?action=getDiary&phone=' + encodeURIComponent(customer.phone) + '&customerCode=' + encodeURIComponent(customer.customerCode||'') + '&petId=' + encodeURIComponent(diaryPetId) + '&petName=' + encodeURIComponent(customer.petName||'') + authQS());
     const diaryData = await diaryRes.json();
     diaryState.entries = (diaryData.success && diaryData.entries) ? diaryData.entries : [];
   }catch(err){
@@ -408,7 +490,7 @@ async function addDiaryEntry(){
   try{
     const res = await fetch(GOOGLE_SCRIPT_URL, {
       method:'POST', headers:{ 'Content-Type':'text/plain;charset=utf-8' },
-      body: JSON.stringify({ action:'addDiaryEntry', phone: diaryState.customer.phone, petName: diaryState.customer.petName, note })
+      body: JSON.stringify(withAuth({ action:'addDiaryEntry', phone: diaryState.customer.phone, petName: diaryState.customer.petName, note, petId: (diaryState.customer.pets && diaryState.customer.pets[0] && diaryState.customer.pets[0].id) || '', customerCode: diaryState.customer.customerCode || '' }))
     });
     const result = await res.json();
     if(!result.success) throw new Error(result.error || '新增失敗');
@@ -431,6 +513,494 @@ function bindDiary(){
   });
   const addBtn = document.getElementById('diaryAddBtn');
   if(addBtn) addBtn.addEventListener('click', addDiaryEntry);
+}
+
+/* ================= 客人管理／包月方案／編輯預約 ================= */
+const CM_FIELDS = { name:'飼主姓名', phone:'電話', line:'LINE ID', pet:'寵物名稱' };
+const custMgmtState = {
+  field:'name', value:'', results:[], customer:null, pets:[], bookings:[], error:'', loadingDetail:false,
+  editPetId:null, petDraft:null, petErr:'',
+  pkgEditPetId:null, pkgDraft:null, pkgErr:'',
+  editBookingCode:null, bookingDraft:null, bookingErr:''
+};
+function freshPetDraft(pet){
+  return { name:pet.name||'', breed:pet.breed||'', species:pet.species||'', hairLength:pet.hairLength||'', age:pet.age||'', weight:pet.weight||'', personality:pet.personality||'', health:pet.health||'' };
+}
+function freshPkgDraft(pet){
+  const pkg = pet.package;
+  return {
+    totalCount: pkg ? pkg.totalCount : 4,
+    usedCount: pkg ? pkg.usedCount : 0,
+    serviceContent: pkg ? (pkg.serviceContent||'') : '',
+    amount: pkg ? (pkg.amount||'') : '',
+    paid: pkg ? !!pkg.paid : false
+  };
+}
+function tplCustomerMgmt(){
+  const cm = custMgmtState;
+  const fieldLabel = CM_FIELDS[cm.field];
+  return `
+    <h2 class="card-title">客人管理／包月</h2>
+    <p class="card-desc">查詢客人後，可編輯寵物資料、設定／管理包月方案，以及修改已成立的預約（時間、服務、包月次數、付款狀態）。</p>
+    <div class="field">
+      <label>查詢方式</label>
+      <select id="cm-field-select">
+        <option value="name" ${cm.field==='name'?'selected':''}>飼主姓名</option>
+        <option value="phone" ${cm.field==='phone'?'selected':''}>電話</option>
+        <option value="line" ${cm.field==='line'?'selected':''}>LINE ID</option>
+        <option value="pet" ${cm.field==='pet'?'selected':''}>寵物名稱</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>輸入${fieldLabel}</label>
+      <input type="text" id="cm-search-value" placeholder="請輸入${fieldLabel}（可只輸入部分內容）" value="${esc(cm.value)}">
+    </div>
+    <div class="err" id="cm-err" style="display:${cm.error?'block':'none'};">${cm.error||''}</div>
+    <div class="actions"><button class="btn btn-primary btn-tab-color" id="cmSearchBtn" style="flex:1;">查詢</button></div>
+
+    ${cm.results.length>1 ? `
+      <div class="summary-box">
+        <h5>找到 ${cm.results.length} 筆符合的客人，請選擇</h5>
+        ${cm.results.map((r,i)=>`
+          <div class="summary-item" data-cm-pick="${i}" style="cursor:pointer;">
+            <span>${esc(r.ownerName)}｜${esc(r.phone)}｜${esc(r.petName)}</span>
+            <span style="color:var(--pine);font-weight:700;">選擇 ›</span>
+          </div>
+        `).join('')}
+      </div>
+    ` : ''}
+
+    ${cm.customer ? tplCustomerMgmtDetail() : ''}
+  `;
+}
+function tplCustomerMgmtDetail(){
+  const cm = custMgmtState;
+  const c = cm.customer;
+  if(cm.loadingDetail){
+    return `
+      <div class="info-card">
+        <h4>客人資訊</h4>
+        <div class="info-line"><span class="k">飼主</span><span class="v">${esc(c.ownerName)}</span></div>
+        <div class="info-line"><span class="k">電話</span><span class="v">${esc(c.phone)}</span></div>
+        <div class="info-line"><span class="k">客戶代碼</span><span class="v">${esc(c.customerCode)}</span></div>
+      </div>
+      <div class="empty-note">讀取寵物與預約資料中...</div>
+    `;
+  }
+  return `
+    <div class="info-card">
+      <h4>客人資訊</h4>
+      <div class="info-line"><span class="k">飼主</span><span class="v">${esc(c.ownerName)}</span></div>
+      <div class="info-line"><span class="k">電話</span><span class="v">${esc(c.phone)}</span></div>
+      <div class="info-line"><span class="k">LINE ID</span><span class="v">${esc(c.lineId)||'—'}</span></div>
+      <div class="info-line"><span class="k">地址</span><span class="v">${esc(c.address)||'—'}</span></div>
+      <div class="info-line"><span class="k">客戶代碼</span><span class="v">${esc(c.customerCode)}</span></div>
+    </div>
+    <div class="slot-title">寵物與包月方案</div>
+    ${cm.pets.length===0 ? `<div class="empty-note">這位客人目前沒有寵物資料。</div>` : cm.pets.map(tplPetCard).join('')}
+    <div class="slot-title" style="margin-top:22px;">預約記錄（新到舊）</div>
+    ${cm.bookings.length===0 ? `<div class="empty-note">目前還沒有預約記錄。</div>` : cm.bookings.map(tplBookingRow).join('')}
+  `;
+}
+function petSpeciesLabel(sp){ return sp==='cat' ? '貓咪' : (sp==='dog' ? '狗狗' : '—'); }
+function tplPetCard(pet){
+  const cm = custMgmtState;
+  if(cm.editPetId === pet.id){
+    const d = cm.petDraft;
+    return `
+      <div class="info-card">
+        <h4>編輯寵物資料</h4>
+        <div class="field"><label>寵物名稱</label><input type="text" id="pet-edit-name" value="${esc(d.name)}"></div>
+        <div class="field"><label>品種</label><input type="text" id="pet-edit-breed" value="${esc(d.breed)}"></div>
+        <div class="field">
+          <label>物種</label>
+          <div class="choice-row" id="pet-edit-species-row">
+            <div class="choice-pill ${d.species==='cat'?'active':''}" data-s="cat">貓咪</div>
+            <div class="choice-pill ${d.species==='dog'?'active':''}" data-s="dog">狗狗</div>
+          </div>
+        </div>
+        ${d.species==='dog' ? `
+        <div class="field">
+          <label>毛長</label>
+          <div class="choice-row" id="pet-edit-hair-row">
+            <div class="choice-pill ${d.hairLength==='long'?'active':''}" data-h="long">長毛</div>
+            <div class="choice-pill ${d.hairLength==='short'?'active':''}" data-h="short">短毛</div>
+          </div>
+        </div>` : ''}
+        <div class="field"><label>年齡</label><input type="text" id="pet-edit-age" value="${esc(d.age)}"></div>
+        <div class="field"><label>體重</label><input type="text" id="pet-edit-weight" value="${esc(d.weight)}"></div>
+        <div class="field"><label>個性</label><textarea id="pet-edit-personality">${esc(d.personality)}</textarea></div>
+        <div class="field"><label>健康狀況</label><textarea id="pet-edit-health">${esc(d.health)}</textarea></div>
+        <div class="err" id="pet-edit-err" style="display:${cm.petErr?'block':'none'};">${cm.petErr||''}</div>
+        <div class="actions">
+          <button class="btn btn-ghost" id="petEditCancel" style="flex:1;">取消</button>
+          <button class="btn btn-primary" id="petEditSave" data-pet="${pet.id}" style="flex:1;">儲存</button>
+        </div>
+      </div>
+    `;
+  }
+  return `
+    <div class="info-card">
+      <h4>${esc(pet.name)||'（未命名寵物）'}</h4>
+      <div class="info-line"><span class="k">品種</span><span class="v">${esc(pet.breed)||'—'}</span></div>
+      <div class="info-line"><span class="k">物種／毛長</span><span class="v">${petSpeciesLabel(pet.species)}${pet.species==='dog'&&pet.hairLength?'／'+(pet.hairLength==='long'?'長毛':'短毛'):''}</span></div>
+      <div class="info-line"><span class="k">年齡／體重</span><span class="v">${esc(pet.age)||'—'}／${esc(pet.weight)||'—'}</span></div>
+      ${pet.personality ? `<div class="info-line"><span class="k">個性</span><span class="v">${esc(pet.personality)}</span></div>` : ''}
+      ${pet.health ? `<div class="info-line"><span class="k">健康狀況</span><span class="v">${esc(pet.health)}</span></div>` : ''}
+      <div class="actions" style="margin-top:12px;"><button class="btn btn-ghost" data-pet-edit="${pet.id}" style="flex:1;">編輯寵物資料</button></div>
+      ${tplPetPackageBlock(pet)}
+    </div>
+  `;
+}
+function tplPetPackageBlock(pet){
+  const cm = custMgmtState;
+  const pkg = pet.package;
+  if(cm.pkgEditPetId === pet.id){
+    const d = cm.pkgDraft;
+    return `
+      <div class="toggle-row" style="flex-direction:column;align-items:stretch;background:var(--cream);margin-top:14px;">
+        <div class="label" style="margin-bottom:10px;">${pkg&&pkg.active?'編輯包月方案':'設定包月方案'}</div>
+        <div class="field"><label>總次數</label><input type="number" id="pkg-edit-total" min="1" value="${esc(d.totalCount)}"></div>
+        <div class="field"><label>已使用次數</label><input type="number" id="pkg-edit-used" min="0" value="${esc(d.usedCount)}"></div>
+        <div class="field"><label>服務內容</label><input type="text" id="pkg-edit-content" value="${esc(d.serviceContent)}" placeholder="例如：洗澡 4 次"></div>
+        <div class="field"><label>金額</label><input type="text" id="pkg-edit-amount" value="${esc(d.amount)}" placeholder="例如：2400"></div>
+        <label style="display:flex;align-items:center;gap:8px;font-size:13.5px;margin-bottom:14px;">
+          <input type="checkbox" id="pkg-edit-paid" ${d.paid?'checked':''}> 整包已付款
+        </label>
+        <div class="err" id="pkg-edit-err" style="display:${cm.pkgErr?'block':'none'};">${cm.pkgErr||''}</div>
+        <div class="actions">
+          <button class="btn btn-ghost" id="pkgEditCancel" style="flex:1;">取消</button>
+          <button class="btn btn-primary" id="pkgEditSave" data-pet="${pet.id}" style="flex:1;">儲存</button>
+        </div>
+      </div>
+    `;
+  }
+  if(!pkg || !pkg.active){
+    return `
+      <div class="actions" style="margin-top:4px;"><button class="btn btn-ghost" data-pkg-new="${pet.id}" style="flex:1;">設定包月方案</button></div>
+    `;
+  }
+  return `
+    <div class="toggle-row" style="flex-direction:column;align-items:stretch;background:var(--sage-light);margin-top:14px;">
+      <div class="label" style="margin-bottom:8px;">包月方案</div>
+      <div class="info-line"><span class="k">服務內容</span><span class="v">${esc(pkg.serviceContent)||'—'}</span></div>
+      <div class="info-line"><span class="k">總次數／已用／剩餘</span><span class="v">${pkg.totalCount} / ${pkg.usedCount} / ${pkg.remainingCount!=null?pkg.remainingCount:'—'}</span></div>
+      <div class="info-line"><span class="k">金額</span><span class="v">${esc(pkg.amount)||'—'}</span></div>
+      <label style="display:flex;align-items:center;gap:8px;font-size:13.5px;margin:8px 0 12px;">
+        <input type="checkbox" class="pkg-paid-toggle" data-pet-paid="${pet.id}" ${pkg.paid?'checked':''}> 整包已付款
+      </label>
+      <div class="actions">
+        <button class="btn btn-ghost" data-pkg-edit="${pet.id}" style="flex:1;">編輯方案</button>
+        <button class="btn btn-ghost" data-pkg-disable="${pet.id}" style="flex:1;color:var(--danger);">停用方案</button>
+      </div>
+    </div>
+  `;
+}
+function tplBookingRow(b){
+  const cm = custMgmtState;
+  if(cm.editBookingCode === b.confirmCode){
+    const d = cm.bookingDraft;
+    return `
+      <div class="info-card">
+        <h4>編輯預約（${esc(b.confirmCode)}）</h4>
+        <div class="field"><label>日期</label><input type="date" id="bk-edit-date" value="${esc(d.date)}"></div>
+        <div class="field"><label>開始時間</label><input type="time" id="bk-edit-time" value="${esc(d.time)}"></div>
+        <div class="field"><label>服務內容</label><input type="text" id="bk-edit-service" value="${esc(d.serviceLabel)}"></div>
+        <div class="field"><label>預估分鐘</label><input type="number" id="bk-edit-duration" min="10" step="10" value="${esc(d.durationMinutes)}"></div>
+        <div class="field"><label>包月次數（留空交回系統自動計算）</label><input type="number" id="bk-edit-session" min="1" value="${esc(d.sessionNumber)}"></div>
+        <label style="display:flex;align-items:center;gap:8px;font-size:13.5px;margin-bottom:14px;">
+          <input type="checkbox" id="bk-edit-paid" ${d.packagePaid?'checked':''}> 這筆已付款
+        </label>
+        <div class="err" id="bk-edit-err" style="display:${cm.bookingErr?'block':'none'};">${cm.bookingErr||''}</div>
+        <div class="actions">
+          <button class="btn btn-ghost" id="bkEditCancel" style="flex:1;">取消</button>
+          <button class="btn btn-primary" id="bkEditSave" data-code="${esc(b.confirmCode)}" style="flex:1;">儲存</button>
+        </div>
+      </div>
+    `;
+  }
+  return `
+    <div class="info-card">
+      <div class="info-line"><span class="k">日期時間</span><span class="v">${esc(b.date)} ${esc(b.time)}–${esc(b.endTime)}</span></div>
+      <div class="info-line"><span class="k">寵物</span><span class="v">${esc(b.petName)}</span></div>
+      <div class="info-line"><span class="k">服務</span><span class="v">${esc(b.serviceLabel)}（${esc(b.durationMinutes)} 分）</span></div>
+      <div class="info-line"><span class="k">狀態</span><span class="v">${esc(b.status)||'—'}</span></div>
+      ${b.sessionNumber ? `<div class="info-line"><span class="k">包月次數</span><span class="v">第 ${b.sessionNumber} 次${b.manualSessionNumber!=null?'（手動設定）':''}</span></div>` : ''}
+      ${b.sessionNumber ? `<div class="info-line"><span class="k">整輪付款狀態</span><span class="v">${b.packagePaid?'已付款':'未付款'}（自己：${b.ownPaid?'已勾':'未勾'}）</span></div>` : ''}
+      <div class="actions" style="margin-top:10px;"><button class="btn btn-ghost" data-bk-edit="${esc(b.confirmCode)}" style="flex:1;">編輯這筆預約</button></div>
+    </div>
+  `;
+}
+async function searchCustomerMgmt(){
+  const value = document.getElementById('cm-search-value').value.trim();
+  const cm = custMgmtState;
+  cm.error = ''; cm.results = []; cm.customer = null; cm.pets = []; cm.bookings = [];
+  if(!value){ cm.error = '請輸入查詢內容。'; render(); return; }
+  cm.value = value;
+  if(!GOOGLE_SCRIPT_URL){ cm.error = '尚未連結試算表，無法查詢。'; render(); return; }
+  const btn = document.getElementById('cmSearchBtn');
+  btn.disabled = true; btn.textContent = '查詢中...';
+  try{
+    const res = await fetch(GOOGLE_SCRIPT_URL + '?action=searchDiaryCustomer&field=' + cm.field + '&value=' + encodeURIComponent(value) + authQS());
+    const data = await res.json();
+    if(!data.success) throw new Error(data.error || '查詢失敗');
+    const results = data.results || [];
+    if(results.length === 0){ cm.error = '查無符合的客人，請確認輸入內容，或改用其他欄位查詢。'; }
+    else if(results.length === 1){ await selectCustomerMgmt(results[0]); btn.disabled=false; btn.textContent='查詢'; render(); return; }
+    else { cm.results = results; }
+  }catch(err){
+    cm.error = (err && err.message) ? err.message : '查詢失敗，請確認網路連線後再試一次。';
+    console.error('查詢客人失敗：', err);
+  }
+  btn.disabled = false; btn.textContent = '查詢';
+  render();
+}
+async function selectCustomerMgmt(customer){
+  const cm = custMgmtState;
+  cm.customer = customer; cm.results = []; cm.error = ''; cm.loadingDetail = true;
+  cm.editPetId = null; cm.pkgEditPetId = null; cm.editBookingCode = null;
+  render();
+  await loadCustomerMgmtDetail();
+}
+async function loadCustomerMgmtDetail(){
+  const cm = custMgmtState;
+  try{
+    const res = await fetch(GOOGLE_SCRIPT_URL + '?action=getCustomerBookings&customerCode=' + encodeURIComponent(cm.customer.customerCode) + authQS());
+    const data = await res.json();
+    if(!data.success) throw new Error(data.error || '讀取失敗');
+    cm.pets = data.pets || [];
+    cm.bookings = data.bookings || [];
+  }catch(err){
+    cm.pets = []; cm.bookings = [];
+    cm.error = (err && err.message) ? err.message : '讀取客人資料失敗，請確認網路連線後再試一次。';
+    console.error('讀取客人詳情失敗：', err);
+  }
+  cm.loadingDetail = false;
+  render();
+}
+async function savePetEdit(petId){
+  const cm = custMgmtState;
+  const d = cm.petDraft;
+  const btn = document.getElementById('petEditSave');
+  btn.disabled = true; btn.textContent = '儲存中...';
+  try{
+    const res = await fetch(GOOGLE_SCRIPT_URL, {
+      method:'POST', headers:{ 'Content-Type':'text/plain;charset=utf-8' },
+      body: JSON.stringify(withAuth({
+        action:'updatePet', customerCode: cm.customer.customerCode, petId,
+        petName:d.name, petBreed:d.breed, petSpecies:d.species, petHairLength:d.hairLength,
+        petAge:d.age, petWeight:d.weight, petPersonality:d.personality, petHealth:d.health
+      }))
+    });
+    const result = await res.json();
+    if(!result.success) throw new Error(result.error || '儲存失敗');
+    cm.editPetId = null; cm.petErr = '';
+    await loadCustomerMgmtDetail();
+  }catch(err){
+    cm.petErr = (err && err.message) ? err.message : '儲存失敗，請確認網路連線後再試一次。';
+    btn.disabled = false; btn.textContent = '儲存';
+    render();
+    console.error('更新寵物資料失敗：', err);
+  }
+}
+async function savePkgEdit(petId){
+  const cm = custMgmtState;
+  const d = cm.pkgDraft;
+  const btn = document.getElementById('pkgEditSave');
+  btn.disabled = true; btn.textContent = '儲存中...';
+  try{
+    const res = await fetch(GOOGLE_SCRIPT_URL, {
+      method:'POST', headers:{ 'Content-Type':'text/plain;charset=utf-8' },
+      body: JSON.stringify(withAuth({
+        action:'setPetPackage', customerCode: cm.customer.customerCode, petId,
+        totalCount:d.totalCount, usedCount:d.usedCount, serviceContent:d.serviceContent, amount:d.amount, paid:d.paid
+      }))
+    });
+    const result = await res.json();
+    if(!result.success) throw new Error(result.error || '儲存失敗');
+    cm.pkgEditPetId = null; cm.pkgErr = '';
+    await loadCustomerMgmtDetail();
+  }catch(err){
+    cm.pkgErr = (err && err.message) ? err.message : '儲存失敗，請確認網路連線後再試一次。';
+    btn.disabled = false; btn.textContent = '儲存';
+    render();
+    console.error('更新包月方案失敗：', err);
+  }
+}
+async function togglePkgPaid(petId, paid){
+  const cm = custMgmtState;
+  try{
+    const res = await fetch(GOOGLE_SCRIPT_URL, {
+      method:'POST', headers:{ 'Content-Type':'text/plain;charset=utf-8' },
+      body: JSON.stringify(withAuth({ action:'togglePetPackagePaid', customerCode: cm.customer.customerCode, petId, paid }))
+    });
+    const result = await res.json();
+    if(!result.success) throw new Error(result.error || '更新失敗');
+    await loadCustomerMgmtDetail();
+  }catch(err){
+    console.error('切換包月付款狀態失敗：', err);
+    await loadCustomerMgmtDetail();
+  }
+}
+async function disablePkg(petId){
+  const cm = custMgmtState;
+  try{
+    const res = await fetch(GOOGLE_SCRIPT_URL, {
+      method:'POST', headers:{ 'Content-Type':'text/plain;charset=utf-8' },
+      body: JSON.stringify(withAuth({ action:'disablePetPackage', customerCode: cm.customer.customerCode, petId }))
+    });
+    const result = await res.json();
+    if(!result.success) throw new Error(result.error || '停用失敗');
+    await loadCustomerMgmtDetail();
+  }catch(err){
+    console.error('停用包月方案失敗：', err);
+    await loadCustomerMgmtDetail();
+  }
+}
+async function saveBookingEdit(confirmCode){
+  const cm = custMgmtState;
+  const d = cm.bookingDraft;
+  const btn = document.getElementById('bkEditSave');
+  btn.disabled = true; btn.textContent = '儲存中...';
+  try{
+    const res = await fetch(GOOGLE_SCRIPT_URL, {
+      method:'POST', headers:{ 'Content-Type':'text/plain;charset=utf-8' },
+      body: JSON.stringify(withAuth({
+        action:'updateBookingAdmin', confirmCode, customerCode: cm.customer.customerCode,
+        date:d.date, time:d.time, endTime:'', durationMinutes:d.durationMinutes, serviceLabel:d.serviceLabel,
+        sessionNumber: d.sessionNumber, packagePaid: d.packagePaid
+      }))
+    });
+    const result = await res.json();
+    if(!result.success) throw new Error(result.error || '儲存失敗');
+    cm.editBookingCode = null; cm.bookingErr = '';
+    await loadCustomerMgmtDetail();
+  }catch(err){
+    cm.bookingErr = (err && err.message) ? err.message : '儲存失敗，請確認網路連線後再試一次。';
+    btn.disabled = false; btn.textContent = '儲存';
+    render();
+    console.error('更新預約失敗：', err);
+  }
+}
+function bindCustomerMgmt(){
+  document.getElementById('cm-field-select').addEventListener('change', e=>{
+    custMgmtState.field = e.target.value;
+    custMgmtState.results = []; custMgmtState.customer = null; custMgmtState.pets = []; custMgmtState.bookings = []; custMgmtState.error='';
+    render();
+  });
+  document.getElementById('cmSearchBtn').addEventListener('click', searchCustomerMgmt);
+  document.getElementById('cm-search-value').addEventListener('keydown', e=>{ if(e.key==='Enter') searchCustomerMgmt(); });
+  document.querySelectorAll('[data-cm-pick]').forEach(el=>{
+    el.addEventListener('click', ()=>{ selectCustomerMgmt(custMgmtState.results[parseInt(el.dataset.cmPick,10)]); });
+  });
+
+  // 編輯寵物資料
+  document.querySelectorAll('[data-pet-edit]').forEach(el=>{
+    el.addEventListener('click', ()=>{
+      const petId = el.dataset.petEdit;
+      const pet = custMgmtState.pets.find(p=>p.id===petId);
+      custMgmtState.editPetId = petId; custMgmtState.petDraft = freshPetDraft(pet); custMgmtState.petErr='';
+      render();
+    });
+  });
+  const petCancelBtn = document.getElementById('petEditCancel');
+  if(petCancelBtn) petCancelBtn.addEventListener('click', ()=>{ custMgmtState.editPetId = null; custMgmtState.petErr=''; render(); });
+  const petSpeciesRow = document.getElementById('pet-edit-species-row');
+  if(petSpeciesRow) petSpeciesRow.addEventListener('click', e=>{
+    const p = e.target.closest('.choice-pill'); if(!p) return;
+    custMgmtState.petDraft.name = document.getElementById('pet-edit-name').value;
+    custMgmtState.petDraft.breed = document.getElementById('pet-edit-breed').value;
+    custMgmtState.petDraft.age = document.getElementById('pet-edit-age').value;
+    custMgmtState.petDraft.weight = document.getElementById('pet-edit-weight').value;
+    custMgmtState.petDraft.personality = document.getElementById('pet-edit-personality').value;
+    custMgmtState.petDraft.health = document.getElementById('pet-edit-health').value;
+    custMgmtState.petDraft.species = p.dataset.s;
+    if(p.dataset.s === 'cat') custMgmtState.petDraft.hairLength = '';
+    render();
+  });
+  const petHairRow = document.getElementById('pet-edit-hair-row');
+  if(petHairRow) petHairRow.addEventListener('click', e=>{
+    const p = e.target.closest('.choice-pill'); if(!p) return;
+    custMgmtState.petDraft.name = document.getElementById('pet-edit-name').value;
+    custMgmtState.petDraft.breed = document.getElementById('pet-edit-breed').value;
+    custMgmtState.petDraft.age = document.getElementById('pet-edit-age').value;
+    custMgmtState.petDraft.weight = document.getElementById('pet-edit-weight').value;
+    custMgmtState.petDraft.personality = document.getElementById('pet-edit-personality').value;
+    custMgmtState.petDraft.health = document.getElementById('pet-edit-health').value;
+    custMgmtState.petDraft.hairLength = p.dataset.h;
+    render();
+  });
+  const petSaveBtn = document.getElementById('petEditSave');
+  if(petSaveBtn) petSaveBtn.addEventListener('click', ()=>{
+    const d = custMgmtState.petDraft;
+    d.name = document.getElementById('pet-edit-name').value.trim();
+    d.breed = document.getElementById('pet-edit-breed').value.trim();
+    d.age = document.getElementById('pet-edit-age').value.trim();
+    d.weight = document.getElementById('pet-edit-weight').value.trim();
+    d.personality = document.getElementById('pet-edit-personality').value.trim();
+    d.health = document.getElementById('pet-edit-health').value.trim();
+    savePetEdit(petSaveBtn.dataset.pet);
+  });
+
+  // 包月方案：新增／編輯
+  document.querySelectorAll('[data-pkg-new], [data-pkg-edit]').forEach(el=>{
+    el.addEventListener('click', ()=>{
+      const petId = el.dataset.pkgNew || el.dataset.pkgEdit;
+      const pet = custMgmtState.pets.find(p=>p.id===petId);
+      custMgmtState.pkgEditPetId = petId; custMgmtState.pkgDraft = freshPkgDraft(pet); custMgmtState.pkgErr='';
+      render();
+    });
+  });
+  const pkgCancelBtn = document.getElementById('pkgEditCancel');
+  if(pkgCancelBtn) pkgCancelBtn.addEventListener('click', ()=>{ custMgmtState.pkgEditPetId = null; custMgmtState.pkgErr=''; render(); });
+  const pkgSaveBtn = document.getElementById('pkgEditSave');
+  if(pkgSaveBtn) pkgSaveBtn.addEventListener('click', ()=>{
+    const d = custMgmtState.pkgDraft;
+    d.totalCount = parseInt(document.getElementById('pkg-edit-total').value, 10) || 1;
+    d.usedCount = parseInt(document.getElementById('pkg-edit-used').value, 10) || 0;
+    d.serviceContent = document.getElementById('pkg-edit-content').value.trim();
+    d.amount = document.getElementById('pkg-edit-amount').value.trim();
+    d.paid = document.getElementById('pkg-edit-paid').checked;
+    savePkgEdit(pkgSaveBtn.dataset.pet);
+  });
+  document.querySelectorAll('.pkg-paid-toggle').forEach(el=>{
+    el.addEventListener('change', ()=>{ togglePkgPaid(el.dataset.petPaid, el.checked); });
+  });
+  document.querySelectorAll('[data-pkg-disable]').forEach(el=>{
+    el.addEventListener('click', ()=>{
+      if(!confirm('確定要停用這隻寵物的包月方案嗎？')) return;
+      disablePkg(el.dataset.pkgDisable);
+    });
+  });
+
+  // 編輯預約
+  document.querySelectorAll('[data-bk-edit]').forEach(el=>{
+    el.addEventListener('click', ()=>{
+      const code = el.dataset.bkEdit;
+      const b = custMgmtState.bookings.find(x=>String(x.confirmCode)===String(code));
+      custMgmtState.editBookingCode = code;
+      custMgmtState.bookingDraft = {
+        date: b.date, time: b.time, serviceLabel: b.serviceLabel, durationMinutes: b.durationMinutes,
+        sessionNumber: b.manualSessionNumber!=null ? b.manualSessionNumber : '', packagePaid: !!b.ownPaid
+      };
+      custMgmtState.bookingErr = '';
+      render();
+    });
+  });
+  const bkCancelBtn = document.getElementById('bkEditCancel');
+  if(bkCancelBtn) bkCancelBtn.addEventListener('click', ()=>{ custMgmtState.editBookingCode = null; custMgmtState.bookingErr=''; render(); });
+  const bkSaveBtn = document.getElementById('bkEditSave');
+  if(bkSaveBtn) bkSaveBtn.addEventListener('click', ()=>{
+    const d = custMgmtState.bookingDraft;
+    d.date = document.getElementById('bk-edit-date').value;
+    d.time = document.getElementById('bk-edit-time').value;
+    d.serviceLabel = document.getElementById('bk-edit-service').value.trim();
+    d.durationMinutes = parseInt(document.getElementById('bk-edit-duration').value, 10) || d.durationMinutes;
+    const sessionVal = document.getElementById('bk-edit-session').value;
+    d.sessionNumber = sessionVal === '' ? '' : parseInt(sessionVal, 10);
+    d.packagePaid = document.getElementById('bk-edit-paid').checked;
+    saveBookingEdit(bkSaveBtn.dataset.code);
+  });
 }
 
 /* ================= 新增客人 ================= */
@@ -935,7 +1505,7 @@ async function searchNBCustomer(){
   const btn = document.getElementById('nbSearchBtn');
   btn.disabled = true; btn.textContent = '查詢中...';
   try{
-    const res = await fetch(GOOGLE_SCRIPT_URL + '?action=searchDiaryCustomer&field=' + newBookingState.field + '&value=' + encodeURIComponent(value));
+    const res = await fetch(GOOGLE_SCRIPT_URL + '?action=searchDiaryCustomer&field=' + newBookingState.field + '&value=' + encodeURIComponent(value) + authQS());
     const data = await res.json();
     if(!data.success) throw new Error(data.error || '查詢失敗');
     const results = data.results || [];
@@ -943,7 +1513,7 @@ async function searchNBCustomer(){
     else if(results.length === 1){ selectNBCustomer(results[0]); return; }
     else { newBookingState.results = results; }
   }catch(err){
-    newBookingState.error = '查詢失敗，請確認網路連線後再試一次。';
+    newBookingState.error = (err && err.message) ? err.message : '查詢失敗，請確認網路連線後再試一次。';
     console.error('查詢客人失敗：', err);
   }
   btn.disabled = false; btn.textContent = '查詢客人';
@@ -967,7 +1537,7 @@ async function submitNBBooking(){
   if(!newBookingState.date || !newBookingState.time) return;
   const c = newBookingState.customer, s = newBookingState.service, nb = newBookingState;
   const code = genBookingCode();
-  const payload = {
+  const payload = withAuth({
     action:'booking', createdByAdmin:true, customerCode: c.customerCode, hideAreaHint: nb.hideAreaHint,
     confirmCode: code, ownerName:c.ownerName, phone:c.phone, lineId:c.lineId, address:c.address,
     petName:c.petName, petBreed:c.petBreed, petAge:c.petAge, petWeight:c.petWeight,
@@ -975,7 +1545,7 @@ async function submitNBBooking(){
     serviceLabel:s.label, durationMinutes:s.duration,
     date: nb.date, time: nb.time, endTime: fmtTime(toMin(nb.time) + s.duration),
     taichung: adminConfig.taichungDates.has(nb.date)
-  };
+  });
   if(!GOOGLE_SCRIPT_URL){ errEl.textContent = '尚未連結試算表，無法新增。'; errEl.style.display = 'block'; return; }
   btn.disabled = true; btn.textContent = '新增中...';
   try{
@@ -1149,7 +1719,8 @@ function bindAdmin(){
   document.querySelectorAll('[data-remove-blocked]').forEach(btn=>{ btn.addEventListener('click', ()=>{ delete adminConfig.blockedSlots[btn.dataset.removeBlocked]; render(); saveSettings(); }); });
 }
 
-loadSettings();
+document.getElementById('adminLogoutBtn').addEventListener('click', logoutAdmin);
+initAuth();
 
 if('serviceWorker' in navigator){
   window.addEventListener('load', ()=>{ navigator.serviceWorker.register('sw.js').catch(()=>{}); });
