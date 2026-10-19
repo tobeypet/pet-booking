@@ -293,7 +293,7 @@ const newCustomerState = {
 };
 
 const newBookingState = {
-  field:'name', value:'', results:[], customer:null, error:'', selectedPetId:null,
+  field:'name', value:'', results:[], customer:null, error:'', selectedPetIds:[],
   service:{ category:'', animalType:'', hairLength:'', multiplier:1, duration:0, label:'', customLabel:'', customDuration:60 },
   date:null, time:null, customTime:false, hideAreaHint:false,
   monthView:{ year:new Date().getFullYear(), month:new Date().getMonth() }
@@ -304,11 +304,19 @@ function nbCustomerPets(c){
   if(c && c.petName) return [{ id:'', name:c.petName, breed:c.petBreed, age:c.petAge, weight:c.petWeight, personality:c.petPersonality, health:c.petHealth }];
   return [];
 }
-function nbSelectedPet(){
+// 這次預約實際選到的寵物（可能不只一隻），依照點選順序排列
+function nbSelectedPets(){
   const c = newBookingState.customer;
-  if(!c) return null;
+  if(!c) return [];
   const pets = nbCustomerPets(c);
-  return pets.find(p=>p.id===newBookingState.selectedPetId) || pets[0] || null;
+  if(pets.length <= 1) return pets; // 只有一隻寵物時，不用特地勾選，直接視為選了那一隻
+  const ids = newBookingState.selectedPetIds;
+  return ids.map(id=>pets.find(p=>p.id===id)).filter(Boolean);
+}
+// 總共需要的時間（同一個服務，依序一隻接一隻做下去）
+function nbBlockDuration(){
+  const count = Math.max(1, nbSelectedPets().length);
+  return (newBookingState.service.duration || 0) * count;
 }
 
 function setStatus(mode){
@@ -1187,7 +1195,7 @@ function bindNewCustomer(){
   if(goBookingBtn){
     goBookingBtn.addEventListener('click', ()=>{
       newBookingState.customer = newCustomerState.lastCreated;
-      newBookingState.results = []; newBookingState.value = ''; newBookingState.error = ''; newBookingState.selectedPetId = null;
+      newBookingState.results = []; newBookingState.value = ''; newBookingState.error = ''; newBookingState.selectedPetIds = [];
       newBookingState.service = { category:'', animalType:'', hairLength:'', multiplier:1, duration:0, label:'', customLabel:'', customDuration:60 };
       newBookingState.date = null; newBookingState.time = null; newBookingState.customTime = false; newBookingState.hideAreaHint = false;
       nbTravelState.loaded = false; nbTravelState.blockedRanges = []; nbTravelState.forDate = null;
@@ -1326,7 +1334,9 @@ function tplNewBooking(){
   const isOtherService = s.category === 'other';
   const showDogHair = !isFlatService && !isOtherService && s.animalType==='dog';
   const dur = computeDurationNB();
-  const ready = !!dur;
+  const nbPets = nbCustomerPets(c);
+  const selPets = nbSelectedPets();
+  const ready = !!dur && selPets.length > 0;
   let calendarBlock = '';
   if(ready){
     calendarBlock = `
@@ -1349,8 +1359,6 @@ function tplNewBooking(){
       <div id="nb-slot-section">${nb.customTime ? renderNBCustomTimeSection() : renderNBSlotSection()}</div>
     `;
   }
-  const nbPets = nbCustomerPets(c);
-  const nbPet = nbSelectedPet();
   return `
     <h2 class="card-title">新增預約</h2>
     <div class="info-card">
@@ -1359,13 +1367,13 @@ function tplNewBooking(){
       <div class="info-line"><span class="k">電話</span><span class="v">${esc(c.phone)}</span></div>
       ${nbPets.length > 1 ? `
       <div class="field" style="margin-top:12px;margin-bottom:4px;">
-        <label>這次預約是哪隻寵物</label>
-        <div class="choice-row" id="nb-pet-row">
-          ${nbPets.map(p=>`<div class="choice-pill ${nb.selectedPetId===p.id?'active':''}" data-pet-id="${esc(p.id)}">${esc(p.name)||'（未命名）'}</div>`).join('')}
+        <label>這次預約要約哪幾隻寵物（可複選，會用同一個服務、同一天，一隻接一隻排時段）</label>
+        <div class="choice-row" id="nb-pet-row" style="flex-wrap:wrap;">
+          ${nbPets.map(p=>`<div class="choice-pill ${nb.selectedPetIds.includes(p.id)?'active':''}" data-pet-id="${esc(p.id)}" style="flex:0 0 auto;padding-left:16px;padding-right:16px;">${esc(p.name)||'（未命名）'}</div>`).join('')}
         </div>
       </div>
       ` : `
-      <div class="info-line"><span class="k">寵物</span><span class="v">${esc(nbPet?nbPet.name:'')}（${esc(nbPet?nbPet.breed:'')}）</span></div>
+      <div class="info-line"><span class="k">寵物</span><span class="v">${esc(nbPets[0]?nbPets[0].name:'')}（${esc(nbPets[0]?nbPets[0].breed:'')}）</span></div>
       `}
     </div>
     <button class="btn btn-ghost" id="nbChangeCustomer" style="width:100%;margin-bottom:18px;">換一位客人</button>
@@ -1417,7 +1425,10 @@ function tplNewBooking(){
       </div>
     </div>` : ''}
     `}
-    ${ready ? calendarBlock : `<div class="empty-note">請先選擇服務類型${(isFlatService||isOtherService)?'':'與寵物類型'}${isOtherService?'並填寫服務名稱與所需時間':''}，即可查看可預約時段。</div>`}
+    ${(selPets.length>1 && dur) ? `
+    <div class="info-line" style="padding:6px 2px;"><span class="k">這幾隻總共需要</span><span class="v">${dur.duration} 分鐘 × ${selPets.length} 隻 ＝ ${nbBlockDuration()} 分鐘</span></div>
+    ` : ''}
+    ${ready ? calendarBlock : `<div class="empty-note">請先選擇服務類型${(isFlatService||isOtherService)?'':'與寵物類型'}${isOtherService?'並填寫服務名稱與所需時間':''}${nbPets.length>1?'、並勾選要約的寵物':''}，即可查看可預約時段。</div>`}
     ${ready ? `
     <div class="toggle-row">
       <div>
@@ -1490,7 +1501,7 @@ function renderNBSlotSection(){
   if(nbTravelState.forDate !== newBookingState.date || !nbTravelState.loaded){
     return `<div class="empty-note">檢查行程時間中...</div>`;
   }
-  const duration = newBookingState.service.duration || 120;
+  const duration = nbBlockDuration() || 120;
   const end = getBusinessEnd(newBookingState.date);
   const slots = [];
   for(let start=BUSINESS_START; start+duration<=end; start+=30){
@@ -1514,7 +1525,7 @@ function renderNBSlotSection(){
 }
 function renderNBCustomTimeSection(){
   if(!newBookingState.date){ return `<div class="empty-note">請先選擇日期。</div>`; }
-  const duration = newBookingState.service.duration || 120;
+  const duration = nbBlockDuration() || 120;
   const nb = newBookingState;
   let warning = '';
   if(nb.time){
@@ -1545,7 +1556,7 @@ function bindNewBooking(){
     return;
   }
   document.getElementById('nbChangeCustomer').addEventListener('click', ()=>{
-    newBookingState.customer = null; newBookingState.results = []; newBookingState.value = ''; newBookingState.selectedPetId = null;
+    newBookingState.customer = null; newBookingState.results = []; newBookingState.value = ''; newBookingState.selectedPetIds = [];
     newBookingState.date = null; newBookingState.time = null; newBookingState.customTime = false; newBookingState.hideAreaHint = false;
     newBookingState.service = { category:'', animalType:'', hairLength:'', multiplier:1, duration:0, label:'', customLabel:'', customDuration:60 };
     nbTravelState.loaded = false; nbTravelState.blockedRanges = []; nbTravelState.forDate = null;
@@ -1555,7 +1566,11 @@ function bindNewBooking(){
   if(nbPetRow){
     nbPetRow.addEventListener('click', e=>{
       const p = e.target.closest('.choice-pill'); if(!p) return;
-      newBookingState.selectedPetId = p.dataset.petId;
+      const id = p.dataset.petId;
+      const ids = newBookingState.selectedPetIds;
+      const idx = ids.indexOf(id);
+      if(idx === -1) ids.push(id); else ids.splice(idx, 1);
+      newBookingState.date = null; newBookingState.time = null; newBookingState.customTime = false; newBookingState.hideAreaHint = false;
       render();
     });
   }
@@ -1698,7 +1713,8 @@ function selectNBCustomer(customer){
   newBookingState.results = [];
   newBookingState.error = '';
   const pets = nbCustomerPets(customer);
-  newBookingState.selectedPetId = pets[0] ? pets[0].id : null;
+  // 只有一隻寵物時不用勾選；有好幾隻的話，預設先不勾，請店家自己選要約哪幾隻
+  newBookingState.selectedPetIds = pets.length === 1 ? [pets[0].id] : [];
   render();
 }
 function genBookingCode(){
@@ -1712,34 +1728,51 @@ async function submitNBBooking(){
   errEl.style.display = 'none';
   if(!newBookingState.date || !newBookingState.time) return;
   const c = newBookingState.customer, s = newBookingState.service, nb = newBookingState;
-  const pet = nbSelectedPet() || {};
-  const code = genBookingCode();
-  const payload = withAuth({
-    action:'booking', createdByAdmin:true, customerCode: c.customerCode, hideAreaHint: nb.hideAreaHint,
-    confirmCode: code, ownerName:c.ownerName, phone:c.phone, lineId:c.lineId, address:c.address,
-    petId: pet.id || '', petName:pet.name||'', petBreed:pet.breed||'', petAge:pet.age||'', petWeight:pet.weight||'',
-    petPersonality:pet.personality||'', petHealth:pet.health||'',
-    serviceLabel:s.label, durationMinutes:s.duration,
-    date: nb.date, time: nb.time, endTime: fmtTime(toMin(nb.time) + s.duration),
-    taichung: adminConfig.taichungDates.has(nb.date)
-  });
+  const pets = nbSelectedPets();
+  if(pets.length === 0){ errEl.textContent = '請先選擇要約的寵物。'; errEl.style.display = 'block'; return; }
   if(!GOOGLE_SCRIPT_URL){ errEl.textContent = '尚未連結試算表，無法新增。'; errEl.style.display = 'block'; return; }
-  btn.disabled = true; btn.textContent = '新增中...';
-  try{
-    const res = await fetch(GOOGLE_SCRIPT_URL, {
-      method:'POST', headers:{ 'Content-Type':'text/plain;charset=utf-8' }, body: JSON.stringify(payload)
+  btn.disabled = true;
+  const okNames = [];
+  const failNames = [];
+  let startMin = toMin(nb.time);
+  // 一隻接一隻排時段，同一個服務、同一天，依照勾選順序往後排
+  for(let i=0; i<pets.length; i++){
+    const pet = pets[i];
+    btn.textContent = pets.length>1 ? `新增中...（${i+1}/${pets.length}）` : '新增中...';
+    const endMin = startMin + s.duration;
+    const payload = withAuth({
+      action:'booking', createdByAdmin:true, customerCode: c.customerCode, hideAreaHint: nb.hideAreaHint,
+      confirmCode: genBookingCode(), ownerName:c.ownerName, phone:c.phone, lineId:c.lineId, address:c.address,
+      petId: pet.id || '', petName:pet.name||'', petBreed:pet.breed||'', petAge:pet.age||'', petWeight:pet.weight||'',
+      petPersonality:pet.personality||'', petHealth:pet.health||'',
+      serviceLabel:s.label, durationMinutes:s.duration,
+      date: nb.date, time: fmtTime(startMin), endTime: fmtTime(endMin),
+      taichung: adminConfig.taichungDates.has(nb.date)
     });
-    const result = await res.json();
-    if(!result.success) throw new Error(result.error || '新增失敗');
-    newBookingState.customer = null; newBookingState.results = []; newBookingState.value = ''; newBookingState.selectedPetId = null;
+    try{
+      const res = await fetch(GOOGLE_SCRIPT_URL, {
+        method:'POST', headers:{ 'Content-Type':'text/plain;charset=utf-8' }, body: JSON.stringify(payload)
+      });
+      const result = await res.json();
+      if(!result.success) throw new Error(result.error || '新增失敗');
+      okNames.push(pet.name || '（未命名）');
+    }catch(err){
+      failNames.push(pet.name || '（未命名）');
+      console.error('新增預約失敗：', pet.name, err);
+    }
+    startMin = endMin;
+  }
+  if(failNames.length === 0){
+    newBookingState.customer = null; newBookingState.results = []; newBookingState.value = ''; newBookingState.selectedPetIds = [];
     newBookingState.service = { category:'', animalType:'', hairLength:'', multiplier:1, duration:0, label:'', customLabel:'', customDuration:60 };
     newBookingState.date = null; newBookingState.time = null; newBookingState.customTime = false; newBookingState.hideAreaHint = false;
     render();
-  }catch(err){
+  } else {
     btn.disabled = false; btn.textContent = '新增預約';
-    errEl.textContent = '新增失敗，請確認網路連線後再試一次。';
+    errEl.textContent = okNames.length > 0
+      ? `「${okNames.join('、')}」新增成功，但「${failNames.join('、')}」新增失敗（可能時段衝突），請確認後重新查詢這位客人，針對失敗的寵物再試一次。`
+      : `新增失敗（可能時段衝突），請確認網路連線後再試一次。`;
     errEl.style.display = 'block';
-    console.error('新增預約失敗：', err);
   }
 }
 
