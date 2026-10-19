@@ -6,7 +6,7 @@
 <title>毛孩預約 | 店家後台</title>
 <link rel="manifest" href="admin-manifest.json">
 <meta name="theme-color" content="#3D6FA8">
-<link rel="apple-touch-icon" href="icons/admin-apple-touch-icon.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="毛孩後台">
@@ -28,7 +28,7 @@
   .wrap{max-width:640px;margin:0 auto;}
   .brand{display:flex;align-items:center;justify-content:space-between;margin-bottom:22px;}
   .brand-left{display:flex;align-items:center;gap:12px;}
-  .brand-mark{width:50px;height:50px;border-radius:50%;background:var(--pine);display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 4px 10px rgba(46,104,88,0.3);overflow:hidden;}
+  .brand-mark{width:50px;height:50px;border-radius:50%;background:var(--pine);display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 4px 10px rgba(46,104,88,0.3);}
   .brand-name{font-family:"Baloo 2","Noto Sans TC",sans-serif;font-weight:800;font-size:23px;color:var(--pine);letter-spacing:0.3px;line-height:1.1;}
   .brand-sub{font-size:12.5px;color:var(--ink-soft);letter-spacing:1px;margin-top:2px;}
   .status-pill{font-size:11px;font-weight:700;padding:4px 10px;border-radius:99px;background:var(--sage-light);color:var(--pine);white-space:nowrap;}
@@ -85,16 +85,6 @@
   .admin-slot-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:8px;}
   .admin-slot{padding:9px 4px;border-radius:9px;border:1.5px solid var(--line);background:var(--cream);text-align:center;font-size:12.5px;font-weight:600;color:var(--pine);cursor:pointer;}
   .admin-slot.blocked{background:var(--danger-light);border-color:var(--danger);color:var(--danger);text-decoration:line-through;}
-  .region-cell{user-select:none;-webkit-user-select:none;touch-action:none;}
-  .region-cell.region-on-tc{background:#3D6FA8;border-color:#2A5480;color:#fff;}
-  .region-cell.region-on-sb{background:#3E9B6B;border-color:#2F7A53;color:#fff;}
-  .region-cell.dragging{outline:2px dashed var(--ink);outline-offset:-2px;}
-  .region-legend{display:flex;gap:16px;font-size:11.5px;color:var(--ink-soft);margin:2px 0 10px;flex-wrap:wrap;}
-  .region-legend span{display:inline-flex;align-items:center;gap:5px;}
-  .region-dot{width:9px;height:9px;border-radius:4px;display:inline-block;}
-  .region-dot.tc{background:#3D6FA8;}
-  .region-dot.sb{background:#3E9B6B;}
-  .link-btn{background:none;border:none;color:var(--ink-soft);font-size:11.5px;text-decoration:underline;cursor:pointer;padding:0 0 16px;}
   .empty-note{font-size:13px;color:var(--ink-soft);background:var(--cream);border-radius:10px;padding:14px;text-align:${'left'};}
 
   .summary-box{background:var(--cream);border-radius:12px;padding:14px;margin-top:18px;}
@@ -172,7 +162,10 @@
   <div class="brand">
     <div class="brand-left">
       <div class="brand-mark">
-        <img src="data:image/jpeg;base64,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" style="width:100%;height:100%;object-fit:cover;display:block;">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+          <circle cx="7" cy="8" r="2" fill="#FFFFFF"/><circle cx="12" cy="6" r="2" fill="#FFFFFF"/><circle cx="17" cy="8" r="2" fill="#FFFFFF"/>
+          <path d="M12 11c-3 0-5.5 2.2-5.5 4.6 0 1.6 1.3 2.4 2.7 1.9.9-.3 1.7-.5 2.8-.5s1.9.2 2.8.5c1.4.5 2.7-.3 2.7-1.9C17.5 13.2 15 11 12 11z" fill="#FFFFFF"/>
+        </svg>
       </div>
       <div>
         <div class="brand-name">毛孩預約・店家後台</div>
@@ -190,13 +183,12 @@
    此網址同時用來讀取／儲存後台設定（與客人端 index.html 共用同一個網址）*/
 const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwfwpOEL4l_iqzXx0Ky9_J2l-HzFsHZD-nURQ8VRpGPrs_NYAN6u5RTtVE607RutPH6/exec";
 
-const adminConfig = { closedDates:new Set(), blockedSlots:{}, extendedDates:new Set(), taichungDates:new Set(), taichungRegionSlots:{} };
+const adminConfig = { closedDates:new Set(), blockedSlots:{}, extendedDates:new Set(), taichungDates:new Set() };
 const adminView = { year:new Date().getFullYear(), month:new Date().getMonth(), selectedDate:null };
 const BUSINESS_START = 9*60, DEFAULT_BUSINESS_END = 13*60, EXTENDED_BUSINESS_END = 20*60;
 
 const pageState = { view:'calendar' }; // 'calendar' | 'diary' | 'newCustomer' | 'newBooking'
-const adminAuth = { password: sessionStorage.getItem('adminAuthPassword') || '', verified:false, error:'' };
-const diaryState = { field:'name', value:'', results:[], customer:null, selectedPetId:null, entries:[], error:'', addPetOpen:false, newPetDraft:{ name:'',breed:'',age:'',weight:'',personality:'',health:'',species:'',hairLength:'' }, editingPetId:null, editPetDraft:{ name:'',breed:'',age:'',weight:'',personality:'',health:'',species:'',hairLength:'' }, packageOpen:false, packageDraft:{ totalCount:'',usedCount:'',serviceContent:'',amount:'',paid:false }, bookings:[], bookingsOpen:false, editingBookingCode:null, bookingEditDraft:{ date:'',time:'',serviceLabel:'',durationMinutes:'',petId:'',sessionNumber:'' } };
+const diaryState = { field:'name', value:'', results:[], customer:null, entries:[], error:'' };
 const DIARY_FIELDS = { name:'飼主姓名', phone:'電話', line:'LINE ID', pet:'寵物名稱' };
 function esc(str){ return String(str==null?'':str).replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
 
@@ -217,25 +209,22 @@ function isSlotBlockedForBooking(dateStr, startMin, durationMin){
 
 const SERVICE_DEF = {
   grooming: { name:'美容', rules:{ cat:{duration:120,label:'貓咪美容'}, dogLong:{duration:120,label:'長毛狗美容'}, dogShort:{duration:120,label:'短毛狗美容'} } },
-  bath: { name:'洗澡', rules:{ cat:{duration:60,label:'貓咪洗澡'}, dogLong:{duration:90,label:'長毛狗洗澡'}, dogShort:{duration:60,label:'短毛狗洗澡'} } },
+  bath: { name:'洗澡', rules:{ cat:{duration:120,label:'貓咪洗澡'}, dogLong:{duration:90,label:'長毛狗洗澡'}, dogShort:{duration:60,label:'短毛狗洗澡'} } },
   walk: { name:'散步', flatUnit:30 },
-  homecare: { name:'到府照顧', flatUnit:30 }
+  homecare: { name:'到府照顧', flatUnit:30 },
+  nail: { name:'剪指甲', flatUnit:30 }
 };
-const FLAT_SERVICES = ['walk','homecare']; // 這兩項不分貓狗，用「基本時間 × 倍數」計算
+const FLAT_SERVICES = ['walk','homecare','nail']; // 這些項目不分貓狗，用「基本時間 × 倍數」計算
 
 const newCustomerState = {
-  data:{ ownerName:'',phone:'',lineId:'',address:'',remarks:'',contactPref:'' },
-  pets:[ { name:'',breed:'',age:'',weight:'',personality:'',health:'',species:'',hairLength:'' } ],
-  resultCode:null, resultPets:null, lastCreated:null, error:''
+  data:{ ownerName:'',phone:'',lineId:'',address:'',petName:'',petBreed:'',petAge:'',petWeight:'',petPersonality:'',petHealth:'',remarks:'',contactPref:'' },
+  resultCode:null, lastCreated:null, error:''
 };
 
 const newBookingState = {
   field:'name', value:'', results:[], customer:null, error:'',
-  stage:'pets', // 'pets'（選寵物）| 'services'（每隻寵物選服務）| 'time'（選時間）
-  selectedPets:[], petServices:{}, // petId -> {category,animalType,hairLength,multiplier,duration,label}
-  addPetOpen:false, newPetDraft:{ name:'',breed:'',age:'',weight:'',personality:'',health:'',species:'',hairLength:'',photo:null },
-  service:{ category:'', duration:0, label:'' }, // 這是「所有選定寵物加總」的彙總結果，供日曆/時段邏輯共用
-  selectedDates:[], timesByDate:{}, travelByDate:{}, customTimeByDate:{}, hideAreaHint:false,
+  service:{ category:'', animalType:'', hairLength:'', multiplier:1, duration:0, label:'', customLabel:'', customDuration:60 },
+  date:null, time:null, customTime:false, hideAreaHint:false,
   monthView:{ year:new Date().getFullYear(), month:new Date().getMonth() }
 };
 
@@ -248,63 +237,6 @@ function setStatus(mode){
   else if(mode==='loading'){ pill.textContent = '讀取設定中...'; pill.className='status-pill saving'; }
 }
 
-/* ================= 後台密碼登入 ================= */
-function renderAuthGate(){
-  document.getElementById('card').innerHTML = `
-    <h2 class="card-title">店家後台登入</h2>
-    <p class="card-desc">請輸入後台密碼才能繼續使用。</p>
-    <div class="field"><label>密碼</label><input type="password" id="auth-password" placeholder="請輸入密碼"></div>
-    <div class="err" id="auth-err" style="display:${adminAuth.error?'block':'none'};">${esc(adminAuth.error)}</div>
-    <div class="actions"><button class="btn btn-primary" id="authSubmitBtn" style="flex:1;">登入</button></div>
-  `;
-  const btn = document.getElementById('authSubmitBtn');
-  const input = document.getElementById('auth-password');
-  btn.addEventListener('click', submitAuth);
-  input.addEventListener('keydown', e=>{ if(e.key==='Enter') submitAuth(); });
-  input.focus();
-}
-async function submitAuth(){
-  const input = document.getElementById('auth-password');
-  const errEl = document.getElementById('auth-err');
-  const btn = document.getElementById('authSubmitBtn');
-  const pw = input.value;
-  if(!pw){ errEl.textContent='請輸入密碼。'; errEl.style.display='block'; return; }
-  if(!GOOGLE_SCRIPT_URL){ errEl.textContent='尚未連結試算表，無法驗證密碼。'; errEl.style.display='block'; return; }
-  errEl.style.display='none';
-  btn.disabled = true; btn.textContent = '驗證中...';
-  try{
-    const res = await fetch(GOOGLE_SCRIPT_URL + '?action=checkAdminPassword&adminPassword=' + encodeURIComponent(pw));
-    const data = await res.json();
-    if(data.success){
-      adminAuth.password = pw;
-      adminAuth.verified = true;
-      sessionStorage.setItem('adminAuthPassword', pw);
-      loadSettings();
-    } else {
-      errEl.textContent = '密碼錯誤，請再試一次。';
-      errEl.style.display = 'block';
-      btn.disabled = false; btn.textContent = '登入';
-    }
-  }catch(err){
-    console.error('驗證密碼失敗：', err);
-    errEl.textContent = '驗證失敗，請確認網路連線後再試一次。';
-    errEl.style.display = 'block';
-    btn.disabled = false; btn.textContent = '登入';
-  }
-}
-// 進站時先確認密碼：本機示範模式（沒接試算表）不需要密碼；有記住密碼的話先偷偷驗一次，驗過才載入正式內容
-async function initAdminAuth(){
-  if(!GOOGLE_SCRIPT_URL){ loadSettings(); return; }
-  if(adminAuth.password){
-    try{
-      const res = await fetch(GOOGLE_SCRIPT_URL + '?action=checkAdminPassword&adminPassword=' + encodeURIComponent(adminAuth.password));
-      const data = await res.json();
-      if(data.success){ adminAuth.verified = true; loadSettings(); return; }
-    }catch(err){ console.error('驗證密碼失敗：', err); }
-  }
-  renderAuthGate();
-}
-
 async function loadSettings(){
   if(!GOOGLE_SCRIPT_URL){ setStatus(); render(); return; }
   setStatus('loading');
@@ -315,11 +247,6 @@ async function loadSettings(){
       adminConfig.closedDates = new Set(data.settings.closedDates || []);
       adminConfig.extendedDates = new Set(data.settings.extendedDates || []);
       adminConfig.taichungDates = new Set(data.settings.taichungDates || []);
-      const trs = {};
-      Object.entries(data.settings.taichungRegionSlots || {}).forEach(([d, obj])=>{
-        trs[d] = { taichung: new Set((obj && obj.taichung) || []), shuangbei: new Set((obj && obj.shuangbei) || []) };
-      });
-      adminConfig.taichungRegionSlots = trs;
       const bs = {};
       Object.entries(data.settings.blockedSlots || {}).forEach(([d,arr])=>{ bs[d] = new Set(arr); });
       adminConfig.blockedSlots = bs;
@@ -336,13 +263,12 @@ async function saveSettings(){
     closedDates: Array.from(adminConfig.closedDates),
     extendedDates: Array.from(adminConfig.extendedDates),
     taichungDates: Array.from(adminConfig.taichungDates),
-    taichungRegionSlots: Object.fromEntries(Object.entries(adminConfig.taichungRegionSlots).map(([k,v])=>[k, { taichung: Array.from(v.taichung||[]), shuangbei: Array.from(v.shuangbei||[]) }])),
     blockedSlots: Object.fromEntries(Object.entries(adminConfig.blockedSlots).map(([k,v])=>[k, Array.from(v)]))
   };
   try{
     const res = await fetch(GOOGLE_SCRIPT_URL, {
       method:'POST', headers:{ 'Content-Type':'text/plain;charset=utf-8' },
-      body: JSON.stringify({ action:'saveSettings', adminPassword: adminAuth.password, settings })
+      body: JSON.stringify({ action:'saveSettings', settings })
     });
     const result = await res.json();
     if(!result.success) throw new Error(result.error || '儲存失敗');
@@ -353,9 +279,6 @@ async function saveSettings(){
 /* ================= render ================= */
 function render(){
   const tabs = `
-    <div style="display:flex;justify-content:flex-end;margin-bottom:8px;">
-      <button type="button" id="logoutBtn" class="link-btn" style="padding:0;">登出後台</button>
-    </div>
     <div class="view-tabs" id="view-tabs">
       <button type="button" data-v="calendar" class="${pageState.view==='calendar'?'active':''}">預約時間管理</button>
       <button type="button" data-v="diary" class="${pageState.view==='diary'?'active':''}">寵物日記</button>
@@ -370,14 +293,8 @@ function render(){
   else bodyHtml = tplAdmin();
 
   document.getElementById('card').innerHTML = tabs + bodyHtml;
-  document.getElementById('logoutBtn').addEventListener('click', ()=>{
-    adminAuth.password=''; adminAuth.verified=false;
-    sessionStorage.removeItem('adminAuthPassword');
-    renderAuthGate();
-  });
   document.getElementById('view-tabs').addEventListener('click', e=>{
     const btn = e.target.closest('button'); if(!btn) return;
-    if(!btn.dataset.v) return;
     pageState.view = btn.dataset.v; render();
   });
   if(pageState.view==='diary') bindDiary();
@@ -390,7 +307,6 @@ function render(){
 function tplDiary(){
   const c = diaryState.customer;
   const fieldLabel = DIARY_FIELDS[diaryState.field];
-  const selectedPetName = c ? (((c.pets||[]).find(p=>p.id===diaryState.selectedPetId)||{}).name || '') : '';
   return `
     <h2 class="card-title">寵物日記</h2>
     <p class="card-desc">可用飼主姓名、電話、LINE ID 或寵物名稱任一項查詢客戶，找到後即可針對每次服務新增紀錄，方便下次服務前回顧。客人本人看不到這些內容。</p>
@@ -428,143 +344,14 @@ function tplDiary(){
         <div class="info-line"><span class="k">飼主</span><span class="v">${esc(c.ownerName)}</span></div>
         <div class="info-line"><span class="k">電話</span><span class="v">${esc(c.phone)}</span></div>
         <div class="info-line"><span class="k">LINE ID</span><span class="v">${esc(c.lineId)||'—'}</span></div>
+        <div class="info-line"><span class="k">寵物</span><span class="v">${esc(c.petName)}（${esc(c.petBreed)}）</span></div>
       </div>
-      <div class="slot-title" style="margin-top:16px;">寵物名單 <span class="hint">(點寵物卡片可修改資料)</span></div>
-      <div class="svc-grid" id="diary-pet-grid">
-        ${(c.pets||[]).map(p=>`<div class="svc-card ${diaryState.editingPetId===p.id?'active':''}" data-pet-id="${esc(p.id)}"><div class="svc-name">${esc(p.name)}</div><div class="svc-sub">${esc(p.breed||'')}</div></div>`).join('')}
-        <div class="svc-card ${diaryState.addPetOpen?'active':''}" id="diary-pet-add-card"><div class="svc-name">＋ 新增寵物</div></div>
-      </div>
-      ${diaryState.editingPetId ? `
-      <div class="addon-panel" id="diary-edit-pet-panel">
-        <div class="slot-title">修改寵物資料</div>
-        <div class="field"><label>寵物名稱</label><input type="text" id="dep-name" value="${esc(diaryState.editPetDraft.name)}"></div>
-        <div class="field"><label>寵物品種</label><input type="text" id="dep-breed" value="${esc(diaryState.editPetDraft.breed)}"></div>
-        <div class="field">
-          <label>寵物類別</label>
-          <div class="choice-row" id="dep-species-row">
-            <div class="choice-pill ${diaryState.editPetDraft.species==='cat'?'active':''}" data-a="cat">貓咪</div>
-            <div class="choice-pill ${diaryState.editPetDraft.species==='dog'?'active':''}" data-a="dog">狗狗</div>
-          </div>
-        </div>
-        ${diaryState.editPetDraft.species==='dog' ? `
-        <div class="field">
-          <label>毛長類型</label>
-          <div class="choice-row" id="dep-hair-row">
-            <div class="choice-pill ${diaryState.editPetDraft.hairLength==='long'?'active':''}" data-h="long">毛量濃密</div>
-            <div class="choice-pill ${diaryState.editPetDraft.hairLength==='short'?'active':''}" data-h="short">毛量正常</div>
-          </div>
-        </div>` : ''}
-        <div class="field"><label>年齡</label><input type="text" id="dep-age" value="${esc(diaryState.editPetDraft.age)}"></div>
-        <div class="field"><label>體重</label><input type="text" id="dep-weight" value="${esc(diaryState.editPetDraft.weight)}"></div>
-        <div class="field"><label>寵物個性</label><textarea id="dep-personality">${esc(diaryState.editPetDraft.personality)}</textarea></div>
-        <div class="field"><label>健康狀況</label><textarea id="dep-health">${esc(diaryState.editPetDraft.health)}</textarea></div>
-        <div class="err" id="dep-err" style="display:none;"></div>
-        <div class="actions" style="margin-top:6px;"><button class="btn btn-ghost" id="depCancelBtn">取消</button><button class="btn btn-primary" id="depSubmitBtn" style="flex:1;">儲存修改</button></div>
-        <div class="slot-title" style="margin-top:18px;">包月服務</div>
-        ${(function(){
-          const editPet = (c.pets||[]).find(p=>p.id===diaryState.editingPetId);
-          const pkg = editPet ? editPet.package : null;
-          if(pkg && pkg.active){
-            return `
-            <div class="info-card">
-              <div class="info-line"><span class="k">剩餘次數</span><span class="v" style="font-weight:700;color:var(--pine);">${pkg.remainingCount} / ${pkg.totalCount}</span></div>
-              <div class="info-line"><span class="k">服務內容</span><span class="v">${esc(pkg.serviceContent)||'—'}</span></div>
-              <div class="info-line"><span class="k">金額</span><span class="v">${pkg.amount?('$'+esc(String(pkg.amount))):'—'}</span></div>
-              <div class="info-line"><span class="k">付款狀態</span><span class="v" style="font-weight:700;color:${pkg.paid?'var(--pine)':'var(--danger)'};">${pkg.paid?'已付款':'未付款'}</span></div>
-              <div class="info-line"><span class="k">建立日期</span><span class="v">${esc(pkg.createdDate)||'—'}</span></div>
-            </div>
-            <div class="actions" style="margin-top:8px;">
-              <button type="button" class="btn btn-ghost" id="depPackageTogglePaidBtn" style="flex:1;">標記為${pkg.paid?'未付款':'已付款'}</button>
-              <button type="button" class="btn btn-ghost" id="depPackageDisableBtn" style="flex:1;">停用包月</button>
-            </div>
-            <div class="actions" style="margin-top:8px;">
-              <button type="button" class="btn btn-ghost" id="depPackageOpenBtn" style="width:100%;">重新設定次數</button>
-            </div>`;
-          }
-          return `<button type="button" class="btn btn-ghost" id="depPackageOpenBtn" style="width:100%;">${pkg ? '＋ 重新啟用包月服務' : '＋ 開啟包月服務'}</button>`;
-        })()}
-        ${diaryState.packageOpen ? `
-        <div class="addon-panel" style="margin-top:10px;">
-          <div class="field"><label>總次數</label><input type="number" min="1" id="dep-pkg-count" value="${esc(diaryState.packageDraft.totalCount)}" placeholder="例如：10"></div>
-          <div class="field"><label>已使用次數 <span class="hint">(選填，例如客人之前已經用過幾次)</span></label><input type="number" min="0" id="dep-pkg-used" value="${esc(diaryState.packageDraft.usedCount)}" placeholder="沒有就留空，預設 0"></div>
-          <div class="field"><label>服務內容</label><input type="text" id="dep-pkg-content" placeholder="例如：洗澡" value="${esc(diaryState.packageDraft.serviceContent)}"></div>
-          <div class="field"><label>金額 <span class="hint">(選填)</span></label><input type="number" min="0" id="dep-pkg-amount" placeholder="選填" value="${esc(diaryState.packageDraft.amount)}"></div>
-          <label class="addon-check"><input type="checkbox" id="dep-pkg-paid" ${diaryState.packageDraft.paid?'checked':''}> 這筆已經付款了</label>
-          <div class="empty-note">啟用後，這隻寵物之後每完成一次預約會自動扣一次，扣完前台會顯示剩餘次數。</div>
-          <div class="err" id="dep-pkg-err" style="display:none;"></div>
-          <div class="actions" style="margin-top:6px;"><button type="button" class="btn btn-ghost" id="depPackageCancelBtn">取消</button><button type="button" class="btn btn-primary" id="depPackageSaveBtn" style="flex:1;">儲存包月設定</button></div>
-        </div>` : ''}
-      </div>` : ''}
-      ${diaryState.addPetOpen ? `
-      <div class="addon-panel" id="diary-add-pet-panel">
-        <div class="field"><label>寵物名稱</label><input type="text" id="dnp-name" value="${esc(diaryState.newPetDraft.name)}"></div>
-        <div class="field"><label>寵物品種</label><input type="text" id="dnp-breed" value="${esc(diaryState.newPetDraft.breed)}"></div>
-        <div class="field">
-          <label>寵物類別 <span class="hint">(選填，設定好下次預約就不用再選)</span></label>
-          <div class="choice-row" id="dnp-species-row">
-            <div class="choice-pill ${diaryState.newPetDraft.species==='cat'?'active':''}" data-a="cat">貓咪</div>
-            <div class="choice-pill ${diaryState.newPetDraft.species==='dog'?'active':''}" data-a="dog">狗狗</div>
-          </div>
-        </div>
-        ${diaryState.newPetDraft.species==='dog' ? `
-        <div class="field">
-          <label>毛長類型 <span class="hint">(選填，設定好下次預約就不用再選)</span></label>
-          <div class="choice-row" id="dnp-hair-row">
-            <div class="choice-pill ${diaryState.newPetDraft.hairLength==='long'?'active':''}" data-h="long">毛量濃密</div>
-            <div class="choice-pill ${diaryState.newPetDraft.hairLength==='short'?'active':''}" data-h="short">毛量正常</div>
-          </div>
-        </div>` : ''}
-        <div class="field"><label>年齡</label><input type="text" id="dnp-age" value="${esc(diaryState.newPetDraft.age)}"></div>
-        <div class="field"><label>體重</label><input type="text" id="dnp-weight" value="${esc(diaryState.newPetDraft.weight)}"></div>
-        <div class="field"><label>寵物個性</label><textarea id="dnp-personality">${esc(diaryState.newPetDraft.personality)}</textarea></div>
-        <div class="field"><label>健康狀況</label><textarea id="dnp-health">${esc(diaryState.newPetDraft.health)}</textarea></div>
-        <div class="err" id="dnp-err" style="display:none;"></div>
-        <div class="actions" style="margin-top:6px;"><button class="btn btn-primary" id="dnpSubmitBtn" style="flex:1;">新增這隻寵物</button></div>
-      </div>` : ''}
-      ${(c.pets||[]).length>1 ? `
-      <div class="slot-title" style="margin-top:22px;">日記對象</div>
-      <div class="choice-row" id="diary-pet-target-row">
-        ${(c.pets||[]).map(p=>`<div class="choice-pill ${diaryState.selectedPetId===p.id?'active':''}" data-pet-id="${esc(p.id)}">${esc(p.name)}</div>`).join('')}
-      </div>
-      ` : ''}
-      <div class="field" style="margin-top:18px;"><label>新增日記${selectedPetName?`（${esc(selectedPetName)}）`:''}</label><textarea id="diary-note" placeholder="這次服務的紀錄，例如：這次剪得比較短、皮膚有點泛紅要注意"></textarea></div>
-      <div class="actions"><button class="btn btn-primary" id="diaryAddBtn" style="flex:1;" ${diaryState.selectedPetId?'':'disabled'}>新增日記</button></div>
-      <div class="slot-title" style="margin-top:22px;">${selectedPetName?esc(selectedPetName)+' ':''}過往日記（新到舊）</div>
+      <div class="field"><label>新增日記</label><textarea id="diary-note" placeholder="這次服務的紀錄，例如：這次剪得比較短、皮膚有點泛紅要注意"></textarea></div>
+      <div class="actions"><button class="btn btn-primary" id="diaryAddBtn" style="flex:1;">新增日記</button></div>
+      <div class="slot-title" style="margin-top:22px;">過往日記（新到舊）</div>
       ${diaryState.entries.length===0
         ? `<div class="empty-note">目前還沒有日記紀錄。</div>`
         : diaryState.entries.map(en=>`<div class="diary-entry"><div class="date">${esc(en.date)}</div><div class="note">${esc(en.note)}</div></div>`).join('')}
-
-      <button type="button" class="btn btn-ghost" id="diaryBookingsToggleBtn" style="width:100%;margin-top:22px;">${diaryState.bookingsOpen?'隱藏':'查看／編輯'}完整預約記錄（共 ${diaryState.bookings.length} 筆）</button>
-      ${diaryState.bookingsOpen ? (diaryState.bookings.length===0 ? `<div class="empty-note">目前還沒有任何預約記錄。</div>` : diaryState.bookings.map(b=>{
-        const isEditing = diaryState.editingBookingCode === b.confirmCode;
-        if(isEditing){
-          const d = diaryState.bookingEditDraft;
-          return `
-          <div class="review-block" data-booking-code="${esc(b.confirmCode)}">
-            <div class="field"><label>寵物</label>
-              <select class="bk-edit-pet">
-                ${(c.pets||[]).map(p=>`<option value="${esc(p.id)}" ${d.petId===p.id?'selected':''}>${esc(p.name)}</option>`).join('')}
-              </select>
-            </div>
-            <div class="field"><label>日期</label><input type="date" class="bk-edit-date" value="${esc(d.date)}"></div>
-            <div class="field"><label>開始時間</label><input type="time" class="bk-edit-time" value="${esc(d.time)}"></div>
-            <div class="field"><label>所需分鐘</label><input type="number" min="1" class="bk-edit-duration" value="${esc(d.durationMinutes)}"></div>
-            <div class="field"><label>服務項目</label><input type="text" class="bk-edit-service" value="${esc(d.serviceLabel)}"></div>
-            <div class="field"><label>包月次數 <span class="hint">(留空＝系統自動算${d.autoSessionNumber?`，目前自動算出來是第 ${d.autoSessionNumber} 次`:''})</span></label><input type="number" min="1" class="bk-edit-session" placeholder="留空使用自動計算" value="${esc(d.sessionNumber)}"></div>
-            <label class="addon-check"><input type="checkbox" class="bk-edit-paid" ${d.packagePaid?'checked':''}> 這筆包月費用已經付款</label>
-            <div class="hint" style="margin-top:2px;">同一輪包月（例如第1~4次）只要勾其中一筆，整輪都會顯示已付款</div>
-            <div class="err bk-edit-err" style="display:none;"></div>
-            <div class="actions" style="margin-top:6px;"><button type="button" class="btn btn-ghost bk-edit-cancel">取消</button><button type="button" class="btn btn-primary bk-edit-save" style="flex:1;">儲存修改</button></div>
-          </div>`;
-        }
-        return `
-        <div class="review-block">
-          <div class="info-line"><span class="k">${esc(b.date)} ${esc(b.time)}–${esc(b.endTime)}</span><span class="v">${esc(b.status)||'—'}</span></div>
-          <div class="info-line"><span class="k">${esc(b.petName)}</span><span class="v">${esc(b.serviceLabel)}${b.sessionNumber?`（包月${b.packagePaid?'已付':'未付'}・第 ${b.sessionNumber} 次${b.manualSessionNumber?'・手動':''}）`:''}</span></div>
-          ${b.sessionNumber ? `<div class="info-line" style="font-size:11px;color:var(--ink-soft);"><span class="k">除錯資訊</span><span class="v">這筆自己：${b.ownPaid?'已勾':'未勾'}／整輪顯示：${b.packagePaid?'已付':'未付'}</span></div>` : ''}
-          <div class="actions" style="margin-top:8px;"><button type="button" class="btn btn-ghost bk-edit-open" data-booking-code="${esc(b.confirmCode)}" style="width:100%;">編輯這筆預約</button></div>
-        </div>`;
-      }).join('')) : ''}
     ` : ''}
   `;
 }
@@ -580,7 +367,7 @@ async function searchDiary(){
   const btn = document.getElementById('diarySearchBtn');
   btn.disabled = true; btn.textContent = '查詢中...';
   try{
-    const res = await fetch(GOOGLE_SCRIPT_URL + '?action=searchDiaryCustomer&field=' + diaryState.field + '&value=' + encodeURIComponent(value) + '&adminPassword=' + encodeURIComponent(adminAuth.password));
+    const res = await fetch(GOOGLE_SCRIPT_URL + '?action=searchDiaryCustomer&field=' + diaryState.field + '&value=' + encodeURIComponent(value));
     const data = await res.json();
     if(!data.success) throw new Error(data.error || '查詢失敗');
     const results = data.results || [];
@@ -603,62 +390,29 @@ async function selectDiaryCustomer(customer){
   diaryState.customer = customer;
   diaryState.results = [];
   diaryState.error = '';
-  diaryState.addPetOpen = false;
-  diaryState.newPetDraft = { name:'',breed:'',age:'',weight:'',personality:'',health:'',species:'',hairLength:'' };
-  diaryState.editingPetId = null;
-  diaryState.editPetDraft = { name:'',breed:'',age:'',weight:'',personality:'',health:'',species:'',hairLength:'' };
-  diaryState.bookingsOpen = false;
-  diaryState.editingBookingCode = null;
-  const pets = customer.pets || [];
-  diaryState.selectedPetId = pets.length ? pets[0].id : null;
-  await loadDiaryEntries();
-  await loadCustomerBookings();
-  render();
-}
-// 讀取這位客人完整的預約記錄（含過去的），供後台查看/手動編輯用
-async function loadCustomerBookings(){
-  const c = diaryState.customer;
-  if(!c){ diaryState.bookings = []; return; }
   try{
-    const res = await fetch(GOOGLE_SCRIPT_URL + '?action=getCustomerBookings&customerCode=' + encodeURIComponent(c.customerCode) + '&adminPassword=' + encodeURIComponent(adminAuth.password));
-    const data = await res.json();
-    diaryState.bookings = (data.success && data.bookings) ? data.bookings : [];
-    if(data.success && data.pets) diaryState.customer.pets = data.pets;
-  }catch(err){
-    diaryState.bookings = [];
-    console.error('讀取預約記錄失敗：', err);
-  }
-}
-// 依「目前選定的寵物」讀取日記；有寵物ID優先用ID比對，舊資料沒有ID的話後端會退回比對寵物名稱
-async function loadDiaryEntries(){
-  const c = diaryState.customer;
-  if(!c || !diaryState.selectedPetId){ diaryState.entries = []; return; }
-  const pet = (c.pets||[]).find(p=>p.id===diaryState.selectedPetId);
-  try{
-    const diaryRes = await fetch(GOOGLE_SCRIPT_URL + '?action=getDiary&customerCode=' + encodeURIComponent(c.customerCode||'') + '&phone=' + encodeURIComponent(c.phone) + '&petId=' + encodeURIComponent(diaryState.selectedPetId) + '&petName=' + encodeURIComponent(pet?pet.name:'') + '&adminPassword=' + encodeURIComponent(adminAuth.password));
+    const diaryRes = await fetch(GOOGLE_SCRIPT_URL + '?action=getDiary&phone=' + encodeURIComponent(customer.phone));
     const diaryData = await diaryRes.json();
     diaryState.entries = (diaryData.success && diaryData.entries) ? diaryData.entries : [];
   }catch(err){
     diaryState.entries = [];
     console.error('讀取日記失敗：', err);
   }
+  render();
 }
 async function addDiaryEntry(){
   const note = document.getElementById('diary-note').value.trim();
   if(!note) return;
-  const pet = (diaryState.customer.pets||[]).find(p=>p.id===diaryState.selectedPetId);
-  if(!pet) return;
   const btn = document.getElementById('diaryAddBtn');
   btn.disabled = true; btn.textContent = '新增中...';
   try{
     const res = await fetch(GOOGLE_SCRIPT_URL, {
       method:'POST', headers:{ 'Content-Type':'text/plain;charset=utf-8' },
-      body: JSON.stringify({ action:'addDiaryEntry', adminPassword: adminAuth.password, customerCode: diaryState.customer.customerCode, phone: diaryState.customer.phone, petId: pet.id, petName: pet.name, note })
+      body: JSON.stringify({ action:'addDiaryEntry', phone: diaryState.customer.phone, petName: diaryState.customer.petName, note })
     });
     const result = await res.json();
     if(!result.success) throw new Error(result.error || '新增失敗');
-    await loadDiaryEntries();
-    render();
+    await selectDiaryCustomer(diaryState.customer);
   }catch(err){
     btn.disabled = false; btn.textContent = '新增日記';
     console.error('新增日記失敗：', err);
@@ -677,324 +431,14 @@ function bindDiary(){
   });
   const addBtn = document.getElementById('diaryAddBtn');
   if(addBtn) addBtn.addEventListener('click', addDiaryEntry);
-  const targetRow = document.getElementById('diary-pet-target-row');
-  if(targetRow){
-    targetRow.addEventListener('click', async e=>{
-      const pill = e.target.closest('.choice-pill'); if(!pill) return;
-      if(diaryState.selectedPetId === pill.dataset.petId) return;
-      diaryState.selectedPetId = pill.dataset.petId;
-      await loadDiaryEntries();
-      render();
-    });
-  }
-  const petGrid = document.getElementById('diary-pet-grid');
-  if(petGrid){
-    petGrid.addEventListener('click', e=>{
-      const addCard = e.target.closest('#diary-pet-add-card');
-      if(addCard){ diaryState.addPetOpen = !diaryState.addPetOpen; diaryState.editingPetId = null; render(); return; }
-      const card = e.target.closest('[data-pet-id]'); if(!card) return;
-      const pet = (diaryState.customer.pets||[]).find(p=>p.id===card.dataset.petId);
-      if(!pet) return;
-      if(diaryState.editingPetId === pet.id){ diaryState.editingPetId = null; }
-      else {
-        diaryState.editingPetId = pet.id;
-        diaryState.editPetDraft = { name:pet.name||'', breed:pet.breed||'', age:pet.age||'', weight:pet.weight||'', personality:pet.personality||'', health:pet.health||'', species:pet.species||'', hairLength:pet.hairLength||'' };
-        diaryState.addPetOpen = false;
-        diaryState.packageOpen = false;
-        diaryState.packageDraft = { totalCount:'', usedCount:'', serviceContent:'', amount:'' };
-      }
-      render();
-    });
-  }
-  const depCancelBtn = document.getElementById('depCancelBtn');
-  if(depCancelBtn) depCancelBtn.addEventListener('click', ()=>{ diaryState.editingPetId = null; render(); });
-  const depSpeciesRow = document.getElementById('dep-species-row');
-  if(depSpeciesRow) depSpeciesRow.addEventListener('click', e=>{
-    const pill = e.target.closest('.choice-pill'); if(!pill) return;
-    diaryState.editPetDraft.species = (diaryState.editPetDraft.species===pill.dataset.a) ? '' : pill.dataset.a;
-    if(diaryState.editPetDraft.species!=='dog') diaryState.editPetDraft.hairLength = '';
-    render();
-  });
-  const depHairRow = document.getElementById('dep-hair-row');
-  if(depHairRow) depHairRow.addEventListener('click', e=>{
-    const pill = e.target.closest('.choice-pill'); if(!pill) return;
-    diaryState.editPetDraft.hairLength = (diaryState.editPetDraft.hairLength===pill.dataset.h) ? '' : pill.dataset.h;
-    render();
-  });
-  const depBtn = document.getElementById('depSubmitBtn');
-  if(depBtn){
-    depBtn.addEventListener('click', async ()=>{
-      const p = diaryState.editPetDraft;
-      p.name = document.getElementById('dep-name').value.trim();
-      p.breed = document.getElementById('dep-breed').value.trim();
-      p.age = document.getElementById('dep-age').value.trim();
-      p.weight = document.getElementById('dep-weight').value.trim();
-      p.personality = document.getElementById('dep-personality').value.trim();
-      p.health = document.getElementById('dep-health').value.trim();
-      const errEl = document.getElementById('dep-err');
-      if(!p.name || !p.breed){ errEl.textContent='請填寫寵物名稱與品種。'; errEl.style.display='block'; return; }
-      if(!GOOGLE_SCRIPT_URL){ errEl.textContent='尚未連結試算表，無法修改。'; errEl.style.display='block'; return; }
-      errEl.style.display='none';
-      depBtn.disabled = true; depBtn.textContent = '儲存中...';
-      try{
-        const res = await fetch(GOOGLE_SCRIPT_URL, {
-          method:'POST', headers:{ 'Content-Type':'text/plain;charset=utf-8' },
-          body: JSON.stringify({ action:'updatePet', adminPassword: adminAuth.password, customerCode: diaryState.customer.customerCode, petId: diaryState.editingPetId, petName:p.name, petBreed:p.breed, petSpecies:p.species||'', petHairLength:p.hairLength||'', petAge:p.age, petWeight:p.weight, petPersonality:p.personality, petHealth:p.health })
-        });
-        const result = await res.json();
-        if(!result.success) throw new Error(result.error || '修改失敗');
-        diaryState.customer.pets = result.pets;
-        diaryState.editingPetId = null;
-        render();
-      }catch(err){
-        depBtn.disabled = false; depBtn.textContent = '儲存修改';
-        errEl.textContent = '修改失敗，請確認網路連線後再試一次。';
-        errEl.style.display = 'block';
-        console.error('修改寵物失敗：', err);
-      }
-    });
-  }
-  const depPkgOpenBtn = document.getElementById('depPackageOpenBtn');
-  if(depPkgOpenBtn) depPkgOpenBtn.addEventListener('click', ()=>{
-    diaryState.packageOpen = true;
-    const curPet = (diaryState.customer.pets||[]).find(p=>p.id===diaryState.editingPetId);
-    const pkg = curPet ? curPet.package : null;
-    if(pkg){
-      diaryState.packageDraft = {
-        totalCount: String(pkg.totalCount||''),
-        usedCount: String(pkg.totalCount!=null && pkg.remainingCount!=null ? (pkg.totalCount - pkg.remainingCount) : ''),
-        serviceContent: pkg.serviceContent||'',
-        amount: pkg.amount!=null ? String(pkg.amount) : '',
-        paid: !!pkg.paid
-      };
-    } else {
-      diaryState.packageDraft = { totalCount:'', usedCount:'', serviceContent:'', amount:'', paid:false };
-    }
-    render();
-  });
-  const depPkgCancelBtn = document.getElementById('depPackageCancelBtn');
-  if(depPkgCancelBtn) depPkgCancelBtn.addEventListener('click', ()=>{ diaryState.packageOpen = false; render(); });
-  const depPkgDisableBtn = document.getElementById('depPackageDisableBtn');
-  if(depPkgDisableBtn) depPkgDisableBtn.addEventListener('click', async ()=>{
-    if(!GOOGLE_SCRIPT_URL) return;
-    depPkgDisableBtn.disabled = true; depPkgDisableBtn.textContent = '停用中...';
-    try{
-      const res = await fetch(GOOGLE_SCRIPT_URL, {
-        method:'POST', headers:{ 'Content-Type':'text/plain;charset=utf-8' },
-        body: JSON.stringify({ action:'disablePetPackage', adminPassword: adminAuth.password, customerCode: diaryState.customer.customerCode, petId: diaryState.editingPetId })
-      });
-      const result = await res.json();
-      if(!result.success) throw new Error(result.error || '停用失敗');
-      diaryState.customer.pets = result.pets;
-      render();
-    }catch(err){
-      depPkgDisableBtn.disabled = false; depPkgDisableBtn.textContent = '停用包月';
-      console.error('停用包月失敗：', err);
-    }
-  });
-  const depPkgTogglePaidBtn = document.getElementById('depPackageTogglePaidBtn');
-  if(depPkgTogglePaidBtn) depPkgTogglePaidBtn.addEventListener('click', async ()=>{
-    if(!GOOGLE_SCRIPT_URL) return;
-    const curPet2 = (diaryState.customer.pets||[]).find(p=>p.id===diaryState.editingPetId);
-    const curPkg2 = curPet2 ? curPet2.package : null;
-    if(!curPkg2) return;
-    const nextPaid = !curPkg2.paid;
-    depPkgTogglePaidBtn.disabled = true; depPkgTogglePaidBtn.textContent = '更新中...';
-    try{
-      const res = await fetch(GOOGLE_SCRIPT_URL, {
-        method:'POST', headers:{ 'Content-Type':'text/plain;charset=utf-8' },
-        body: JSON.stringify({ action:'togglePetPackagePaid', adminPassword: adminAuth.password, customerCode: diaryState.customer.customerCode, petId: diaryState.editingPetId, paid: nextPaid })
-      });
-      const result = await res.json();
-      if(!result.success) throw new Error(result.error || '更新失敗');
-      diaryState.customer.pets = result.pets;
-      render();
-    }catch(err){
-      depPkgTogglePaidBtn.disabled = false; depPkgTogglePaidBtn.textContent = '標記為' + (curPkg2.paid?'未付款':'已付款');
-      console.error('更新付款狀態失敗：', err);
-    }
-  });
-  const depPkgSaveBtn = document.getElementById('depPackageSaveBtn');
-  if(depPkgSaveBtn){
-    depPkgSaveBtn.addEventListener('click', async ()=>{
-      const d = diaryState.packageDraft;
-      d.totalCount = document.getElementById('dep-pkg-count').value.trim();
-      d.usedCount = document.getElementById('dep-pkg-used').value.trim();
-      d.serviceContent = document.getElementById('dep-pkg-content').value.trim();
-      d.amount = document.getElementById('dep-pkg-amount').value.trim();
-      d.paid = document.getElementById('dep-pkg-paid').checked;
-      const errEl = document.getElementById('dep-pkg-err');
-      if(!d.totalCount || Number(d.totalCount) < 1){ errEl.textContent='請填寫總次數（至少 1 次）。'; errEl.style.display='block'; return; }
-      if(d.usedCount && Number(d.usedCount) > Number(d.totalCount)){ errEl.textContent='已使用次數不能超過總次數。'; errEl.style.display='block'; return; }
-      if(!GOOGLE_SCRIPT_URL){ errEl.textContent='尚未連結試算表，無法設定。'; errEl.style.display='block'; return; }
-      errEl.style.display='none';
-      depPkgSaveBtn.disabled = true; depPkgSaveBtn.textContent = '儲存中...';
-      try{
-        const res = await fetch(GOOGLE_SCRIPT_URL, {
-          method:'POST', headers:{ 'Content-Type':'text/plain;charset=utf-8' },
-          body: JSON.stringify({ action:'setPetPackage', adminPassword: adminAuth.password, customerCode: diaryState.customer.customerCode, petId: diaryState.editingPetId, totalCount: d.totalCount, usedCount: d.usedCount, serviceContent: d.serviceContent, amount: d.amount, paid: d.paid })
-        });
-        const result = await res.json();
-        if(!result.success) throw new Error(result.error || '設定失敗');
-        diaryState.customer.pets = result.pets;
-        diaryState.packageOpen = false;
-        render();
-      }catch(err){
-        depPkgSaveBtn.disabled = false; depPkgSaveBtn.textContent = '儲存包月設定';
-        errEl.textContent = '設定失敗，請確認網路連線後再試一次。';
-        errEl.style.display = 'block';
-        console.error('設定包月失敗：', err);
-      }
-    });
-  }
-  const dnpSpeciesRow = document.getElementById('dnp-species-row');
-  if(dnpSpeciesRow) dnpSpeciesRow.addEventListener('click', e=>{
-    const pill = e.target.closest('.choice-pill'); if(!pill) return;
-    diaryState.newPetDraft.species = (diaryState.newPetDraft.species===pill.dataset.a) ? '' : pill.dataset.a;
-    if(diaryState.newPetDraft.species!=='dog') diaryState.newPetDraft.hairLength = '';
-    render();
-  });
-  const dnpHairRow = document.getElementById('dnp-hair-row');
-  if(dnpHairRow) dnpHairRow.addEventListener('click', e=>{
-    const pill = e.target.closest('.choice-pill'); if(!pill) return;
-    diaryState.newPetDraft.hairLength = (diaryState.newPetDraft.hairLength===pill.dataset.h) ? '' : pill.dataset.h;
-    render();
-  });
-  const dnpBtn = document.getElementById('dnpSubmitBtn');
-  if(dnpBtn){
-    dnpBtn.addEventListener('click', async ()=>{
-      const p = diaryState.newPetDraft;
-      p.name = document.getElementById('dnp-name').value.trim();
-      p.breed = document.getElementById('dnp-breed').value.trim();
-      p.age = document.getElementById('dnp-age').value.trim();
-      p.weight = document.getElementById('dnp-weight').value.trim();
-      p.personality = document.getElementById('dnp-personality').value.trim();
-      p.health = document.getElementById('dnp-health').value.trim();
-      const errEl = document.getElementById('dnp-err');
-      if(!p.name || !p.breed){ errEl.textContent='請填寫寵物名稱與品種。'; errEl.style.display='block'; return; }
-      if(!GOOGLE_SCRIPT_URL){ errEl.textContent='尚未連結試算表，無法新增。'; errEl.style.display='block'; return; }
-      errEl.style.display='none';
-      dnpBtn.disabled = true; dnpBtn.textContent = '新增中...';
-      try{
-        const res = await fetch(GOOGLE_SCRIPT_URL, {
-          method:'POST', headers:{ 'Content-Type':'text/plain;charset=utf-8' },
-          body: JSON.stringify({ action:'addPet', adminPassword: adminAuth.password, customerCode: diaryState.customer.customerCode, petName:p.name, petBreed:p.breed, petSpecies:p.species||'', petHairLength:p.hairLength||'', petAge:p.age, petWeight:p.weight, petPersonality:p.personality, petHealth:p.health })
-        });
-        const result = await res.json();
-        if(!result.success) throw new Error(result.error || '新增失敗');
-        diaryState.customer.pets = result.pets;
-        diaryState.addPetOpen = false;
-        diaryState.newPetDraft = { name:'',breed:'',age:'',weight:'',personality:'',health:'',species:'',hairLength:'' };
-        render();
-      }catch(err){
-        dnpBtn.disabled = false; dnpBtn.textContent = '新增這隻寵物';
-        errEl.textContent = '新增失敗，請確認網路連線後再試一次。';
-        errEl.style.display = 'block';
-        console.error('新增寵物失敗：', err);
-      }
-    });
-  }
-  const bkToggleBtn = document.getElementById('diaryBookingsToggleBtn');
-  if(bkToggleBtn) bkToggleBtn.addEventListener('click', ()=>{
-    diaryState.bookingsOpen = !diaryState.bookingsOpen;
-    diaryState.editingBookingCode = null;
-    render();
-  });
-  document.querySelectorAll('.bk-edit-open').forEach(btn=>{
-    btn.addEventListener('click', ()=>{
-      const code = btn.dataset.bookingCode;
-      const b = diaryState.bookings.find(x=>String(x.confirmCode)===code);
-      if(!b) return;
-      diaryState.editingBookingCode = code;
-      diaryState.bookingEditDraft = {
-        date: b.date, time: b.time, serviceLabel: b.serviceLabel,
-        durationMinutes: String(b.durationMinutes||''), petId: b.petId || (diaryState.customer.pets[0] ? diaryState.customer.pets[0].id : ''),
-        sessionNumber: b.manualSessionNumber ? String(b.manualSessionNumber) : '', autoSessionNumber: b.autoSessionNumber || null,
-        packagePaid: !!b.ownPaid
-      };
-      render();
-    });
-  });
-  document.querySelectorAll('.bk-edit-cancel').forEach(btn=>{
-    btn.addEventListener('click', ()=>{ diaryState.editingBookingCode = null; render(); });
-  });
-  document.querySelectorAll('.bk-edit-save').forEach(btn=>{
-    btn.addEventListener('click', async ()=>{
-      const block = btn.closest('[data-booking-code]');
-      const code = block.dataset.bookingCode;
-      const d = diaryState.bookingEditDraft;
-      d.petId = block.querySelector('.bk-edit-pet').value;
-      d.date = block.querySelector('.bk-edit-date').value;
-      d.time = block.querySelector('.bk-edit-time').value;
-      d.durationMinutes = block.querySelector('.bk-edit-duration').value.trim();
-      d.serviceLabel = block.querySelector('.bk-edit-service').value.trim();
-      d.sessionNumber = block.querySelector('.bk-edit-session').value.trim();
-      d.packagePaid = block.querySelector('.bk-edit-paid').checked;
-      const errEl = block.querySelector('.bk-edit-err');
-      if(!d.date || !d.time || !d.durationMinutes || Number(d.durationMinutes) < 1 || !d.serviceLabel){
-        errEl.textContent = '請完整填寫日期、開始時間、所需分鐘與服務項目。'; errEl.style.display = 'block'; return;
-      }
-      if(!GOOGLE_SCRIPT_URL){ errEl.textContent='尚未連結試算表，無法修改。'; errEl.style.display='block'; return; }
-      errEl.style.display = 'none';
-      const saveBtn = block.querySelector('.bk-edit-save');
-      saveBtn.disabled = true; saveBtn.textContent = '儲存中...';
-      const pet = diaryState.customer.pets.find(p=>p.id===d.petId);
-      try{
-        const res = await fetch(GOOGLE_SCRIPT_URL, {
-          method:'POST', headers:{ 'Content-Type':'text/plain;charset=utf-8' },
-          body: JSON.stringify({
-            action:'updateBookingAdmin', adminPassword: adminAuth.password,
-            customerCode: diaryState.customer.customerCode, confirmCode: code,
-            date: d.date, time: d.time, durationMinutes: d.durationMinutes,
-            serviceLabel: d.serviceLabel, petId: d.petId, petName: pet ? pet.name : undefined,
-            sessionNumber: d.sessionNumber, packagePaid: d.packagePaid
-          })
-        });
-        const result = await res.json();
-        if(!result.success) throw new Error(result.error || '修改失敗');
-        diaryState.editingBookingCode = null;
-        await loadCustomerBookings();
-        render();
-      }catch(err){
-        saveBtn.disabled = false; saveBtn.textContent = '儲存修改';
-        errEl.textContent = err.message || '修改失敗，請確認網路連線後再試一次。';
-        errEl.style.display = 'block';
-        console.error('修改預約失敗：', err);
-      }
-    });
-  });
 }
 
 /* ================= 新增客人 ================= */
 function tplNewCustomer(){
   const d = newCustomerState.data;
-  const petBlocks = newCustomerState.pets.map((p,i)=>`
-    <div class="slot-title" style="margin-top:18px;">${newCustomerState.pets.length>1 ? `寵物 #${i+1}` : '寵物'}${newCustomerState.pets.length>1?` <button type="button" class="link-btn" data-remove-nc-pet="${i}" style="float:right;padding:0;">移除這隻</button>`:''}</div>
-    <div class="field"><label>寵物名稱</label><input type="text" class="nc-petname" data-i="${i}" value="${esc(p.name)}"></div>
-    <div class="field"><label>寵物品種</label><input type="text" class="nc-petbreed" data-i="${i}" value="${esc(p.breed)}"></div>
-    <div class="field">
-      <label>寵物類別 <span class="hint">(選填，設定好之後預約就不用再選)</span></label>
-      <div class="choice-row nc-species-row" data-i="${i}">
-        <div class="choice-pill ${p.species==='cat'?'active':''}" data-a="cat">貓咪</div>
-        <div class="choice-pill ${p.species==='dog'?'active':''}" data-a="dog">狗狗</div>
-      </div>
-    </div>
-    ${p.species==='dog' ? `
-    <div class="field">
-      <label>毛長類型 <span class="hint">(選填，設定好之後預約就不用再選)</span></label>
-      <div class="choice-row nc-hair-row" data-i="${i}">
-        <div class="choice-pill ${p.hairLength==='long'?'active':''}" data-h="long">毛量濃密</div>
-        <div class="choice-pill ${p.hairLength==='short'?'active':''}" data-h="short">毛量正常</div>
-      </div>
-    </div>` : ''}
-    <div class="field"><label>年齡</label><input type="text" class="nc-petage" data-i="${i}" value="${esc(p.age)}"></div>
-    <div class="field"><label>體重</label><input type="text" class="nc-petweight" data-i="${i}" value="${esc(p.weight)}"></div>
-    <div class="field"><label>寵物個性</label><textarea class="nc-personality" data-i="${i}">${esc(p.personality)}</textarea></div>
-    <div class="field"><label>健康狀況</label><textarea class="nc-health" data-i="${i}">${esc(p.health)}</textarea></div>
-  `).join('');
   return `
     <h2 class="card-title">新增客人資料</h2>
-    <p class="card-desc">直接在後台幫客人建檔，系統會自動產生一組專屬代碼；下次客人自己預約時輸入這組代碼，就能快速帶入資料。以下欄位皆為選填，填多少算多少。客人有不只一隻寵物的話，可以一次新增好幾隻。</p>
+    <p class="card-desc">直接在後台幫客人建檔，系統會自動產生一組專屬代碼；下次客人自己預約時輸入這組代碼，就能快速帶入資料。以下欄位皆為選填，填多少算多少。</p>
     <div class="field"><label>飼主姓名</label><input type="text" id="nc-name" value="${esc(d.ownerName)}"></div>
     <div class="field"><label>電話</label><input type="tel" id="nc-phone" value="${esc(d.phone)}"></div>
     <div class="field"><label>LINE ID</label><input type="text" id="nc-line" value="${esc(d.lineId)}"></div>
@@ -1007,8 +451,12 @@ function tplNewCustomer(){
         <div class="choice-pill ${d.contactPref==='IG'?'active':''}" data-c="IG">IG</div>
       </div>
     </div>
-    ${petBlocks}
-    <button type="button" class="btn btn-ghost" id="ncAddPet" style="margin-bottom:18px;">＋ 新增另一隻寵物</button>
+    <div class="field"><label>寵物名稱</label><input type="text" id="nc-petname" value="${esc(d.petName)}"></div>
+    <div class="field"><label>寵物品種</label><input type="text" id="nc-petbreed" value="${esc(d.petBreed)}"></div>
+    <div class="field"><label>年齡</label><input type="text" id="nc-petage" value="${esc(d.petAge)}"></div>
+    <div class="field"><label>體重</label><input type="text" id="nc-petweight" value="${esc(d.petWeight)}"></div>
+    <div class="field"><label>寵物個性</label><textarea id="nc-personality">${esc(d.petPersonality)}</textarea></div>
+    <div class="field"><label>健康狀況</label><textarea id="nc-health">${esc(d.petHealth)}</textarea></div>
     <div class="field"><label>備註</label><textarea id="nc-remarks" placeholder="其他想記錄的事項">${esc(d.remarks)}</textarea></div>
     <div class="err" id="nc-err" style="display:${newCustomerState.error?'block':'none'};">${newCustomerState.error||''}</div>
     <div class="actions"><button class="btn btn-primary" id="ncSubmitBtn" style="flex:1;">新增客人資料</button></div>
@@ -1021,41 +469,15 @@ function tplNewCustomer(){
     ` : ''}
   `;
 }
-// 把畫面上目前輸入的值先讀回 state，再重新渲染；不然點下面這些按鈕（聯繫方式偏好、寵物類別、新增/移除寵物）
-// 觸發的 render() 會直接用舊的 state 蓋掉整個表單，把還沒送出的欄位內容清空
-function syncNewCustomerFormFromDOM(){
-  const d = newCustomerState.data;
-  const nameEl = document.getElementById('nc-name');
-  if(!nameEl) return; // 表單還沒渲染出來就不用同步
-  d.ownerName = nameEl.value;
-  d.phone = document.getElementById('nc-phone').value;
-  d.lineId = document.getElementById('nc-line').value;
-  d.address = document.getElementById('nc-address').value;
-  d.remarks = document.getElementById('nc-remarks').value;
-  newCustomerState.pets.forEach((p,i)=>{
-    const nameField = document.querySelector(`.nc-petname[data-i="${i}"]`);
-    if(!nameField) return;
-    p.name = nameField.value;
-    p.breed = document.querySelector(`.nc-petbreed[data-i="${i}"]`).value;
-    p.age = document.querySelector(`.nc-petage[data-i="${i}"]`).value;
-    p.weight = document.querySelector(`.nc-petweight[data-i="${i}"]`).value;
-    p.personality = document.querySelector(`.nc-personality[data-i="${i}"]`).value;
-    p.health = document.querySelector(`.nc-health[data-i="${i}"]`).value;
-  });
-}
 function bindNewCustomer(){
   const goBookingBtn = document.getElementById('ncGoBooking');
   if(goBookingBtn){
     goBookingBtn.addEventListener('click', ()=>{
       newBookingState.customer = newCustomerState.lastCreated;
       newBookingState.results = []; newBookingState.value = ''; newBookingState.error = '';
-      const pets = (newCustomerState.lastCreated && newCustomerState.lastCreated.pets) || [];
-      newBookingState.selectedPets = pets.length===1 ? [pets[0]] : [];
-      newBookingState.petServices = {};
-      newBookingState.addPetOpen = false;
-      newBookingState.stage = 'pets';
-      newBookingState.service = { category:'', duration:0, label:'' };
-      newBookingState.selectedDates = []; newBookingState.timesByDate = {}; newBookingState.travelByDate = {}; newBookingState.customTimeByDate = {}; newBookingState.hideAreaHint = false;
+      newBookingState.service = { category:'', animalType:'', hairLength:'', multiplier:1, duration:0, label:'', customLabel:'', customDuration:60 };
+      newBookingState.date = null; newBookingState.time = null; newBookingState.customTime = false; newBookingState.hideAreaHint = false;
+      nbTravelState.loaded = false; nbTravelState.blockedRanges = []; nbTravelState.forDate = null;
       newCustomerState.resultCode = null; newCustomerState.lastCreated = null;
       pageState.view = 'newBooking';
       render();
@@ -1064,40 +486,8 @@ function bindNewCustomer(){
   document.getElementById('nc-contact-pref').addEventListener('click', e=>{
     const p = e.target.closest('.choice-pill'); if(!p) return;
     const val = p.dataset.c;
-    syncNewCustomerFormFromDOM();
     newCustomerState.data.contactPref = (newCustomerState.data.contactPref===val) ? '' : val;
     render();
-  });
-  document.querySelectorAll('[data-remove-nc-pet]').forEach(btn=>{
-    btn.addEventListener('click', ()=>{
-      syncNewCustomerFormFromDOM();
-      newCustomerState.pets.splice(Number(btn.dataset.removeNcPet), 1);
-      render();
-    });
-  });
-  document.getElementById('ncAddPet').addEventListener('click', ()=>{
-    syncNewCustomerFormFromDOM();
-    newCustomerState.pets.push({ name:'',breed:'',age:'',weight:'',personality:'',health:'',species:'',hairLength:'' });
-    render();
-  });
-  document.querySelectorAll('.nc-species-row').forEach(row=>{
-    row.addEventListener('click', e=>{
-      const pill = e.target.closest('.choice-pill'); if(!pill) return;
-      const i = Number(row.dataset.i);
-      syncNewCustomerFormFromDOM();
-      newCustomerState.pets[i].species = (newCustomerState.pets[i].species===pill.dataset.a) ? '' : pill.dataset.a;
-      if(newCustomerState.pets[i].species!=='dog') newCustomerState.pets[i].hairLength = '';
-      render();
-    });
-  });
-  document.querySelectorAll('.nc-hair-row').forEach(row=>{
-    row.addEventListener('click', e=>{
-      const pill = e.target.closest('.choice-pill'); if(!pill) return;
-      const i = Number(row.dataset.i);
-      syncNewCustomerFormFromDOM();
-      newCustomerState.pets[i].hairLength = (newCustomerState.pets[i].hairLength===pill.dataset.h) ? '' : pill.dataset.h;
-      render();
-    });
   });
   document.getElementById('ncSubmitBtn').addEventListener('click', async ()=>{
     const d = newCustomerState.data;
@@ -1105,16 +495,14 @@ function bindNewCustomer(){
     d.phone = document.getElementById('nc-phone').value.trim();
     d.lineId = document.getElementById('nc-line').value.trim();
     d.address = document.getElementById('nc-address').value.trim();
+    d.petName = document.getElementById('nc-petname').value.trim();
+    d.petBreed = document.getElementById('nc-petbreed').value.trim();
+    d.petAge = document.getElementById('nc-petage').value.trim();
+    d.petWeight = document.getElementById('nc-petweight').value.trim();
+    d.petPersonality = document.getElementById('nc-personality').value.trim();
+    d.petHealth = document.getElementById('nc-health').value.trim();
     d.remarks = document.getElementById('nc-remarks').value.trim();
-    newCustomerState.pets.forEach((p,i)=>{
-      p.name = document.querySelector(`.nc-petname[data-i="${i}"]`).value.trim();
-      p.breed = document.querySelector(`.nc-petbreed[data-i="${i}"]`).value.trim();
-      p.age = document.querySelector(`.nc-petage[data-i="${i}"]`).value.trim();
-      p.weight = document.querySelector(`.nc-petweight[data-i="${i}"]`).value.trim();
-      p.personality = document.querySelector(`.nc-personality[data-i="${i}"]`).value.trim();
-      p.health = document.querySelector(`.nc-health[data-i="${i}"]`).value.trim();
-    });
-    const hasAny = Object.values(d).some(v => v) || newCustomerState.pets.some(p => Object.values(p).some(v=>v));
+    const hasAny = Object.values(d).some(v => v);
     if(!hasAny){
       newCustomerState.error = '請至少填寫一項資料。';
       render(); return;
@@ -1123,27 +511,20 @@ function bindNewCustomer(){
     newCustomerState.error = '';
     const btn = document.getElementById('ncSubmitBtn');
     btn.disabled = true; btn.textContent = '新增中...';
-    // 只把「有填任何內容」的寵物送出去，避免一堆全空的寵物區塊也被存進去
-    const petsToSend = newCustomerState.pets.filter(p => Object.values(p).some(v=>v));
     try{
       const res = await fetch(GOOGLE_SCRIPT_URL, {
         method:'POST', headers:{ 'Content-Type':'text/plain;charset=utf-8' },
-        body: JSON.stringify({
-          action:'addCustomer', ownerName:d.ownerName, phone:d.phone, lineId:d.lineId, address:d.address,
-          remarks:d.remarks, contactPref:d.contactPref,
-          pets: petsToSend.map(p=>({ petName:p.name, petBreed:p.breed, petSpecies:p.species||'', petHairLength:p.hairLength||'', petAge:p.age, petWeight:p.weight, petPersonality:p.personality, petHealth:p.health }))
-        })
+        body: JSON.stringify(Object.assign({ action:'addCustomer' }, d))
       });
       const result = await res.json();
       if(!result.success) throw new Error(result.error || '新增失敗');
       newCustomerState.resultCode = result.customerCode;
-      newCustomerState.resultPets = result.pets || [];
       newCustomerState.lastCreated = {
         ownerName: d.ownerName, phone: d.phone, lineId: d.lineId, address: d.address,
-        customerCode: result.customerCode, pets: result.pets || []
+        petName: d.petName, petBreed: d.petBreed, petAge: d.petAge, petWeight: d.petWeight,
+        petPersonality: d.petPersonality, petHealth: d.petHealth, customerCode: result.customerCode
       };
-      newCustomerState.data = { ownerName:'',phone:'',lineId:'',address:'',remarks:'',contactPref:'' };
-      newCustomerState.pets = [{ name:'',breed:'',age:'',weight:'',personality:'',health:'',species:'',hairLength:'' }];
+      newCustomerState.data = { ownerName:'',phone:'',lineId:'',address:'',petName:'',petBreed:'',petAge:'',petWeight:'',petPersonality:'',petHealth:'',remarks:'',contactPref:'' };
       render();
     }catch(err){
       btn.disabled = false; btn.textContent = '新增客人資料';
@@ -1155,8 +536,15 @@ function bindNewCustomer(){
 }
 
 /* ================= 新增預約（後台手動建立） ================= */
-function computeServiceDuration(s){
+function computeDurationNB(){
+  const s = newBookingState.service;
   if(!s.category) return null;
+  if(s.category==='other'){
+    const mins = parseInt(s.customDuration, 10);
+    const lbl = (s.customLabel||'').trim();
+    if(!mins || mins<=0 || !lbl) return null;
+    return { duration: mins, label: lbl };
+  }
   if(FLAT_SERVICES.includes(s.category)){
     const mult = s.multiplier || 1;
     return { duration: SERVICE_DEF[s.category].flatUnit * mult, label: SERVICE_DEF[s.category].name };
@@ -1166,40 +554,15 @@ function computeServiceDuration(s){
   if(s.animalType==='dog'){ if(!s.hairLength) return null; return s.hairLength==='long' ? SERVICE_DEF[s.category].rules.dogLong : SERVICE_DEF[s.category].rules.dogShort; }
   return null;
 }
-function ensurePetService(petId, defaultSpecies, defaultHairLength){
-  if(!newBookingState.petServices[petId]) newBookingState.petServices[petId] = { category:'', animalType: defaultSpecies||'', hairLength: defaultHairLength||'', multiplier:1, duration:0, label:'' };
-  return newBookingState.petServices[petId];
-}
-function updatePetServiceDuration(petId){
-  const s = ensurePetService(petId);
-  const r = computeServiceDuration(s);
+function updateNBDuration(){
+  const r = computeDurationNB();
+  const cat = newBookingState.service.category;
   if(r){
-    s.duration = r.duration;
-    s.label = FLAT_SERVICES.includes(s.category) ? r.label : (r.label + '（' + SERVICE_DEF[s.category].name + '）');
-  } else { s.duration = 0; s.label = ''; }
-  updateNBAggregateService();
-}
-// 每隻選定的寵物都要設好服務、算出時長之後，才算「全部準備好」
-function nbAllPetsReady(){
-  const nb = newBookingState;
-  return nb.selectedPets.length>0 && nb.selectedPets.every(p => nb.petServices[p.id] && nb.petServices[p.id].duration>0);
-}
-// 把所有選定寵物的服務時長加總起來，日曆／時段挑選的邏輯直接沿用單一服務時的寫法，
-// 只是這裡的「服務」其實是好幾隻寵物依序接續的加總時間
-function updateNBAggregateService(){
-  const nb = newBookingState;
-  if(!nbAllPetsReady()){ nb.service = { category:'', duration:0, label:'' }; return; }
-  let total = 0; const parts = [];
-  nb.selectedPets.forEach(p=>{
-    const s = nb.petServices[p.id];
-    total += s.duration;
-    parts.push(`${p.name}：${s.label}`);
-  });
-  nb.service = { category:'__multi__', duration: total, label: parts.join('、') };
-}
-function computeDurationNB(){
-  const s = newBookingState.service;
-  return s.duration ? { duration: s.duration, label: s.label } : null;
+    newBookingState.service.duration = r.duration;
+    newBookingState.service.label = (FLAT_SERVICES.includes(cat) || cat==='other')
+      ? r.label
+      : (r.label + '（' + SERVICE_DEF[cat].name + '）');
+  } else { newBookingState.service.duration = 0; newBookingState.service.label = ''; }
 }
 function tplNewBooking(){
   const nb = newBookingState;
@@ -1233,96 +596,10 @@ function tplNewBooking(){
     `;
   }
 
-  const c = nb.customer;
-  if(nb.stage==='pets'){
-    const pets = c.pets || [];
-    const petBlocks = nb.selectedPets.map(p=>{
-      const s = ensurePetService(p.id, p.species, p.hairLength);
-      const isFlatService = FLAT_SERVICES.includes(s.category);
-      const knownSpecies = !!p.species;
-      const knownHairLength = !!p.hairLength;
-      const showDogHair = !isFlatService && s.animalType==='dog' && !knownHairLength;
-      return `
-        <div class="slot-title" style="margin-top:20px;">${esc(p.name)}（${esc(p.breed)}）要做什麼服務？</div>
-        <div class="svc-grid nb-pet-svc-grid" data-pet-id="${esc(p.id)}">
-          <div class="svc-card ${s.category==='grooming'?'active':''}" data-svc="grooming"><div class="svc-name">美容</div><div class="svc-sub">貓／狗均約 2 小時</div></div>
-          <div class="svc-card ${s.category==='bath'?'active':''}" data-svc="bath"><div class="svc-name">洗澡</div><div class="svc-sub">依貓／狗與毛長，時間不同</div></div>
-          <div class="svc-card ${s.category==='walk'?'active':''}" data-svc="walk"><div class="svc-name">散步</div><div class="svc-sub">基本30分鐘，可加倍</div></div>
-          <div class="svc-card ${s.category==='homecare'?'active':''}" data-svc="homecare"><div class="svc-name">到府照顧</div><div class="svc-sub">基本30分鐘，可加倍</div></div>
-        </div>
-        ${isFlatService ? `
-        <div class="field">
-          <label>服務時間</label>
-          <div style="display:flex;align-items:center;gap:10px;">
-            <div style="flex:1;padding:11px 13px;border-radius:11px;border:1.5px solid var(--line);background:var(--cream);font-size:14.5px;color:var(--ink-soft);">30 分鐘（固定）</div>
-            <span style="font-weight:700;color:var(--ink-soft);">×</span>
-            <select class="nb-pet-multiplier" data-pet-id="${esc(p.id)}" style="flex:0 0 90px;">
-              <option value="1" ${(s.multiplier||1)===1?'selected':''}>1</option>
-              <option value="2" ${s.multiplier===2?'selected':''}>2</option>
-            </select>
-          </div>
-        </div>
-        ` : (s.category ? `
-        ${knownSpecies ? '' : `
-        <div class="field">
-          <label>寵物類別</label>
-          <div class="choice-row nb-pet-animal-row" data-pet-id="${esc(p.id)}">
-            <div class="choice-pill ${s.animalType==='cat'?'active':''}" data-a="cat">貓咪</div>
-            <div class="choice-pill ${s.animalType==='dog'?'active':''}" data-a="dog">狗狗</div>
-          </div>
-        </div>`}
-        ${showDogHair ? `
-        <div class="field">
-          <label>毛長類型</label>
-          <div class="choice-row nb-pet-hair-row" data-pet-id="${esc(p.id)}">
-            <div class="choice-pill ${s.hairLength==='long'?'active':''}" data-h="long">毛量濃密</div>
-            <div class="choice-pill ${s.hairLength==='short'?'active':''}" data-h="short">毛量正常</div>
-          </div>
-        </div>` : ''}
-        ` : '')}
-        ${s.duration ? `<div class="info-line" style="padding:6px 2px;"><span class="k">所需時間</span><span class="v">${s.duration} 分鐘</span></div>` : ''}
-      `;
-    }).join('');
-    return `
-      <h2 class="card-title">選擇這次要預約的寵物與服務</h2>
-      <p class="card-desc">飼主：${esc(c.ownerName)}｜${esc(c.phone)}。可以勾選不只一隻，勾選後下面會馬上出現該寵物的服務選項；等一下只要選一個開始時間，就會照勾選順序依序往後排。</p>
-      <div class="svc-grid" id="nb-pet-select-grid">
-        ${pets.map(p=>`<div class="svc-card ${nb.selectedPets.some(sp=>sp.id===p.id)?'active':''}" data-pet-id="${esc(p.id)}"><div class="svc-name">${esc(p.name)}</div><div class="svc-sub">${esc(p.breed||'')}</div></div>`).join('')}
-        <div class="svc-card ${nb.addPetOpen?'active':''}" id="nb-pet-add-card"><div class="svc-name">＋ 新增寵物</div></div>
-      </div>
-      ${nb.addPetOpen ? `
-      <div class="addon-panel" id="nb-add-pet-panel">
-        <div class="field"><label>寵物名稱</label><input type="text" id="nbnp-name" value="${esc(nb.newPetDraft.name)}"></div>
-        <div class="field"><label>寵物品種</label><input type="text" id="nbnp-breed" value="${esc(nb.newPetDraft.breed)}"></div>
-        <div class="field">
-          <label>寵物類別 <span class="hint">(選填，設定好下次就不用再選)</span></label>
-          <div class="choice-row" id="nbnp-species-row">
-            <div class="choice-pill ${nb.newPetDraft.species==='cat'?'active':''}" data-a="cat">貓咪</div>
-            <div class="choice-pill ${nb.newPetDraft.species==='dog'?'active':''}" data-a="dog">狗狗</div>
-          </div>
-        </div>
-        ${nb.newPetDraft.species==='dog' ? `
-        <div class="field">
-          <label>毛長類型 <span class="hint">(選填，設定好下次就不用再選)</span></label>
-          <div class="choice-row" id="nbnp-hair-row">
-            <div class="choice-pill ${nb.newPetDraft.hairLength==='long'?'active':''}" data-h="long">毛量濃密</div>
-            <div class="choice-pill ${nb.newPetDraft.hairLength==='short'?'active':''}" data-h="short">毛量正常</div>
-          </div>
-        </div>` : ''}
-        <div class="err" id="nbnp-err" style="display:none;"></div>
-        <div class="actions" style="margin-top:6px;"><button class="btn btn-primary" id="nbNpSubmitBtn" style="flex:1;">新增這隻寵物並勾選</button></div>
-      </div>` : ''}
-      ${petBlocks}
-      ${nbAllPetsReady() ? `<div class="info-card" style="margin-top:16px;"><h4>總共需要時間</h4><div class="info-line"><span class="k">加總</span><span class="v">${nb.service.duration} 分鐘</span></div></div>` : ''}
-      <div class="err" id="nb-pet-err" style="display:none;margin-top:10px;"></div>
-      <div class="actions" style="margin-top:14px;">
-        <button class="btn btn-ghost" id="nbChangeCustomer" style="flex:0 0 100px;">換一位客人</button>
-        <button class="btn btn-primary" id="nbPetsNextBtn" style="flex:1;">下一步：選時間</button>
-      </div>
-    `;
-  }
-
-  const s = nb.service;
+  const c = nb.customer, s = nb.service;
+  const isFlatService = FLAT_SERVICES.includes(s.category);
+  const isOtherService = s.category === 'other';
+  const showDogHair = !isFlatService && !isOtherService && s.animalType==='dog';
   const dur = computeDurationNB();
   const ready = !!dur;
   let calendarBlock = '';
@@ -1334,8 +611,17 @@ function tplNewBooking(){
         <button class="cal-nav" id="nb-cal-next">下個月 ›</button>
       </div>
       <div class="cal-grid" id="nb-cal-grid">${renderNBCalGrid()}</div>
-      <p class="card-desc" style="margin-top:10px;">可以點選不只一天，每個日期都要各自選一個開始時間。</p>
-      <div id="nb-date-list">${renderNBDateList()}</div>
+      <div class="toggle-row" style="margin-top:14px;">
+        <div>
+          <div class="label">自訂時間</div>
+          <div class="sub">不使用下方時段按鈕，直接手動輸入開始時間</div>
+        </div>
+        <label class="switch">
+          <input type="checkbox" id="nb-custom-time-toggle" ${nb.customTime?'checked':''}>
+          <span class="track"></span>
+        </label>
+      </div>
+      <div id="nb-slot-section">${nb.customTime ? renderNBCustomTimeSection() : renderNBSlotSection()}</div>
     `;
   }
   return `
@@ -1344,11 +630,58 @@ function tplNewBooking(){
       <h4>預約客人</h4>
       <div class="info-line"><span class="k">飼主</span><span class="v">${esc(c.ownerName)}</span></div>
       <div class="info-line"><span class="k">電話</span><span class="v">${esc(c.phone)}</span></div>
-      ${nb.selectedPets.map(p=>{ const ps = nb.petServices[p.id] || {}; return `<div class="info-line"><span class="k">${esc(p.name)}</span><span class="v">${esc(ps.label||'')}（${ps.duration||0}分鐘）</span></div>`; }).join('')}
-      <div class="info-line"><span class="k">總時長</span><span class="v" style="font-weight:700;">${s.duration} 分鐘</span></div>
+      <div class="info-line"><span class="k">寵物</span><span class="v">${esc(c.petName)}（${esc(c.petBreed)}）</span></div>
     </div>
-    <button class="btn btn-ghost" id="nbBackToServices" style="width:100%;margin-bottom:18px;">修改寵物／服務</button>
-    ${ready ? calendarBlock : `<div class="empty-note">請先回上一步把每隻寵物的服務設定好。</div>`}
+    <button class="btn btn-ghost" id="nbChangeCustomer" style="width:100%;margin-bottom:18px;">換一位客人</button>
+
+    <div class="svc-grid" id="nb-svc-grid">
+      <div class="svc-card ${s.category==='grooming'?'active':''}" data-svc="grooming"><div class="svc-name">美容</div><div class="svc-sub">貓／狗均約 2 小時</div></div>
+      <div class="svc-card ${s.category==='bath'?'active':''}" data-svc="bath"><div class="svc-name">洗澡</div><div class="svc-sub">依貓／狗與毛長，時間不同</div></div>
+      <div class="svc-card ${s.category==='walk'?'active':''}" data-svc="walk"><div class="svc-name">散步</div><div class="svc-sub">基本30分鐘，可加倍</div></div>
+      <div class="svc-card ${s.category==='homecare'?'active':''}" data-svc="homecare"><div class="svc-name">到府照顧</div><div class="svc-sub">基本30分鐘，可加倍</div></div>
+      <div class="svc-card ${s.category==='nail'?'active':''}" data-svc="nail"><div class="svc-name">剪指甲</div><div class="svc-sub">固定30分鐘</div></div>
+      <div class="svc-card ${s.category==='other'?'active':''}" data-svc="other"><div class="svc-name">其他</div><div class="svc-sub">自行填入服務項目</div></div>
+    </div>
+    ${isFlatService ? `
+    <div class="field">
+      <label>服務時間</label>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div style="flex:1;padding:11px 13px;border-radius:11px;border:1.5px solid var(--line);background:var(--cream);font-size:14.5px;color:var(--ink-soft);">30 分鐘（固定）</div>
+        <span style="font-weight:700;color:var(--ink-soft);">×</span>
+        <select id="nb-multiplier" style="flex:0 0 90px;">
+          <option value="1" ${(s.multiplier||1)===1?'selected':''}>1</option>
+          <option value="2" ${s.multiplier===2?'selected':''}>2</option>
+        </select>
+      </div>
+      <div class="info-line" style="padding-top:10px;"><span class="k">共需時間</span><span class="v">${30*(s.multiplier||1)} 分鐘${(s.multiplier||1)===2?'（1 小時）':''}</span></div>
+    </div>
+    ` : isOtherService ? `
+    <div class="field">
+      <label>服務名稱</label>
+      <input type="text" id="nb-other-label" placeholder="例如：染毛、SPA 護理" value="${esc(s.customLabel||'')}">
+    </div>
+    <div class="field">
+      <label>所需時間（分鐘）</label>
+      <input type="number" id="nb-other-duration" min="10" step="10" value="${s.customDuration||60}">
+    </div>
+    ` : `
+    <div class="field">
+      <label>寵物類別</label>
+      <div class="choice-row" id="nb-animal-row">
+        <div class="choice-pill ${s.animalType==='cat'?'active':''}" data-a="cat">貓咪</div>
+        <div class="choice-pill ${s.animalType==='dog'?'active':''}" data-a="dog">狗狗</div>
+      </div>
+    </div>
+    ${showDogHair ? `
+    <div class="field">
+      <label>毛長類型</label>
+      <div class="choice-row" id="nb-hair-row">
+        <div class="choice-pill ${s.hairLength==='long'?'active':''}" data-h="long">長毛</div>
+        <div class="choice-pill ${s.hairLength==='short'?'active':''}" data-h="short">短毛</div>
+      </div>
+    </div>` : ''}
+    `}
+    ${ready ? calendarBlock : `<div class="empty-note">請先選擇服務類型${(isFlatService||isOtherService)?'':'與寵物類型'}${isOtherService?'並填寫服務名稱與所需時間':''}，即可查看可預約時段。</div>`}
     ${ready ? `
     <div class="toggle-row">
       <div>
@@ -1362,7 +695,7 @@ function tplNewBooking(){
     </div>
     ` : ''}
     <div class="err" id="nb-err2" style="display:none;"></div>
-    <div class="actions"><button class="btn btn-primary" id="nbSubmitBtn" ${(nb.selectedDates.length===0 || nb.selectedDates.some(d=>!nb.timesByDate[d]))?'disabled':''} style="flex:1;">新增全部 ${nb.selectedDates.length * nb.selectedPets.length} 筆預約</button></div>
+    <div class="actions"><button class="btn btn-primary" id="nbSubmitBtn" ${(!nb.date||!nb.time)?'disabled':''} style="flex:1;">新增預約</button></div>
   `;
 }
 function renderNBCalGrid(){
@@ -1382,7 +715,7 @@ function renderNBCalGrid(){
     const taichung = adminConfig.taichungDates.has(dateStr);
     const disabled = past || closed;
     const isToday = fmtDate(dt) === fmtDate(today);
-    const isSelected = newBookingState.selectedDates.includes(dateStr);
+    const isSelected = newBookingState.date === dateStr;
     let cls = 'cal-cell';
     cls += disabled ? ' disabled' : ' avail';
     if(!disabled && extended) cls += ' extended';
@@ -1393,285 +726,205 @@ function renderNBCalGrid(){
   }
   return html;
 }
-function isSlotBlockedByTravelForNBDate(date, startMin, durationMin){
-  const info = newBookingState.travelByDate[date];
-  if(!info || !info.loaded) return false;
-  for(const range of info.blockedRanges){
-    if(startMin < range[1] && (startMin+durationMin) > range[0]) return true;
+const nbTravelState = { loaded:false, loading:false, blockedRanges:[], forDate:null, error:'' };
+function isSlotBlockedByTravelNB(startMin, durationMin){
+  const ranges = nbTravelState.blockedRanges || [];
+  for(const range of ranges){
+    const rs = range[0], re = range[1];
+    if(startMin < re && (startMin+durationMin) > rs) return true;
   }
   return false;
 }
-async function loadNBTravelForDate(date){
-  newBookingState.travelByDate[date] = { loaded:false, loading:true, blockedRanges:[], error:'' };
-  if(!GOOGLE_SCRIPT_URL || !newBookingState.customer){ newBookingState.travelByDate[date] = { loaded:true, loading:false, blockedRanges:[], error:'' }; return; }
+async function loadNBTravelBlockedSlots(date){
+  nbTravelState.loaded = false; nbTravelState.loading = true; nbTravelState.forDate = date; nbTravelState.error = '';
+  if(!GOOGLE_SCRIPT_URL || !newBookingState.customer){ nbTravelState.blockedRanges = []; nbTravelState.loaded = true; nbTravelState.loading = false; return; }
   try{
     const res = await fetch(GOOGLE_SCRIPT_URL + '?action=getTravelBlockedSlots&date=' + encodeURIComponent(date) + '&address=' + encodeURIComponent(newBookingState.customer.address));
     const data = await res.json();
-    newBookingState.travelByDate[date] = { loaded:true, loading:false, blockedRanges: (data.success && data.blockedRanges) ? data.blockedRanges : [], error:'' };
+    nbTravelState.blockedRanges = (data.success && data.blockedRanges) ? data.blockedRanges : [];
   }catch(err){
-    newBookingState.travelByDate[date] = { loaded:true, loading:false, blockedRanges: [], error:'無法確認行程時間，暫時以一般時段顯示。' };
+    nbTravelState.blockedRanges = [];
+    nbTravelState.error = '無法確認行程時間，暫時以一般時段顯示。';
     console.error('讀取行程限制失敗：', err);
   }
+  nbTravelState.loaded = true; nbTravelState.loading = false;
 }
-function renderNBDateList(){
+function renderNBSlotSection(){
+  if(!newBookingState.date){ return `<div class="empty-note">請先選擇日期。</div>`; }
+  if(nbTravelState.forDate !== newBookingState.date || !nbTravelState.loaded){
+    return `<div class="empty-note">檢查行程時間中...</div>`;
+  }
+  const duration = newBookingState.service.duration || 120;
+  const end = getBusinessEnd(newBookingState.date);
+  const slots = [];
+  for(let start=BUSINESS_START; start+duration<=end; start+=30){
+    const taken = isSlotBlockedForBooking(newBookingState.date, start, duration) || isSlotBlockedByTravelNB(start, duration);
+    slots.push({ start, taken });
+  }
+  if(slots.length===0){ return `<div class="empty-note">此服務所需時間較長，當日時段不足，請選擇其他日期。</div>`; }
+  return `
+    <div class="slot-title">${newBookingState.date} 可預約時段</div>
+    ${nbTravelState.error ? `<div class="empty-note" style="margin-bottom:10px;">${nbTravelState.error}</div>` : ''}
+    <div class="admin-slot-grid" id="nb-slot-grid">
+      ${slots.map(s=>{
+        const val = fmtTime(s.start);
+        const isSel = newBookingState.time === val;
+        let cls = 'admin-slot';
+        if(s.taken) cls += ' blocked'; else if(isSel) cls += ' selected-slot';
+        return `<div class="${cls}" data-time="${s.taken?'':val}">${val}${s.taken?'（已被預約／行程排不過來）':''}</div>`;
+      }).join('')}
+    </div>
+  `;
+}
+function renderNBCustomTimeSection(){
+  if(!newBookingState.date){ return `<div class="empty-note">請先選擇日期。</div>`; }
+  const duration = newBookingState.service.duration || 120;
   const nb = newBookingState;
-  if(nb.selectedDates.length===0){ return `<div class="empty-note">請先在上方日曆點選想預約的日期（可點多個）。</div>`; }
-  const duration = nb.service.duration || 120;
-  return nb.selectedDates.map(date=>{
-    const info = nb.travelByDate[date];
-    const time = nb.timesByDate[date];
-    const isCustom = !!nb.customTimeByDate[date];
-    let bodyHtml;
-    if(!info || !info.loaded){
-      bodyHtml = `<div class="empty-note">檢查行程時間中...</div>`;
-    } else if(isCustom){
-      let warning = '';
-      if(time){
-        const startMin = toMin(time);
-        const conflict = isSlotBlockedForBooking(date, startMin, duration) || isSlotBlockedByTravelForNBDate(date, startMin, duration);
-        if(conflict){
-          warning = `<div class="empty-note" style="margin-top:10px;color:var(--danger);background:var(--danger-light);">⚠️ 這個時間跟公休／已有的預約／行程時間有衝突，仍可送出，但請確認托比排得過來。</div>`;
-        }
-      }
-      bodyHtml = `
-        ${info.error ? `<div class="empty-note" style="margin-bottom:8px;">${info.error}</div>` : ''}
-        <div class="field" style="margin-bottom:0;">
-          <input type="time" class="nb-manual-time" data-date="${date}" value="${time||''}">
-        </div>
-        ${time ? `<div class="info-line" style="padding-top:10px;"><span class="k">結束時間</span><span class="v">${fmtTime(toMin(time)+duration)}</span></div>` : ''}
-        ${warning}
-      `;
-    } else {
-      const end = getBusinessEnd(date);
-      const slots = [];
-      for(let start=BUSINESS_START; start+duration<=end; start+=30){
-        const taken = isSlotBlockedForBooking(date, start, duration) || isSlotBlockedByTravelForNBDate(date, start, duration);
-        slots.push({ start, taken });
-      }
-      bodyHtml = slots.length===0 ? `<div class="empty-note">此服務所需時間較長，當日時段不足，請移除此日期，或改用自訂時間。</div>` : `
-        ${info.error ? `<div class="empty-note" style="margin-bottom:8px;">${info.error}</div>` : ''}
-        <div class="admin-slot-grid">
-          ${slots.map(s=>{
-            const val = fmtTime(s.start);
-            const isSel = time===val;
-            let cls = 'admin-slot';
-            if(s.taken) cls += ' blocked'; else if(isSel) cls += ' selected-slot';
-            return `<div class="${cls}" data-date="${date}" data-time="${s.taken?'':val}">${val}</div>`;
-          }).join('')}
-        </div>
-      `;
+  let warning = '';
+  if(nb.time){
+    const startMin = toMin(nb.time);
+    const isLoaded = nbTravelState.forDate === nb.date && nbTravelState.loaded;
+    const conflict = isSlotBlockedForBooking(nb.date, startMin, duration) || (isLoaded && isSlotBlockedByTravelNB(startMin, duration));
+    if(conflict){
+      warning = `<div class="empty-note" style="margin-top:10px;color:var(--danger);background:var(--danger-light);">⚠️ 這個時間跟公休／已有的預約／行程時間有衝突，仍可送出，但請確認托比排得過來。</div>`;
     }
-    return `
-      <div class="review-block">
-        <h4 style="display:flex;justify-content:space-between;align-items:center;">
-          <span>${date}${time?`　已選 ${time}`:''}</span>
-          <button data-remove-nb-date="${date}" style="color:var(--danger);background:none;border:none;font-weight:700;cursor:pointer;font-size:12px;">移除</button>
-        </h4>
-        <div class="toggle-row" style="margin-bottom:10px;">
-          <div>
-            <div class="label">自訂時間</div>
-            <div class="sub">不使用下方時段按鈕，直接手動輸入開始時間</div>
-          </div>
-          <label class="switch">
-            <input type="checkbox" class="nb-custom-time-toggle" data-date="${date}" ${isCustom?'checked':''}>
-            <span class="track"></span>
-          </label>
-        </div>
-        ${bodyHtml}
-      </div>
-    `;
-  }).join('');
+  }
+  return `
+    <div class="slot-title">${newBookingState.date} 自訂開始時間</div>
+    <div class="field" style="margin-bottom:0;">
+      <input type="time" id="nb-manual-time" value="${nb.time||''}">
+    </div>
+    ${nb.time ? `<div class="info-line" style="padding-top:10px;"><span class="k">結束時間</span><span class="v">${fmtTime(toMin(nb.time)+duration)}</span></div>` : ''}
+    ${warning}
+  `;
 }
 function bindNewBooking(){
-  const nb = newBookingState;
-  if(!nb.customer){
-    document.getElementById('nb-field-select').addEventListener('change', e=>{ nb.field = e.target.value; render(); });
+  if(!newBookingState.customer){
+    document.getElementById('nb-field-select').addEventListener('change', e=>{ newBookingState.field = e.target.value; render(); });
     document.getElementById('nbSearchBtn').addEventListener('click', searchNBCustomer);
     document.getElementById('nb-search-value').addEventListener('keydown', e=>{ if(e.key==='Enter') searchNBCustomer(); });
     document.querySelectorAll('[data-pick]').forEach(el=>{
-      el.addEventListener('click', ()=>{ selectNBCustomer(nb.results[parseInt(el.dataset.pick,10)]); });
+      el.addEventListener('click', ()=>{ selectNBCustomer(newBookingState.results[parseInt(el.dataset.pick,10)]); });
     });
     return;
   }
-  if(nb.stage==='pets'){
-    document.getElementById('nbChangeCustomer').addEventListener('click', ()=>{
-      nb.customer = null; nb.results = []; nb.value = '';
-      nb.selectedPets = []; nb.petServices = {}; nb.addPetOpen = false; nb.stage = 'pets';
-      nb.selectedDates = []; nb.timesByDate = {}; nb.travelByDate = {}; nb.customTimeByDate = {};
+  document.getElementById('nbChangeCustomer').addEventListener('click', ()=>{
+    newBookingState.customer = null; newBookingState.results = []; newBookingState.value = '';
+    newBookingState.date = null; newBookingState.time = null; newBookingState.customTime = false; newBookingState.hideAreaHint = false;
+    newBookingState.service = { category:'', animalType:'', hairLength:'', multiplier:1, duration:0, label:'', customLabel:'', customDuration:60 };
+    nbTravelState.loaded = false; nbTravelState.blockedRanges = []; nbTravelState.forDate = null;
+    render();
+  });
+  document.getElementById('nb-svc-grid').addEventListener('click', e=>{
+    const c = e.target.closest('.svc-card'); if(!c) return;
+    if(c.dataset.svc === newBookingState.service.category) return;
+    newBookingState.service.category = c.dataset.svc;
+    newBookingState.service.animalType = ''; newBookingState.service.hairLength = ''; newBookingState.service.multiplier = 1;
+    newBookingState.service.customLabel = ''; newBookingState.service.customDuration = 60;
+    updateNBDuration();
+    newBookingState.date = null; newBookingState.time = null; newBookingState.customTime = false; newBookingState.hideAreaHint = false;
+    render();
+  });
+  const otherLabelInput = document.getElementById('nb-other-label');
+  if(otherLabelInput){
+    otherLabelInput.addEventListener('change', e=>{
+      newBookingState.service.customLabel = e.target.value;
+      updateNBDuration();
+      newBookingState.date = null; newBookingState.time = null; newBookingState.customTime = false; newBookingState.hideAreaHint = false;
       render();
     });
-    document.getElementById('nb-pet-select-grid').addEventListener('click', e=>{
-      const addCard = e.target.closest('#nb-pet-add-card');
-      if(addCard){ nb.addPetOpen = !nb.addPetOpen; render(); return; }
-      const card = e.target.closest('[data-pet-id]'); if(!card) return;
-      const pet = nb.customer.pets.find(p=>p.id===card.dataset.petId); if(!pet) return;
-      const idx = nb.selectedPets.findIndex(p=>p.id===pet.id);
-      if(idx>=0) nb.selectedPets.splice(idx,1); else nb.selectedPets.push(pet);
-      render();
-    });
-    if(nb.addPetOpen){
-      const speciesRow = document.getElementById('nbnp-species-row');
-      if(speciesRow) speciesRow.addEventListener('click', e=>{
-        const pill = e.target.closest('.choice-pill'); if(!pill) return;
-        nb.newPetDraft.species = (nb.newPetDraft.species===pill.dataset.a) ? '' : pill.dataset.a;
-        if(nb.newPetDraft.species!=='dog') nb.newPetDraft.hairLength = '';
-        render();
-      });
-      const hairRow = document.getElementById('nbnp-hair-row');
-      if(hairRow) hairRow.addEventListener('click', e=>{
-        const pill = e.target.closest('.choice-pill'); if(!pill) return;
-        nb.newPetDraft.hairLength = (nb.newPetDraft.hairLength===pill.dataset.h) ? '' : pill.dataset.h;
-        render();
-      });
-      document.getElementById('nbNpSubmitBtn').addEventListener('click', async ()=>{
-        const p = nb.newPetDraft;
-        p.name = document.getElementById('nbnp-name').value.trim();
-        p.breed = document.getElementById('nbnp-breed').value.trim();
-        const errEl = document.getElementById('nbnp-err');
-        if(!p.name || !p.breed){ errEl.textContent='請填寫寵物名稱與品種。'; errEl.style.display='block'; return; }
-        if(!GOOGLE_SCRIPT_URL){ errEl.textContent='尚未連結試算表，無法新增。'; errEl.style.display='block'; return; }
-        errEl.style.display='none';
-        const btn = document.getElementById('nbNpSubmitBtn');
-        btn.disabled = true; btn.textContent = '新增中...';
-        try{
-          const res = await fetch(GOOGLE_SCRIPT_URL, {
-            method:'POST', headers:{ 'Content-Type':'text/plain;charset=utf-8' },
-            body: JSON.stringify({ action:'addPet', customerCode: nb.customer.customerCode, petName:p.name, petBreed:p.breed, petSpecies:p.species||'', petHairLength:p.hairLength||'' })
-          });
-          const result = await res.json();
-          if(!result.success) throw new Error(result.error || '新增失敗');
-          nb.customer.pets.push(result.pet);
-          nb.selectedPets.push(result.pet);
-          nb.addPetOpen = false;
-          nb.newPetDraft = { name:'',breed:'',age:'',weight:'',personality:'',health:'',species:'',hairLength:'',photo:null };
-          render();
-        }catch(err){
-          btn.disabled = false; btn.textContent = '新增這隻寵物並勾選';
-          errEl.textContent = '新增失敗，請確認網路連線後再試一次。';
-          errEl.style.display = 'block';
-          console.error('新增寵物失敗：', err);
-        }
-      });
-    }
-    document.querySelectorAll('.nb-pet-svc-grid').forEach(grid=>{
-      grid.addEventListener('click', e=>{
-        const card = e.target.closest('.svc-card'); if(!card) return;
-        const petId = grid.dataset.petId;
-        const pet = nb.customer.pets.find(pp=>pp.id===petId);
-        const s = ensurePetService(petId, pet&&pet.species, pet&&pet.hairLength);
-        s.category = card.dataset.svc; s.animalType = (pet&&pet.species) || ''; s.hairLength = (pet&&pet.hairLength) || ''; s.multiplier=1;
-        updatePetServiceDuration(petId);
-        render();
-      });
-    });
-    document.querySelectorAll('.nb-pet-multiplier').forEach(sel=>{
-      sel.addEventListener('change', e=>{
-        const petId = sel.dataset.petId;
-        const s = ensurePetService(petId);
-        s.multiplier = parseInt(e.target.value, 10);
-        updatePetServiceDuration(petId);
-        render();
-      });
-    });
-    document.querySelectorAll('.nb-pet-animal-row').forEach(row=>{
-      row.addEventListener('click', e=>{
-        const pill = e.target.closest('.choice-pill'); if(!pill) return;
-        const petId = row.dataset.petId;
-        const s = ensurePetService(petId);
-        s.animalType = pill.dataset.a;
-        if(pill.dataset.a==='cat') s.hairLength = '';
-        updatePetServiceDuration(petId);
-        render();
-      });
-    });
-    document.querySelectorAll('.nb-pet-hair-row').forEach(row=>{
-      row.addEventListener('click', e=>{
-        const pill = e.target.closest('.choice-pill'); if(!pill) return;
-        const petId = row.dataset.petId;
-        const s = ensurePetService(petId);
-        s.hairLength = pill.dataset.h;
-        updatePetServiceDuration(petId);
-        render();
-      });
-    });
-    document.getElementById('nbPetsNextBtn').addEventListener('click', ()=>{
-      const errEl = document.getElementById('nb-pet-err');
-      if(nb.selectedPets.length===0){ errEl.textContent='請至少選一隻寵物。'; errEl.style.display='block'; return; }
-      if(!nbAllPetsReady()){ errEl.textContent='請幫每隻寵物都選好服務類型（跟寵物類別）。'; errEl.style.display='block'; return; }
-      errEl.style.display='none';
-      nb.selectedDates=[]; nb.timesByDate={}; nb.travelByDate={}; nb.customTimeByDate={}; nb.hideAreaHint=false;
-      nb.stage = 'time';
-      render();
-    });
-    return;
   }
-  // stage === 'time'
-  document.getElementById('nbBackToServices').addEventListener('click', ()=>{ nb.stage='pets'; render(); });
+  const otherDurationInput = document.getElementById('nb-other-duration');
+  if(otherDurationInput){
+    otherDurationInput.addEventListener('change', e=>{
+      newBookingState.service.customDuration = e.target.value;
+      updateNBDuration();
+      newBookingState.date = null; newBookingState.time = null; newBookingState.customTime = false; newBookingState.hideAreaHint = false;
+      render();
+    });
+  }
+  const multiplierSelect = document.getElementById('nb-multiplier');
+  if(multiplierSelect){
+    multiplierSelect.addEventListener('change', e=>{
+      newBookingState.service.multiplier = parseInt(e.target.value, 10);
+      updateNBDuration();
+      newBookingState.date = null; newBookingState.time = null; newBookingState.customTime = false; newBookingState.hideAreaHint = false;
+      render();
+    });
+  }
+  const animalRow = document.getElementById('nb-animal-row');
+  if(animalRow){
+    animalRow.addEventListener('click', e=>{
+      const p = e.target.closest('.choice-pill'); if(!p) return;
+      newBookingState.service.animalType = p.dataset.a;
+      if(p.dataset.a==='cat') newBookingState.service.hairLength = '';
+      updateNBDuration();
+      newBookingState.date = null; newBookingState.time = null; newBookingState.customTime = false; newBookingState.hideAreaHint = false;
+      render();
+    });
+  }
+  const hairRow = document.getElementById('nb-hair-row');
+  if(hairRow){
+    hairRow.addEventListener('click', e=>{
+      const p = e.target.closest('.choice-pill'); if(!p) return;
+      newBookingState.service.hairLength = p.dataset.h; updateNBDuration();
+      newBookingState.date = null; newBookingState.time = null; newBookingState.customTime = false; newBookingState.hideAreaHint = false;
+      render();
+    });
+  }
   const calPrev = document.getElementById('nb-cal-prev');
   if(calPrev) calPrev.addEventListener('click', ()=>{
-    nb.monthView.month--; if(nb.monthView.month<0){nb.monthView.month=11; nb.monthView.year--;}
-    render();
+    newBookingState.monthView.month--; if(newBookingState.monthView.month<0){newBookingState.monthView.month=11; newBookingState.monthView.year--;}
+    newBookingState.date=null; newBookingState.time=null; render();
   });
   const calNext = document.getElementById('nb-cal-next');
   if(calNext) calNext.addEventListener('click', ()=>{
-    nb.monthView.month++; if(nb.monthView.month>11){nb.monthView.month=0; nb.monthView.year++;}
-    render();
+    newBookingState.monthView.month++; if(newBookingState.monthView.month>11){newBookingState.monthView.month=0; newBookingState.monthView.year++;}
+    newBookingState.date=null; newBookingState.time=null; render();
   });
   const calGrid = document.getElementById('nb-cal-grid');
   if(calGrid){
     calGrid.addEventListener('click', e=>{
       const c = e.target.closest('.cal-cell.avail'); if(!c) return;
-      const date = c.dataset.date;
-      if(nb.selectedDates.includes(date)) return;
-      nb.selectedDates.push(date);
+      newBookingState.date = c.dataset.date; newBookingState.time = null;
       render();
-      loadNBTravelForDate(date).then(()=>{ if(pageState.view==='newBooking') render(); });
+      loadNBTravelBlockedSlots(newBookingState.date).then(()=>{ if(pageState.view==='newBooking') render(); });
     });
   }
-  const dateList = document.getElementById('nb-date-list');
-  if(dateList){
-    dateList.addEventListener('click', e=>{
-      const rem = e.target.closest('[data-remove-nb-date]');
-      if(rem){
-        const date = rem.dataset.removeNbDate;
-        nb.selectedDates = nb.selectedDates.filter(d=>d!==date);
-        delete nb.timesByDate[date];
-        delete nb.travelByDate[date];
-        delete nb.customTimeByDate[date];
-        render();
-        return;
-      }
-      const slot = e.target.closest('.admin-slot');
-      if(slot && !slot.classList.contains('blocked') && slot.dataset.time){
-        nb.timesByDate[slot.dataset.date] = slot.dataset.time;
-        render();
-      }
+  const slotGrid = document.getElementById('nb-slot-grid');
+  if(slotGrid){
+    slotGrid.addEventListener('click', e=>{
+      const s = e.target.closest('.admin-slot'); if(!s || s.classList.contains('blocked')) return;
+      newBookingState.time = s.dataset.time;
+      render();
     });
-    dateList.addEventListener('change', e=>{
-      const toggle = e.target.closest('.nb-custom-time-toggle');
-      if(toggle){
-        const date = toggle.dataset.date;
-        nb.customTimeByDate[date] = toggle.checked;
-        delete nb.timesByDate[date];
-        render();
-        return;
-      }
-      const manualInput = e.target.closest('.nb-manual-time');
-      if(manualInput){
-        nb.timesByDate[manualInput.dataset.date] = manualInput.value || undefined;
-        if(!manualInput.value) delete nb.timesByDate[manualInput.dataset.date];
-        render();
-      }
+  }
+  const customTimeToggle = document.getElementById('nb-custom-time-toggle');
+  if(customTimeToggle){
+    customTimeToggle.addEventListener('change', ()=>{
+      newBookingState.customTime = customTimeToggle.checked;
+      newBookingState.time = null;
+      render();
+    });
+  }
+  const manualTimeInput = document.getElementById('nb-manual-time');
+  if(manualTimeInput){
+    manualTimeInput.addEventListener('change', ()=>{
+      newBookingState.time = manualTimeInput.value || null;
+      render();
     });
   }
   const hideAreaToggle = document.getElementById('nb-hide-area-toggle');
   if(hideAreaToggle){
     hideAreaToggle.addEventListener('change', ()=>{
-      nb.hideAreaHint = hideAreaToggle.checked;
+      newBookingState.hideAreaHint = hideAreaToggle.checked;
     });
   }
   const submitBtn = document.getElementById('nbSubmitBtn');
   if(submitBtn) submitBtn.addEventListener('click', submitNBBooking);
+  if(newBookingState.date && nbTravelState.forDate !== newBookingState.date && !nbTravelState.loading){
+    loadNBTravelBlockedSlots(newBookingState.date).then(()=>{ if(pageState.view==='newBooking') render(); });
+  }
 }
 async function searchNBCustomer(){
   const value = document.getElementById('nb-search-value').value.trim();
@@ -1682,7 +935,7 @@ async function searchNBCustomer(){
   const btn = document.getElementById('nbSearchBtn');
   btn.disabled = true; btn.textContent = '查詢中...';
   try{
-    const res = await fetch(GOOGLE_SCRIPT_URL + '?action=searchDiaryCustomer&field=' + newBookingState.field + '&value=' + encodeURIComponent(value) + '&adminPassword=' + encodeURIComponent(adminAuth.password));
+    const res = await fetch(GOOGLE_SCRIPT_URL + '?action=searchDiaryCustomer&field=' + newBookingState.field + '&value=' + encodeURIComponent(value));
     const data = await res.json();
     if(!data.success) throw new Error(data.error || '查詢失敗');
     const results = data.results || [];
@@ -1700,11 +953,6 @@ function selectNBCustomer(customer){
   newBookingState.customer = customer;
   newBookingState.results = [];
   newBookingState.error = '';
-  const pets = customer.pets || [];
-  newBookingState.selectedPets = pets.length===1 ? [pets[0]] : [];
-  newBookingState.petServices = {};
-  newBookingState.addPetOpen = false;
-  newBookingState.stage = 'pets';
   render();
 }
 function genBookingCode(){
@@ -1716,57 +964,35 @@ async function submitNBBooking(){
   const btn = document.getElementById('nbSubmitBtn');
   const errEl = document.getElementById('nb-err2');
   errEl.style.display = 'none';
-  const nb = newBookingState;
-  if(nb.selectedDates.length===0 || nb.selectedDates.some(d=>!nb.timesByDate[d])) return;
+  if(!newBookingState.date || !newBookingState.time) return;
+  const c = newBookingState.customer, s = newBookingState.service, nb = newBookingState;
+  const code = genBookingCode();
+  const payload = {
+    action:'booking', createdByAdmin:true, customerCode: c.customerCode, hideAreaHint: nb.hideAreaHint,
+    confirmCode: code, ownerName:c.ownerName, phone:c.phone, lineId:c.lineId, address:c.address,
+    petName:c.petName, petBreed:c.petBreed, petAge:c.petAge, petWeight:c.petWeight,
+    petPersonality:c.petPersonality, petHealth:c.petHealth,
+    serviceLabel:s.label, durationMinutes:s.duration,
+    date: nb.date, time: nb.time, endTime: fmtTime(toMin(nb.time) + s.duration),
+    taichung: adminConfig.taichungDates.has(nb.date)
+  };
   if(!GOOGLE_SCRIPT_URL){ errEl.textContent = '尚未連結試算表，無法新增。'; errEl.style.display = 'block'; return; }
-  const c = nb.customer;
-  const total = nb.selectedDates.length * nb.selectedPets.length;
   btn.disabled = true; btn.textContent = '新增中...';
-  const results = [];
-  for(const date of nb.selectedDates){
-    let cursor = toMin(nb.timesByDate[date]);
-    const batchConfirmCodes = nb.selectedPets.map(()=>genBookingCode());
-    let idx = 0;
-    for(const p of nb.selectedPets){
-      const s = nb.petServices[p.id];
-      const code = batchConfirmCodes[idx++];
-      const startTime = fmtTime(cursor);
-      const payload = {
-        action:'booking', createdByAdmin:true, adminPassword: adminAuth.password, customerCode: c.customerCode, hideAreaHint: nb.hideAreaHint,
-        confirmCode: code, ownerName:c.ownerName, phone:c.phone, lineId:c.lineId, address:c.address,
-        petId:p.id, petName:p.name, petBreed:p.breed, petAge:p.age, petWeight:p.weight,
-        petPersonality:p.personality, petHealth:p.health,
-        serviceLabel:s.label, durationMinutes:s.duration,
-        date: date, time: startTime, endTime: fmtTime(cursor + s.duration),
-        taichung: adminConfig.taichungDates.has(date),
-        batchConfirmCodes: batchConfirmCodes
-      };
-      try{
-        const res = await fetch(GOOGLE_SCRIPT_URL, {
-          method:'POST', headers:{ 'Content-Type':'text/plain;charset=utf-8' }, body: JSON.stringify(payload)
-        });
-        const result = await res.json();
-        results.push({ pet:p.name, date, time:startTime, success: !!result.success, error: result.error });
-      }catch(err){
-        results.push({ pet:p.name, date, time:startTime, success:false, error: err.message });
-      }
-      cursor += s.duration;
-    }
-  }
-  const failed = results.filter(r=>!r.success);
-  if(failed.length===0){
+  try{
+    const res = await fetch(GOOGLE_SCRIPT_URL, {
+      method:'POST', headers:{ 'Content-Type':'text/plain;charset=utf-8' }, body: JSON.stringify(payload)
+    });
+    const result = await res.json();
+    if(!result.success) throw new Error(result.error || '新增失敗');
     newBookingState.customer = null; newBookingState.results = []; newBookingState.value = '';
-    newBookingState.selectedPets = []; newBookingState.petServices = {}; newBookingState.addPetOpen = false;
-    newBookingState.stage = 'pets';
-    newBookingState.service = { category:'', duration:0, label:'' };
-    newBookingState.selectedDates = []; newBookingState.timesByDate = {}; newBookingState.travelByDate = {}; newBookingState.customTimeByDate = {}; newBookingState.hideAreaHint = false;
+    newBookingState.service = { category:'', animalType:'', hairLength:'', multiplier:1, duration:0, label:'', customLabel:'', customDuration:60 };
+    newBookingState.date = null; newBookingState.time = null; newBookingState.customTime = false; newBookingState.hideAreaHint = false;
     render();
-  } else {
-    btn.disabled = false; btn.textContent = '新增全部 ' + total + ' 筆預約';
-    errEl.innerHTML = '部分預約新增失敗（已成功的不會重複建立，請針對失敗的部分手動處理）：<br>' +
-      failed.map(f=>`${esc(f.date)} ${esc(f.pet)}（${esc(f.time)}）：${esc(f.error||'未知錯誤')}`).join('<br>');
+  }catch(err){
+    btn.disabled = false; btn.textContent = '新增預約';
+    errEl.textContent = '新增失敗，請確認網路連線後再試一次。';
     errEl.style.display = 'block';
-    console.error('部分預約新增失敗：', failed);
+    console.error('新增預約失敗：', err);
   }
 }
 
@@ -1850,31 +1076,6 @@ function renderAdminDetail(){
     </div>
     `;
     const end = getBusinessEnd(date);
-    if(taichung){
-      const regionData = adminConfig.taichungRegionSlots[date] || { taichung: new Set(), shuangbei: new Set() };
-      const tcSet = regionData.taichung || new Set();
-      const sbSet = regionData.shuangbei || new Set();
-      html += `
-      <div class="slot-title">台中／雙北可預約時段</div>
-      <div class="region-legend">
-        <span><i class="region-dot tc"></i>台中客人可約</span>
-        <span><i class="region-dot sb"></i>雙北客人可約</span>
-      </div>
-      <div class="empty-note" style="margin-bottom:14px;">在下面各拖曳圈選一段連續時間（點一下再拖到結尾放開即可）；地址判斷不是台中、也不是雙北的客人，這天將完全無法預約任何時段。</div>
-      <div class="field"><label>台中客人可預約時段</label>
-        <div class="admin-slot-grid region-grid" id="admin-region-grid-taichung" data-region="taichung">
-          ${baseSlots(end).map(t=>{ const val=fmtTime(t); return `<div class="admin-slot region-cell ${tcSet.has(val)?'region-on-tc':''}" data-time="${val}">${val}</div>`; }).join('')}
-        </div>
-        <button type="button" class="link-btn" data-clear-region="taichung">清除台中時段</button>
-      </div>
-      <div class="field"><label>雙北客人可預約時段</label>
-        <div class="admin-slot-grid region-grid" id="admin-region-grid-shuangbei" data-region="shuangbei">
-          ${baseSlots(end).map(t=>{ const val=fmtTime(t); return `<div class="admin-slot region-cell ${sbSet.has(val)?'region-on-sb':''}" data-time="${val}">${val}</div>`; }).join('')}
-        </div>
-        <button type="button" class="link-btn" data-clear-region="shuangbei">清除雙北時段</button>
-      </div>
-      `;
-    }
     const blocked = adminConfig.blockedSlots[date] || new Set();
     html += `<div class="slot-title">個別時段設定（點選切換，共 ${baseSlots(end).length} 個時段）</div>
       <div class="admin-slot-grid" id="admin-slot-grid">
@@ -1946,66 +1147,11 @@ function bindAdmin(){
   document.querySelectorAll('[data-remove-taichung]').forEach(btn=>{ btn.addEventListener('click', ()=>{ adminConfig.taichungDates.delete(btn.dataset.removeTaichung); render(); saveSettings(); }); });
   document.querySelectorAll('[data-remove-extended]').forEach(btn=>{ btn.addEventListener('click', ()=>{ adminConfig.extendedDates.delete(btn.dataset.removeExtended); render(); saveSettings(); }); });
   document.querySelectorAll('[data-remove-blocked]').forEach(btn=>{ btn.addEventListener('click', ()=>{ delete adminConfig.blockedSlots[btn.dataset.removeBlocked]; render(); saveSettings(); }); });
-
-  bindRegionDragGrid(document.getElementById('admin-region-grid-taichung'), 'taichung');
-  bindRegionDragGrid(document.getElementById('admin-region-grid-shuangbei'), 'shuangbei');
-  document.querySelectorAll('[data-clear-region]').forEach(btn=>{
-    btn.addEventListener('click', ()=>{
-      const date = adminView.selectedDate;
-      const region = btn.dataset.clearRegion;
-      if(!adminConfig.taichungRegionSlots[date]) adminConfig.taichungRegionSlots[date] = { taichung:new Set(), shuangbei:new Set() };
-      adminConfig.taichungRegionSlots[date][region] = new Set();
-      render(); saveSettings();
-    });
-  });
 }
 
-// 讓「台中可預約時段」「雙北可預約時段」這兩條時段列可以用拖曳圈選一段連續時間
-// 拖曳放開時，會把那段時間整段設成該地區可預約（取代掉這個地區原本選的那段）
-function bindRegionDragGrid(gridEl, region){
-  if(!gridEl) return;
-  const cells = Array.from(gridEl.querySelectorAll('.region-cell'));
-  let dragging = false, startIdx = null;
-  function idxFromPoint(x, y){
-    const el = document.elementFromPoint(x, y);
-    const cell = el && el.closest ? el.closest('.region-cell') : null;
-    return (cell && cells.includes(cell)) ? cells.indexOf(cell) : null;
-  }
-  function previewRange(a, b){
-    const lo = Math.min(a,b), hi = Math.max(a,b);
-    cells.forEach((c,i)=>{ c.classList.toggle('dragging', i>=lo && i<=hi); });
-  }
-  function commitRange(a, b){
-    const lo = Math.min(a,b), hi = Math.max(a,b);
-    const date = adminView.selectedDate;
-    if(!adminConfig.taichungRegionSlots[date]) adminConfig.taichungRegionSlots[date] = { taichung:new Set(), shuangbei:new Set() };
-    const times = cells.slice(lo, hi+1).map(c=>c.dataset.time);
-    adminConfig.taichungRegionSlots[date][region] = new Set(times);
-    render(); saveSettings();
-  }
-  gridEl.addEventListener('pointerdown', e=>{
-    const cell = e.target.closest('.region-cell'); if(!cell) return;
-    dragging = true;
-    startIdx = cells.indexOf(cell);
-    previewRange(startIdx, startIdx);
-    e.preventDefault();
-  });
-  gridEl.addEventListener('pointermove', e=>{
-    if(!dragging) return;
-    const idx = idxFromPoint(e.clientX, e.clientY);
-    if(idx != null) previewRange(startIdx, idx);
-    e.preventDefault();
-  });
-  window.addEventListener('pointerup', e=>{
-    if(!dragging) return;
-    dragging = false;
-    const idx = idxFromPoint(e.clientX, e.clientY);
-    const endIdx = (idx == null) ? startIdx : idx;
-    commitRange(startIdx, endIdx);
-  });
-}
+loadSettings();
 
-initAdminAuth();if('serviceWorker' in navigator){
+if('serviceWorker' in navigator){
   window.addEventListener('load', ()=>{ navigator.serviceWorker.register('sw.js').catch(()=>{}); });
 }
 
