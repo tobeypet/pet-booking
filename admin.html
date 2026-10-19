@@ -521,10 +521,14 @@ const custMgmtState = {
   field:'name', value:'', results:[], customer:null, pets:[], bookings:[], error:'', loadingDetail:false,
   editPetId:null, petDraft:null, petErr:'',
   pkgEditPetId:null, pkgDraft:null, pkgErr:'',
-  editBookingCode:null, bookingDraft:null, bookingErr:''
+  editBookingCode:null, bookingDraft:null, bookingErr:'',
+  addingPet:false, newPetDraft:null, newPetErr:''
 };
 function freshPetDraft(pet){
   return { name:pet.name||'', breed:pet.breed||'', species:pet.species||'', hairLength:pet.hairLength||'', age:pet.age||'', weight:pet.weight||'', personality:pet.personality||'', health:pet.health||'' };
+}
+function emptyPetDraft(){
+  return { name:'', breed:'', species:'', hairLength:'', age:'', weight:'', personality:'', health:'' };
 }
 function freshPkgDraft(pet){
   const pkg = pet.package;
@@ -598,6 +602,7 @@ function tplCustomerMgmtDetail(){
     </div>
     <div class="slot-title">寵物與包月方案</div>
     ${cm.pets.length===0 ? `<div class="empty-note">這位客人目前沒有寵物資料。</div>` : cm.pets.map(tplPetCard).join('')}
+    ${tplAddPetBlock()}
     <div class="slot-title" style="margin-top:22px;">預約記錄（新到舊）</div>
     ${cm.bookings.length===0 ? `<div class="empty-note">目前還沒有預約記錄。</div>` : cm.bookings.map(tplBookingRow).join('')}
   `;
@@ -696,6 +701,44 @@ function tplPetPackageBlock(pet){
     </div>
   `;
 }
+function tplAddPetBlock(){
+  const cm = custMgmtState;
+  if(!cm.addingPet){
+    return `<div class="actions" style="margin-top:4px;"><button class="btn btn-ghost" id="petAddOpen" style="flex:1;">＋ 新增一隻寵物</button></div>`;
+  }
+  const d = cm.newPetDraft;
+  return `
+    <div class="info-card">
+      <h4>新增寵物</h4>
+      <div class="field"><label>寵物名稱</label><input type="text" id="pet-new-name" value="${esc(d.name)}"></div>
+      <div class="field"><label>品種</label><input type="text" id="pet-new-breed" value="${esc(d.breed)}"></div>
+      <div class="field">
+        <label>物種</label>
+        <div class="choice-row" id="pet-new-species-row">
+          <div class="choice-pill ${d.species==='cat'?'active':''}" data-s="cat">貓咪</div>
+          <div class="choice-pill ${d.species==='dog'?'active':''}" data-s="dog">狗狗</div>
+        </div>
+      </div>
+      ${d.species==='dog' ? `
+      <div class="field">
+        <label>毛長</label>
+        <div class="choice-row" id="pet-new-hair-row">
+          <div class="choice-pill ${d.hairLength==='long'?'active':''}" data-h="long">長毛</div>
+          <div class="choice-pill ${d.hairLength==='short'?'active':''}" data-h="short">短毛</div>
+        </div>
+      </div>` : ''}
+      <div class="field"><label>年齡</label><input type="text" id="pet-new-age" value="${esc(d.age)}"></div>
+      <div class="field"><label>體重</label><input type="text" id="pet-new-weight" value="${esc(d.weight)}"></div>
+      <div class="field"><label>個性</label><textarea id="pet-new-personality">${esc(d.personality)}</textarea></div>
+      <div class="field"><label>健康狀況</label><textarea id="pet-new-health">${esc(d.health)}</textarea></div>
+      <div class="err" id="pet-new-err" style="display:${cm.newPetErr?'block':'none'};">${cm.newPetErr||''}</div>
+      <div class="actions">
+        <button class="btn btn-ghost" id="petAddCancel" style="flex:1;">取消</button>
+        <button class="btn btn-primary" id="petAddSave" style="flex:1;">新增這隻寵物</button>
+      </div>
+    </div>
+  `;
+}
 function tplBookingRow(b){
   const cm = custMgmtState;
   if(cm.editBookingCode === b.confirmCode){
@@ -759,6 +802,7 @@ async function selectCustomerMgmt(customer){
   const cm = custMgmtState;
   cm.customer = customer; cm.results = []; cm.error = ''; cm.loadingDetail = true;
   cm.editPetId = null; cm.pkgEditPetId = null; cm.editBookingCode = null;
+  cm.addingPet = false; cm.newPetDraft = null; cm.newPetErr = '';
   render();
   await loadCustomerMgmtDetail();
 }
@@ -777,6 +821,32 @@ async function loadCustomerMgmtDetail(){
   }
   cm.loadingDetail = false;
   render();
+}
+async function saveNewPet(){
+  const cm = custMgmtState;
+  const d = cm.newPetDraft;
+  if(!d.name){ cm.newPetErr = '請至少填寫寵物名稱。'; render(); return; }
+  const btn = document.getElementById('petAddSave');
+  btn.disabled = true; btn.textContent = '新增中...';
+  try{
+    const res = await fetch(GOOGLE_SCRIPT_URL, {
+      method:'POST', headers:{ 'Content-Type':'text/plain;charset=utf-8' },
+      body: JSON.stringify(withAuth({
+        action:'addPet', customerCode: cm.customer.customerCode,
+        petName:d.name, petBreed:d.breed, petSpecies:d.species, petHairLength:d.hairLength,
+        petAge:d.age, petWeight:d.weight, petPersonality:d.personality, petHealth:d.health
+      }))
+    });
+    const result = await res.json();
+    if(!result.success) throw new Error(result.error || '新增失敗');
+    cm.addingPet = false; cm.newPetDraft = null; cm.newPetErr = '';
+    await loadCustomerMgmtDetail();
+  }catch(err){
+    cm.newPetErr = (err && err.message) ? err.message : '新增失敗，請確認網路連線後再試一次。';
+    btn.disabled = false; btn.textContent = '新增這隻寵物';
+    render();
+    console.error('新增寵物失敗：', err);
+  }
 }
 async function savePetEdit(petId){
   const cm = custMgmtState;
@@ -940,6 +1010,56 @@ function bindCustomerMgmt(){
     d.personality = document.getElementById('pet-edit-personality').value.trim();
     d.health = document.getElementById('pet-edit-health').value.trim();
     savePetEdit(petSaveBtn.dataset.pet);
+  });
+
+  // 新增寵物
+  const petAddOpenBtn = document.getElementById('petAddOpen');
+  if(petAddOpenBtn) petAddOpenBtn.addEventListener('click', ()=>{
+    custMgmtState.addingPet = true; custMgmtState.newPetDraft = emptyPetDraft(); custMgmtState.newPetErr = '';
+    render();
+  });
+  const petAddCancelBtn = document.getElementById('petAddCancel');
+  if(petAddCancelBtn) petAddCancelBtn.addEventListener('click', ()=>{
+    custMgmtState.addingPet = false; custMgmtState.newPetDraft = null; custMgmtState.newPetErr = '';
+    render();
+  });
+  const petNewSpeciesRow = document.getElementById('pet-new-species-row');
+  if(petNewSpeciesRow) petNewSpeciesRow.addEventListener('click', e=>{
+    const p = e.target.closest('.choice-pill'); if(!p) return;
+    const d = custMgmtState.newPetDraft;
+    d.name = document.getElementById('pet-new-name').value;
+    d.breed = document.getElementById('pet-new-breed').value;
+    d.age = document.getElementById('pet-new-age').value;
+    d.weight = document.getElementById('pet-new-weight').value;
+    d.personality = document.getElementById('pet-new-personality').value;
+    d.health = document.getElementById('pet-new-health').value;
+    d.species = p.dataset.s;
+    if(p.dataset.s === 'cat') d.hairLength = '';
+    render();
+  });
+  const petNewHairRow = document.getElementById('pet-new-hair-row');
+  if(petNewHairRow) petNewHairRow.addEventListener('click', e=>{
+    const p = e.target.closest('.choice-pill'); if(!p) return;
+    const d = custMgmtState.newPetDraft;
+    d.name = document.getElementById('pet-new-name').value;
+    d.breed = document.getElementById('pet-new-breed').value;
+    d.age = document.getElementById('pet-new-age').value;
+    d.weight = document.getElementById('pet-new-weight').value;
+    d.personality = document.getElementById('pet-new-personality').value;
+    d.health = document.getElementById('pet-new-health').value;
+    d.hairLength = p.dataset.h;
+    render();
+  });
+  const petAddSaveBtn = document.getElementById('petAddSave');
+  if(petAddSaveBtn) petAddSaveBtn.addEventListener('click', ()=>{
+    const d = custMgmtState.newPetDraft;
+    d.name = document.getElementById('pet-new-name').value.trim();
+    d.breed = document.getElementById('pet-new-breed').value.trim();
+    d.age = document.getElementById('pet-new-age').value.trim();
+    d.weight = document.getElementById('pet-new-weight').value.trim();
+    d.personality = document.getElementById('pet-new-personality').value.trim();
+    d.health = document.getElementById('pet-new-health').value.trim();
+    saveNewPet();
   });
 
   // 包月方案：新增／編輯
