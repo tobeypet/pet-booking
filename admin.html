@@ -1035,11 +1035,22 @@ function tplNewCustomer(){
         <h4>建檔成功</h4>
         <div class="info-line"><span class="k">專屬代碼</span><span class="v" style="font-size:18px;font-weight:800;color:var(--pine);">${esc(newCustomerState.resultCode)}</span></div>
       </div>
-      <div class="actions"><button class="btn btn-primary" id="ncGoBooking" style="flex:1;">馬上幫這位客人安排預約</button></div>
+      <div class="actions">
+        <button class="btn btn-ghost" id="ncClearForm" style="flex:1;">清空表單，新增下一位客人</button>
+        <button class="btn btn-primary" id="ncGoBooking" style="flex:1;">馬上幫這位客人安排預約</button>
+      </div>
     ` : ''}
   `;
 }
 function bindNewCustomer(){
+  const clearFormBtn = document.getElementById('ncClearForm');
+  if(clearFormBtn){
+    clearFormBtn.addEventListener('click', ()=>{
+      newCustomerState.data = { ownerName:'',phone:'',lineId:'',address:'',petName:'',petBreed:'',petAge:'',petWeight:'',petPersonality:'',petHealth:'',remarks:'',contactPref:'' };
+      newCustomerState.resultCode = null; newCustomerState.lastCreated = null;
+      render();
+    });
+  }
   const goBookingBtn = document.getElementById('ncGoBooking');
   if(goBookingBtn){
     goBookingBtn.addEventListener('click', ()=>{
@@ -1094,7 +1105,6 @@ function bindNewCustomer(){
         petName: d.petName, petBreed: d.petBreed, petAge: d.petAge, petWeight: d.petWeight,
         petPersonality: d.petPersonality, petHealth: d.petHealth, customerCode: result.customerCode
       };
-      newCustomerState.data = { ownerName:'',phone:'',lineId:'',address:'',petName:'',petBreed:'',petAge:'',petWeight:'',petPersonality:'',petHealth:'',remarks:'',contactPref:'' };
       render();
     }catch(err){
       btn.disabled = false; btn.textContent = '新增客人資料';
