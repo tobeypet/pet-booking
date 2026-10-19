@@ -1735,14 +1735,18 @@ async function submitNBBooking(){
   const okNames = [];
   const failNames = [];
   let startMin = toMin(nb.time);
+  // 同一次送出的這幾筆，彼此之間要互相排除在「時段衝突檢查」之外（不然每筆都會被前後緩衝時間擋住）
+  const batchCodes = pets.map(()=>genBookingCode());
   // 一隻接一隻排時段，同一個服務、同一天，依照勾選順序往後排
   for(let i=0; i<pets.length; i++){
     const pet = pets[i];
     btn.textContent = pets.length>1 ? `新增中...（${i+1}/${pets.length}）` : '新增中...';
     const endMin = startMin + s.duration;
+    const otherBatchCodes = batchCodes.filter((_, idx) => idx !== i);
     const payload = withAuth({
       action:'booking', createdByAdmin:true, customerCode: c.customerCode, hideAreaHint: nb.hideAreaHint,
-      confirmCode: genBookingCode(), ownerName:c.ownerName, phone:c.phone, lineId:c.lineId, address:c.address,
+      batchConfirmCodes: otherBatchCodes,
+      confirmCode: batchCodes[i], ownerName:c.ownerName, phone:c.phone, lineId:c.lineId, address:c.address,
       petId: pet.id || '', petName:pet.name||'', petBreed:pet.breed||'', petAge:pet.age||'', petWeight:pet.weight||'',
       petPersonality:pet.personality||'', petHealth:pet.health||'',
       serviceLabel:s.label, durationMinutes:s.duration,
