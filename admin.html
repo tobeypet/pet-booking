@@ -1067,7 +1067,20 @@ function bindNewCustomer(){
   document.getElementById('nc-contact-pref').addEventListener('click', e=>{
     const p = e.target.closest('.choice-pill'); if(!p) return;
     const val = p.dataset.c;
-    newCustomerState.data.contactPref = (newCustomerState.data.contactPref===val) ? '' : val;
+    const d = newCustomerState.data;
+    // 先把其他欄位目前打到一半的內容存起來，避免點選這個按鈕時被 render() 重畫整個表單蓋掉
+    d.ownerName = document.getElementById('nc-name').value;
+    d.phone = document.getElementById('nc-phone').value;
+    d.lineId = document.getElementById('nc-line').value;
+    d.address = document.getElementById('nc-address').value;
+    d.petName = document.getElementById('nc-petname').value;
+    d.petBreed = document.getElementById('nc-petbreed').value;
+    d.petAge = document.getElementById('nc-petage').value;
+    d.petWeight = document.getElementById('nc-petweight').value;
+    d.petPersonality = document.getElementById('nc-personality').value;
+    d.petHealth = document.getElementById('nc-health').value;
+    d.remarks = document.getElementById('nc-remarks').value;
+    d.contactPref = (d.contactPref===val) ? '' : val;
     render();
   });
   document.getElementById('ncSubmitBtn').addEventListener('click', async ()=>{
