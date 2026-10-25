@@ -68,6 +68,11 @@
 
   textarea{width:100%;min-height:80px;border:2px solid var(--line);border-radius:14px;padding:10px 12px;font:inherit;color:var(--ink);background:var(--white);resize:vertical;}
   textarea:focus{outline:none;border-color:var(--pine);}
+  .text-in{width:100%;height:52px;border:2px solid var(--line);border-radius:14px;padding:0 14px;font:inherit;font-size:17px;color:var(--ink);background:var(--white);}
+  .text-in:focus{outline:none;border-color:var(--pine);}
+  .region{margin-top:14px;padding:14px;border-radius:16px;background:var(--sage-light);display:grid;gap:8px;}
+  .region[hidden]{display:none;}
+  .region label{font-size:14px;font-weight:700;color:var(--pine-2);}
 
   .bar{
     position:fixed;left:0;right:0;bottom:0;z-index:5;background:var(--white);border-top:1px solid var(--line);
@@ -122,7 +127,11 @@ const SLOTS = [
 ];
 const PETS = [{v:'dog',t:'狗狗'},{v:'cat',t:'貓咪'},{v:'both',t:'都有'}];
 
-const state = { dayType:'', weekdays:[], weekdaySlots:[], weekendSlots:[], pet:'', note:'', sending:false, error:'', done:false };
+const state = { petName:'', region:'', dayType:'', weekdays:[], weekdaySlots:[], weekendSlots:[], pet:'', note:'', sending:false, error:'', done:false };
+
+/* 這些名字很多人取，要多問地區才分得出是哪一隻（不分大小寫） */
+const ASK_REGION_NAMES = ['妹妹', 'lucky'];
+function needRegion(){ return ASK_REGION_NAMES.includes(state.petName.trim().toLowerCase()); }
 
 const $ = s => document.querySelector(s);
 const esc = s => String(s).replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
@@ -135,7 +144,9 @@ function slotsDone(){
   if(needWeekend() && !state.weekendSlots.length) return false;
   return true;
 }
-function answered(){ return (state.dayType?1:0) + (slotsDone()?1:0); }
+function nameDone(){ return !!state.petName.trim() && (!needRegion() || !!state.region.trim()); }
+function answered(){ return (nameDone()?1:0) + (state.dayType?1:0) + (slotsDone()?1:0); }
+const REQUIRED = 3;
 
 function radio(name, list, cur, cls){
   return `<div class="opts ${cls}">` + list.map(o=>`
@@ -150,8 +161,18 @@ function renderSurvey(){
     <header>
       <div class="brand">TOBEY PET SPA</div>
       <h1>你通常什麼時候方便帶毛孩來？</h1>
-      <p class="lead">花 30 秒點一點，幫我們排出更好約的時段。不用填名字。</p>
+      <p class="lead">花 30 秒點一點，幫我們排出更好約的時段。</p>
     </header>
+
+    <section class="q">
+      <div class="q-head"><span class="q-num">${n++}</span><h2>毛孩叫什麼名字？</h2></div>
+      <p class="hint">有好幾隻的話，填一隻就好</p>
+      <input type="text" class="text-in" id="petName" maxlength="30" autocomplete="off" placeholder="例如：豆豆" value="${esc(state.petName)}">
+      <div id="regionBox" class="region" ${needRegion()?'':'hidden'}>
+        <label for="region">叫「${esc(state.petName.trim())}」的毛孩很多，請問你住在哪個地區？</label>
+        <input type="text" class="text-in" id="region" maxlength="40" autocomplete="off" placeholder="例如：台中北屯、新北板橋" value="${esc(state.region)}">
+      </div>
+    </section>
 
     <section class="q">
       <div class="q-head"><span class="q-num">${n++}</span><h2>平日還是假日比較方便？</h2></div>
@@ -209,9 +230,10 @@ function renderBar(){
   let bar = $('#bar');
   if(state.done){ if(bar) bar.remove(); return; }
   if(!bar){ bar = document.createElement('div'); bar.id='bar'; bar.className='bar'; document.body.appendChild(bar); }
-  const ok = answered()===2;
+  const ok = answered()===REQUIRED;
+  const regionMissing = state.petName.trim() && needRegion() && !state.region.trim();
   bar.innerHTML = `<div class="bar-in">
-    <div class="progress">${ok?'<b>可以送出了！</b>':`必填 <b>${answered()}</b> / 2 題`}</div>
+    <div class="progress">${ok?'<b>可以送出了！</b>':regionMissing?'請填寫<b>地區</b>':`必填 <b>${answered()}</b> / ${REQUIRED} 題`}</div>
     <button class="btn" id="send" ${ok&&!state.sending?'':'disabled'}>${state.sending?'送出中…':'送出'}</button>
   </div>`;
 }
@@ -246,7 +268,19 @@ document.addEventListener('change', e=>{
     t.checked ? (i<0&&state.weekdays.push(d)) : (i>=0&&state.weekdays.splice(i,1));
   }
 });
-document.addEventListener('input', e=>{ if(e.target.id==='note') state.note = e.target.value; });
+document.addEventListener('input', e=>{
+  const t = e.target;
+  if(t.id==='note') state.note = t.value;
+  if(t.id==='region'){ state.region = t.value; renderBar(); }
+  if(t.id==='petName'){
+    state.petName = t.value;
+    // 只切換地區欄的顯示，不重畫整頁，打字不會被打斷
+    const box = $('#regionBox');
+    box.hidden = !needRegion();
+    box.querySelector('label').textContent = `叫「${state.petName.trim()}」的毛孩很多，請問你住在哪個地區？`;
+    renderBar();
+  }
+});
 document.addEventListener('click', async e=>{
   const all = e.target.dataset && e.target.dataset.all;
   if(all){
@@ -258,13 +292,15 @@ document.addEventListener('click', async e=>{
 });
 
 async function submit(){
-  if(answered()<2 || state.sending) return;
+  if(answered()<REQUIRED || state.sending) return;
   state.sending = true; state.error=''; renderBar();
   try{
     const res = await fetch(GOOGLE_SCRIPT_URL, {
       method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'},
       body: JSON.stringify({
         action:'submitSurvey',
+        petName: state.petName.trim().slice(0,30),
+        region: needRegion() ? state.region.trim().slice(0,40) : '',
         dayType: state.dayType,
         weekdaySlots: state.weekdaySlots,
         weekendSlots: state.weekendSlots,
