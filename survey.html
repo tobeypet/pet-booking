@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>預約時段小調查｜托比寵物美容</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+  /* 和 index.html 同一組顏色 */
+  :root{
+    --cream:#EAF0FA; --cream-2:#DCE6F5; --pine:#3D6FA8; --pine-2:#2A5480;
+    --sage-light:#E3EDF9; --apricot:#29B6E8; --apricot-dark:#1D96C2;
+    --ink:#1A3A56; --ink-soft:#4A6785; --line:#C7D9EF;
+    --white:#FFFFFF; --danger:#C15B4A; --danger-light:#F6E4DF; --radius:22px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;}
+  body{
+    background:var(--cream); color:var(--ink);
+    font-family:"Noto Sans TC", sans-serif; font-size:16px; line-height:1.6;
+    padding:0 max(16px, env(safe-area-inset-left)) calc(110px + env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-right));
+  }
+  .wrap{max-width:560px;margin:0 auto;}
+  header{padding:28px 4px 8px;}
+  .brand{font-family:"Baloo 2","Noto Sans TC",sans-serif;font-weight:800;color:var(--apricot-dark);letter-spacing:.5px;font-size:14px;}
+  h1{font-family:"Baloo 2","Noto Sans TC",sans-serif;font-weight:800;color:var(--pine-2);font-size:26px;line-height:1.3;margin:4px 0 6px;text-wrap:balance;}
+  .lead{color:var(--ink-soft);margin:0;font-size:15px;}
+
+  .q{background:var(--white);border-radius:var(--radius);padding:20px 18px;margin-top:14px;box-shadow:0 2px 0 var(--line);}
+  .q[hidden]{display:none;}
+  .q-head{display:flex;align-items:baseline;gap:8px;margin-bottom:4px;}
+  .q-num{font-family:"Baloo 2",sans-serif;font-weight:800;color:var(--apricot);font-size:18px;}
+  .q h2{font-size:17px;margin:0;font-weight:700;color:var(--ink);}
+  .hint{font-size:13px;color:var(--ink-soft);margin:0 0 12px;}
+  .tag{font-size:12px;font-weight:500;color:var(--ink-soft);background:var(--sage-light);border-radius:99px;padding:1px 8px;margin-left:4px;white-space:nowrap;}
+
+  /* 大顆選項：手機好按 */
+  .opts{display:grid;gap:10px;}
+  .opts.cols-3{grid-template-columns:repeat(3,1fr);}
+  .opts.cols-5{grid-template-columns:repeat(5,1fr);}
+  .opts.cols-2{grid-template-columns:repeat(2,1fr);}
+  .opt{position:relative;}
+  .opt input{position:absolute;opacity:0;pointer-events:none;}
+  .opt label{
+    display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;
+    min-height:56px;padding:10px 6px;border:2px solid var(--line);border-radius:16px;
+    background:var(--white);cursor:pointer;font-weight:700;font-size:16px;color:var(--ink);
+    transition:background .15s,border-color .15s,transform .1s;user-select:none;-webkit-tap-highlight-color:transparent;
+  }
+  .opt label small{font-weight:500;font-size:12px;color:var(--ink-soft);margin-top:2px;}
+  .opt label:active{transform:scale(.97);}
+  .opt input:checked + label{background:var(--pine);border-color:var(--pine);color:var(--white);}
+  .opt input:checked + label small{color:#DCE6F5;}
+  .opt input:focus-visible + label{outline:3px solid var(--apricot);outline-offset:2px;}
+
+  /* 時段表格：橫列是時間，直欄是平日／假日 */
+  .grid{display:grid;grid-template-columns:auto 1fr 1fr;gap:8px;align-items:stretch;}
+  .grid .col-h{font-size:13px;font-weight:700;color:var(--ink-soft);text-align:center;padding-bottom:2px;}
+  .grid .row-h{display:flex;flex-direction:column;justify-content:center;font-weight:700;font-size:15px;padding-right:4px;white-space:nowrap;}
+  .grid .row-h small{font-weight:500;font-size:12px;color:var(--ink-soft);font-variant-numeric:tabular-nums;}
+  .grid .opt label{min-height:52px;font-size:20px;}
+  .grid.one-col{grid-template-columns:auto 1fr;}
+  .grid .off{display:none;}
+  .quick{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;}
+  .quick button{font:inherit;font-size:13px;border:1px solid var(--line);background:var(--cream);color:var(--pine-2);border-radius:99px;padding:5px 12px;cursor:pointer;}
+
+  textarea{width:100%;min-height:80px;border:2px solid var(--line);border-radius:14px;padding:10px 12px;font:inherit;color:var(--ink);background:var(--white);resize:vertical;}
+  textarea:focus{outline:none;border-color:var(--pine);}
+
+  .bar{
+    position:fixed;left:0;right:0;bottom:0;z-index:5;background:var(--white);border-top:1px solid var(--line);
+    padding:12px max(16px, env(safe-area-inset-left)) calc(12px + env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-right));
+  }
+  .bar-in{max-width:560px;margin:0 auto;display:flex;align-items:center;gap:12px;}
+  .progress{flex:1;font-size:13px;color:var(--ink-soft);}
+  .progress b{color:var(--pine-2);}
+  .btn{font:inherit;font-weight:700;font-size:16px;border:0;border-radius:99px;padding:13px 26px;background:var(--apricot);color:var(--white);cursor:pointer;}
+  .btn:disabled{background:var(--cream-2);color:var(--ink-soft);cursor:not-allowed;}
+  .err{background:var(--danger-light);color:var(--danger);border-radius:14px;padding:10px 14px;margin-top:14px;font-size:14px;}
+
+  .done{text-align:center;padding:60px 10px;}
+  .done .big{font-size:56px;line-height:1;}
+  .done h2{font-family:"Baloo 2","Noto Sans TC",sans-serif;color:var(--pine-2);font-size:24px;margin:14px 0 6px;}
+  .done a{display:inline-block;margin-top:18px;color:var(--apricot-dark);font-weight:700;}
+
+  /* 統計結果頁（網址加 #results） */
+  .stat{margin-top:6px;}
+  .stat-row{display:grid;grid-template-columns:7.5em 1fr 3.2em;gap:10px;align-items:center;padding:5px 0;font-size:14px;}
+  .stat-bar{height:14px;background:var(--cream);border-radius:99px;overflow:hidden;}
+  .stat-bar i{display:block;height:100%;background:var(--pine);border-radius:99px;}
+  .stat-row.top .stat-bar i{background:var(--apricot);}
+  .stat-n{text-align:right;font-variant-numeric:tabular-nums;color:var(--ink-soft);}
+  .heat{display:grid;grid-template-columns:auto 1fr 1fr;gap:6px;font-size:14px;}
+  .heat .cell{border-radius:10px;padding:10px 4px;text-align:center;font-weight:700;font-variant-numeric:tabular-nums;}
+  .total{font-family:"Baloo 2",sans-serif;font-size:40px;font-weight:800;color:var(--pine-2);line-height:1;}
+
+  @media (max-width:380px){ .opts.cols-5{grid-template-columns:repeat(3,1fr);} }
+  @media (prefers-reduced-motion:reduce){ *{transition:none!important;} }
+</style>
+</head>
+<body>
+<div class="wrap" id="app"></div>
+
+<script>
+/* ===== 設定：和 index.html 同一個 Apps Script 網址 ===== */
+const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwfwpOEL4l_iqzXx0Ky9_J2l-HzFsHZD-nURQ8VRpGPrs_NYAN6u5RTtVE607RutPH6/exec";
+
+const DAYTYPE = [
+  {v:'weekday', t:'平日', s:'週一～週五'},
+  {v:'weekend', t:'假日', s:'週六、週日'},
+  {v:'both',    t:'都可以', s:'看時間'}
+];
+const WEEKDAYS = ['一','二','三','四','五'];
+const SLOTS = [
+  {v:'morning',   t:'早上', s:'9–12 點'},
+  {v:'noon',      t:'中午', s:'12–14 點'},
+  {v:'afternoon', t:'下午', s:'14–17 點'},
+  {v:'evening',   t:'傍晚', s:'17–19 點'},
+  {v:'night',     t:'晚上', s:'19 點後'}
+];
+const PETS = [{v:'dog',t:'狗狗'},{v:'cat',t:'貓咪'},{v:'both',t:'都有'}];
+
+const state = { dayType:'', weekdays:[], weekdaySlots:[], weekendSlots:[], pet:'', note:'', sending:false, error:'', done:false };
+
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+function needWeekday(){ return state.dayType==='weekday' || state.dayType==='both'; }
+function needWeekend(){ return state.dayType==='weekend' || state.dayType==='both'; }
+function slotsDone(){
+  if(!state.dayType) return false;
+  if(needWeekday() && !state.weekdaySlots.length) return false;
+  if(needWeekend() && !state.weekendSlots.length) return false;
+  return true;
+}
+function answered(){ return (state.dayType?1:0) + (slotsDone()?1:0); }
+
+function radio(name, list, cur, cls){
+  return `<div class="opts ${cls}">` + list.map(o=>`
+    <div class="opt"><input type="radio" name="${name}" id="${name}-${o.v}" value="${o.v}" ${cur===o.v?'checked':''}>
+    <label for="${name}-${o.v}">${o.t}${o.s?`<small>${o.s}</small>`:''}</label></div>`).join('') + `</div>`;
+}
+
+function renderSurvey(){
+  const wd = needWeekday(), we = needWeekend();
+  let n = 1;
+  $('#app').innerHTML = `
+    <header>
+      <div class="brand">TOBEY PET SPA</div>
+      <h1>你通常什麼時候方便帶毛孩來？</h1>
+      <p class="lead">花 30 秒點一點，幫我們排出更好約的時段。不用填名字。</p>
+    </header>
+
+    <section class="q">
+      <div class="q-head"><span class="q-num">${n++}</span><h2>平日還是假日比較方便？</h2></div>
+      <p class="hint">選一個</p>
+      ${radio('dayType', DAYTYPE, state.dayType, 'cols-3')}
+    </section>
+
+    <section class="q" ${state.dayType?'':'hidden'}>
+      <div class="q-head"><span class="q-num">${n++}</span><h2>哪些時段可以？</h2></div>
+      <p class="hint">可以複選，點格子打勾</p>
+      <div class="grid ${wd&&we?'':'one-col'}">
+        <div></div>
+        ${wd?'<div class="col-h">平日</div>':''}
+        ${we?'<div class="col-h">假日</div>':''}
+        ${SLOTS.map(s=>`
+          <div class="row-h">${s.t}<small>${s.s}</small></div>
+          ${wd?cell('wd',s.v,state.weekdaySlots.includes(s.v),'平日'+s.t):''}
+          ${we?cell('we',s.v,state.weekendSlots.includes(s.v),'假日'+s.t):''}
+        `).join('')}
+      </div>
+      <div class="quick">
+        ${wd?'<button type="button" data-all="wd">平日全部都行</button>':''}
+        ${we?'<button type="button" data-all="we">假日全部都行</button>':''}
+      </div>
+    </section>
+
+    <section class="q" ${wd?'':'hidden'}>
+      <div class="q-head"><span class="q-num">${wd?n++:''}</span><h2>平日哪幾天比較方便？<span class="tag">可略過</span></h2></div>
+      <p class="hint">可以複選，不確定就跳過</p>
+      <div class="opts cols-5">
+        ${WEEKDAYS.map((d,i)=>`
+          <div class="opt"><input type="checkbox" id="wkd-${i+1}" data-wkd="${i+1}" ${state.weekdays.includes(i+1)?'checked':''}>
+          <label for="wkd-${i+1}">週${d}</label></div>`).join('')}
+      </div>
+    </section>
+
+    <section class="q" ${state.dayType?'':'hidden'}>
+      <div class="q-head"><span class="q-num">${n++}</span><h2>家裡的毛孩是？<span class="tag">可略過</span></h2></div>
+      ${radio('pet', PETS, state.pet, 'cols-3')}
+      <p class="hint" style="margin:14px 0 6px">還有什麼想跟托比說的？<span class="tag">可略過</span></p>
+      <textarea id="note" maxlength="300" placeholder="例如：希望週三晚上也能約">${esc(state.note)}</textarea>
+    </section>
+
+    ${state.error?`<div class="err">${esc(state.error)}</div>`:''}
+  `;
+  renderBar();
+}
+
+function cell(prefix, v, on, aria){
+  return `<div class="opt"><input type="checkbox" id="${prefix}-${v}" data-slot="${prefix}" value="${v}" ${on?'checked':''} aria-label="${aria}">
+    <label for="${prefix}-${v}" aria-hidden="true">${on?'✓':''}</label></div>`;
+}
+
+function renderBar(){
+  let bar = $('#bar');
+  if(state.done){ if(bar) bar.remove(); return; }
+  if(!bar){ bar = document.createElement('div'); bar.id='bar'; bar.className='bar'; document.body.appendChild(bar); }
+  const ok = answered()===2;
+  bar.innerHTML = `<div class="bar-in">
+    <div class="progress">${ok?'<b>可以送出了！</b>':`必填 <b>${answered()}</b> / 2 題`}</div>
+    <button class="btn" id="send" ${ok&&!state.sending?'':'disabled'}>${state.sending?'送出中…':'送出'}</button>
+  </div>`;
+}
+
+function renderDone(){
+  $('#app').innerHTML = `<div class="done">
+    <div class="big">🐾</div>
+    <h2>謝謝你！</h2>
+    <p class="lead">我們會參考大家的回覆調整開放時段。</p>
+    <a href="./">前往預約 →</a>
+  </div>`;
+  renderBar();
+}
+
+document.addEventListener('change', e=>{
+  const t = e.target;
+  if(t.name==='dayType'){
+    state.dayType = t.value;
+    if(!needWeekday()){ state.weekdaySlots=[]; state.weekdays=[]; }
+    if(!needWeekend()){ state.weekendSlots=[]; }
+    renderSurvey(); return;
+  }
+  if(t.name==='pet'){ state.pet = t.value; return; }
+  if(t.dataset.slot){
+    const arr = t.dataset.slot==='wd' ? state.weekdaySlots : state.weekendSlots;
+    const i = arr.indexOf(t.value); t.checked ? (i<0&&arr.push(t.value)) : (i>=0&&arr.splice(i,1));
+    t.nextElementSibling.textContent = t.checked ? '✓' : '';
+    renderBar(); return;
+  }
+  if(t.dataset.wkd){
+    const d = +t.dataset.wkd, i = state.weekdays.indexOf(d);
+    t.checked ? (i<0&&state.weekdays.push(d)) : (i>=0&&state.weekdays.splice(i,1));
+  }
+});
+document.addEventListener('input', e=>{ if(e.target.id==='note') state.note = e.target.value; });
+document.addEventListener('click', async e=>{
+  const all = e.target.dataset && e.target.dataset.all;
+  if(all){
+    const key = all==='wd'?'weekdaySlots':'weekendSlots';
+    state[key] = state[key].length===SLOTS.length ? [] : SLOTS.map(s=>s.v);
+    renderSurvey(); return;
+  }
+  if(e.target.id==='send') submit();
+});
+
+async function submit(){
+  if(answered()<2 || state.sending) return;
+  state.sending = true; state.error=''; renderBar();
+  try{
+    const res = await fetch(GOOGLE_SCRIPT_URL, {
+      method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'},
+      body: JSON.stringify({
+        action:'submitSurvey',
+        dayType: state.dayType,
+        weekdaySlots: state.weekdaySlots,
+        weekendSlots: state.weekendSlots,
+        weekdays: state.weekdays.sort(),
+        pet: state.pet,
+        note: state.note.trim().slice(0,300)
+      })
+    });
+    const r = await res.json();
+    if(!r.success) throw new Error(r.error || '送出失敗');
+    try{ localStorage.setItem('tobey_survey_done','1'); }catch(_){}
+    state.done = true; renderDone();
+  }catch(err){
+    state.sending = false;
+    state.error = '沒有送出成功，請檢查網路後再按一次「送出」。';
+    renderSurvey();
+  }
+}
+
+/* ===== 統計結果（survey.html#results，給店家看） ===== */
+async function renderResults(){
+  $('#app').innerHTML = `<header><div class="brand">TOBEY PET SPA</div><h1>預約時段調查結果</h1><p class="lead">讀取中…</p></header>`;
+  let s;
+  try{
+    const res = await fetch(GOOGLE_SCRIPT_URL + '?action=getSurveyStats');
+    s = await res.json();
+    if(!s.success) throw new Error(s.error);
+  }catch(err){
+    $('#app').innerHTML += `<div class="err">讀不到結果：${esc(err.message||'網路錯誤')}</div>`; return;
+  }
+  const N = s.total || 0;
+  const bars = (rows) => {
+    const max = Math.max(1, ...rows.map(r=>r.n));
+    return `<div class="stat">` + rows.map(r=>`
+      <div class="stat-row ${r.n===max&&r.n>0?'top':''}"><span>${r.t}</span>
+      <span class="stat-bar"><i style="width:${(r.n/max*100).toFixed(1)}%"></i></span>
+      <span class="stat-n">${r.n}</span></div>`).join('') + `</div>`;
+  };
+  const heatMax = Math.max(1, ...SLOTS.map(x=>Math.max(s.weekdaySlots[x.v]||0, s.weekendSlots[x.v]||0)));
+  const heatCell = n => {
+    const a = n/heatMax;
+    return `<div class="cell" style="background:rgba(61,111,168,${(0.08+a*0.85).toFixed(2)});color:${a>0.5?'#fff':'var(--ink)'}">${n}</div>`;
+  };
+  $('#app').innerHTML = `
+    <header><div class="brand">TOBEY PET SPA</div><h1>預約時段調查結果</h1>
+      <p class="lead">共 <span class="total">${N}</span> 份回覆</p></header>
+    <section class="q"><div class="q-head"><h2>平日 vs 假日</h2></div>
+      ${bars(DAYTYPE.map(d=>({t:d.t, n:s.dayType[d.v]||0})))}</section>
+    <section class="q"><div class="q-head"><h2>時段熱度</h2></div>
+      <p class="hint">數字＝勾選這格的人數，顏色越深越多人</p>
+      <div class="heat"><div></div><div class="col-h" style="text-align:center;font-weight:700;color:var(--ink-soft)">平日</div><div class="col-h" style="text-align:center;font-weight:700;color:var(--ink-soft)">假日</div>
+      ${SLOTS.map(x=>`<div class="row-h" style="display:flex;flex-direction:column;justify-content:center;font-weight:700">${x.t}<small style="font-weight:500;color:var(--ink-soft)">${x.s}</small></div>
+        ${heatCell(s.weekdaySlots[x.v]||0)}${heatCell(s.weekendSlots[x.v]||0)}`).join('')}</div></section>
+    <section class="q"><div class="q-head"><h2>平日哪幾天</h2></div>
+      ${bars(WEEKDAYS.map((d,i)=>({t:'週'+d, n:s.weekdays[i+1]||0})))}</section>
+    <section class="q"><div class="q-head"><h2>毛孩</h2></div>
+      ${bars(PETS.map(p=>({t:p.t, n:s.pet[p.v]||0})))}</section>
+    <p class="hint" style="text-align:center;margin-top:16px">每一筆完整回覆（含留言）都在試算表的「問卷回覆」分頁</p>`;
+}
+
+if(location.hash==='#results') renderResults(); else renderSurvey();
+</script>
+</body>
+</html>
