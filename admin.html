@@ -85,6 +85,15 @@
   .admin-slot-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:8px;}
   .admin-slot{padding:9px 4px;border-radius:9px;border:1.5px solid var(--line);background:var(--cream);text-align:center;font-size:12.5px;font-weight:600;color:var(--pine);cursor:pointer;}
   .admin-slot.blocked{background:var(--danger-light);border-color:var(--danger);color:var(--danger);text-decoration:line-through;}
+  .region-quick-row{display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;}
+  .region-quick-btn{padding:7px 12px;border-radius:9px;border:1.5px solid var(--line);background:var(--cream);font-size:12px;font-weight:600;color:var(--pine);cursor:pointer;}
+  .region-slot-list{display:flex;flex-direction:column;gap:6px;margin-bottom:8px;}
+  .region-slot-row{display:flex;align-items:center;justify-content:space-between;padding:7px 10px;border-radius:9px;border:1.5px solid var(--line);background:var(--cream);}
+  .region-slot-time{font-size:12.5px;font-weight:700;color:var(--pine);}
+  .region-slot-btns{display:flex;gap:6px;}
+  .region-pill{padding:6px 12px;border-radius:8px;border:1.5px solid var(--line);background:#fff;font-size:12px;font-weight:600;color:var(--ink-soft);cursor:pointer;}
+  .region-pill.sb.active{background:#3b82c4;border-color:#3b82c4;color:#fff;}
+  .region-pill.tc.active{background:var(--pine);border-color:var(--pine);color:#fff;}
   .empty-note{font-size:13px;color:var(--ink-soft);background:var(--cream);border-radius:10px;padding:14px;text-align:${'left'};}
 
   .summary-box{background:var(--cream);border-radius:12px;padding:14px;margin-top:18px;}
@@ -184,7 +193,7 @@
    此網址同時用來讀取／儲存後台設定（與客人端 index.html 共用同一個網址）*/
 const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwfwpOEL4l_iqzXx0Ky9_J2l-HzFsHZD-nURQ8VRpGPrs_NYAN6u5RTtVE607RutPH6/exec";
 
-const adminConfig = { closedDates:new Set(), blockedSlots:{}, extendedDates:new Set(), taichungDates:new Set() };
+const adminConfig = { closedDates:new Set(), blockedSlots:{}, extendedDates:new Set(), taichungDates:new Set(), taichungRegionSlots:{} };
 const adminView = { year:new Date().getFullYear(), month:new Date().getMonth(), selectedDate:null };
 const BUSINESS_START = 9*60, DEFAULT_BUSINESS_END = 13*60, EXTENDED_BUSINESS_END = 20*60;
 
@@ -341,6 +350,11 @@ async function loadSettings(){
       const bs = {};
       Object.entries(data.settings.blockedSlots || {}).forEach(([d,arr])=>{ bs[d] = new Set(arr); });
       adminConfig.blockedSlots = bs;
+      const rs = {};
+      Object.entries(data.settings.taichungRegionSlots || {}).forEach(([d,obj])=>{
+        rs[d] = { shuangbei:new Set((obj&&obj.shuangbei)||[]), taichung:new Set((obj&&obj.taichung)||[]) };
+      });
+      adminConfig.taichungRegionSlots = rs;
     }
     setStatus('saved');
   }catch(err){ console.error('讀取設定失敗：', err); setStatus('error'); }
@@ -354,7 +368,8 @@ async function saveSettings(){
     closedDates: Array.from(adminConfig.closedDates),
     extendedDates: Array.from(adminConfig.extendedDates),
     taichungDates: Array.from(adminConfig.taichungDates),
-    blockedSlots: Object.fromEntries(Object.entries(adminConfig.blockedSlots).map(([k,v])=>[k, Array.from(v)]))
+    blockedSlots: Object.fromEntries(Object.entries(adminConfig.blockedSlots).map(([k,v])=>[k, Array.from(v)])),
+    taichungRegionSlots: Object.fromEntries(Object.entries(adminConfig.taichungRegionSlots).map(([k,v])=>[k, { shuangbei:Array.from(v.shuangbei||[]), taichung:Array.from(v.taichung||[]) }]))
   };
   try{
     const res = await fetch(GOOGLE_SCRIPT_URL, {
@@ -1867,6 +1882,32 @@ function renderAdminDetail(){
       </div>
       <div class="empty-note">已標記為不可預約的時段會以紅色顯示，客人在該時段將無法預約（若服務時間跨越此時段亦會一併排除）。</div>
     `;
+    if(taichung){
+      const rs = adminConfig.taichungRegionSlots[date] || { shuangbei:new Set(), taichung:new Set() };
+      html += `
+      <div class="slot-title" style="margin-top:18px;">雙北／台中地區時段分配</div>
+      <div class="empty-note" style="margin-bottom:10px;">這天是台中服務日。請勾選每個時段開放給「雙北」客人、還是「台中」客人（也可以兩者都勾）。沒有勾任何一邊的時段，不管哪個地區的客人都無法預約。</div>
+      <div class="region-quick-row">
+        <button type="button" class="region-quick-btn" id="rs-all-sb">整天全部設為雙北</button>
+        <button type="button" class="region-quick-btn" id="rs-all-tc">整天全部設為台中</button>
+        <button type="button" class="region-quick-btn" id="rs-clear">整天清空</button>
+      </div>
+      <div class="region-slot-list" id="admin-region-slot-list">
+        ${baseSlots(end).map(t=>{
+          const val = fmtTime(t);
+          const sb = rs.shuangbei.has(val);
+          const tc = rs.taichung.has(val);
+          return `<div class="region-slot-row">
+            <span class="region-slot-time">${val}</span>
+            <div class="region-slot-btns">
+              <div class="region-pill sb ${sb?'active':''}" data-region="shuangbei" data-time="${val}">雙北</div>
+              <div class="region-pill tc ${tc?'active':''}" data-region="taichung" data-time="${val}">台中</div>
+            </div>
+          </div>`;
+        }).join('')}
+      </div>
+      `;
+    }
   }
   return html;
 }
@@ -1925,6 +1966,33 @@ function bindAdmin(){
     if(!adminConfig.blockedSlots[date]) adminConfig.blockedSlots[date] = new Set();
     const set = adminConfig.blockedSlots[date];
     if(set.has(time)) set.delete(time); else set.add(time);
+    render(); saveSettings();
+  }); }
+  const regionList = document.getElementById('admin-region-slot-list');
+  if(regionList){ regionList.addEventListener('click', e=>{
+    const pill = e.target.closest('.region-pill'); if(!pill) return;
+    const date = adminView.selectedDate; const time = pill.dataset.time; const region = pill.dataset.region;
+    if(!adminConfig.taichungRegionSlots[date]) adminConfig.taichungRegionSlots[date] = { shuangbei:new Set(), taichung:new Set() };
+    const set = adminConfig.taichungRegionSlots[date][region];
+    if(set.has(time)) set.delete(time); else set.add(time);
+    render(); saveSettings();
+  }); }
+  const rsAllSb = document.getElementById('rs-all-sb');
+  if(rsAllSb){ rsAllSb.addEventListener('click', ()=>{
+    const date = adminView.selectedDate; const end = getBusinessEnd(date);
+    adminConfig.taichungRegionSlots[date] = { shuangbei:new Set(baseSlots(end).map(fmtTime)), taichung:new Set((adminConfig.taichungRegionSlots[date]&&adminConfig.taichungRegionSlots[date].taichung)||[]) };
+    render(); saveSettings();
+  }); }
+  const rsAllTc = document.getElementById('rs-all-tc');
+  if(rsAllTc){ rsAllTc.addEventListener('click', ()=>{
+    const date = adminView.selectedDate; const end = getBusinessEnd(date);
+    adminConfig.taichungRegionSlots[date] = { shuangbei:new Set((adminConfig.taichungRegionSlots[date]&&adminConfig.taichungRegionSlots[date].shuangbei)||[]), taichung:new Set(baseSlots(end).map(fmtTime)) };
+    render(); saveSettings();
+  }); }
+  const rsClear = document.getElementById('rs-clear');
+  if(rsClear){ rsClear.addEventListener('click', ()=>{
+    const date = adminView.selectedDate;
+    adminConfig.taichungRegionSlots[date] = { shuangbei:new Set(), taichung:new Set() };
     render(); saveSettings();
   }); }
   document.querySelectorAll('[data-remove-closed]').forEach(btn=>{ btn.addEventListener('click', ()=>{ adminConfig.closedDates.delete(btn.dataset.removeClosed); render(); saveSettings(); }); });
